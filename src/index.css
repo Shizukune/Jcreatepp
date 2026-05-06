@@ -65,6 +65,14 @@ body {
   background: #ff6b6b;
 }
 
+#btnDownloadJS {
+  background: #1b9e5e;
+  color: #fff;
+}
+#btnDownloadJS:hover {
+  background: #25c274;
+}
+
 #btnSave {
   background: #0f3460;
   color: #a3d8f4;
@@ -113,6 +121,17 @@ body {
   color: #a3d8f4;
   background: #0f3460;
   border-bottom: 1px solid #1a4a7a;
+}
+
+#errorMessages {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #ff6b6b;
+  background: #2a1a1a;
+  border-bottom: 1px solid #4a2020;
+  white-space: pre-wrap;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }
 
 #generatedCode {

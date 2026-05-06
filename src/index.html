@@ -3,22 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jcreate++ MVP Demo</title>
+    <title>Jcreate++</title>
   </head>
   <body>
     <div id="app">
       <header id="headerBar">
-        <h1>Jcreate++ MVP Demo</h1>
+        <h1>Jcreate++</h1>
         <div id="toolbar">
           <button id="btnGenerate" title="ブロックからJSコードを生成">JS生成</button>
+          <button id="btnDownloadJS" title="生成したJSコードをファイルとして保存">JS保存</button>
           <button id="btnSave" title="ワークスペースをJSONでダウンロード">workspace保存</button>
           <button id="btnLoad" title="JSONファイルからワークスペースを復元">workspace読込</button>
+          <button id="btnClear" title="ワークスペースをすべて消去" style="background-color: #d9534f;">すべてクリア</button>
         </div>
       </header>
       <div id="mainContainer">
         <div id="blocklyDiv"></div>
         <div id="codePane">
           <h2>生成コード</h2>
+          <div id="errorMessages" style="display: none;"></div>
           <pre id="generatedCode"><code>// ブロックを配置して「JS生成」を押してください</code></pre>
         </div>
       </div>
