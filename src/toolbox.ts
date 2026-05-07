@@ -27,6 +27,17 @@ export const toolbox = {
     },
     {
       kind: 'category',
+      name: '制御',
+      colour: '120',
+      contents: [
+        {
+          kind: 'block',
+          type: 'jcreatepp_if',
+        },
+      ],
+    },
+    {
+      kind: 'category',
       name: '動作',
       colour: '210',
       contents: [
@@ -91,6 +102,17 @@ export const toolbox = {
           fields: {
             NUM: 0,
           },
+        },
+      ],
+    },
+    {
+      kind: 'category',
+      name: '条件・演算',
+      colour: '210',
+      contents: [
+        {
+          kind: 'block',
+          type: 'jcreatepp_compare',
         },
       ],
     },

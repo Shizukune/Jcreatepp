@@ -81,6 +81,15 @@ function stmtToJS(stmt: Stmt): string {
     case 'add_rotation':
       return `$.setRotation(($.getRotation() || new Quaternion()).multiply(Quaternion.euler(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
+    case 'if': {
+      const condCode = boolExprToJS(stmt.condition);
+      if (stmt.thenBody.length === 0) {
+        return `if (${condCode}) {\n}`;
+      }
+      const thenBodyJS = stmt.thenBody.map((s) => '  ' + stmtToJS(s).replace(/\n/g, '\n  ')).join('\n');
+      return `if (${condCode}) {\n${thenBodyJS}\n}`;
+    }
+
     default: {
       // 将来の Stmt 追加時にコンパイルエラーで検出するための exhaustive check
       const _exhaustive: never = stmt;
@@ -95,6 +104,18 @@ function exprToJS(expr: Expr): string {
   switch (expr.kind) {
     case 'raw':
       return expr.code;
-    // 将来 Expr の kind が増えたらここにケースを追加する
+    // 将来: Expr の kind が増えたらここにケースを追加する
+  }
+}
+
+function boolExprToJS(expr: import('./ir').BoolExpr): string {
+  switch (expr.kind) {
+    case 'raw_bool':
+      return expr.code;
+    default:
+      // compare等は現在 dummyGenerator側(index.ts)で javascriptGenerator に変換させており、
+      // raw_bool としてコードが渡ってくる構成にしているためここでは raw_bool のみを処理。
+      // 将来的に自前でIRから生成する場合はここに追加する。
+      return 'false';
   }
 }

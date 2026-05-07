@@ -14,7 +14,7 @@
 
 import * as Blockly from 'blockly';
 import { blocks } from './blocks/jcreatepp';
-import { javascriptGenerator } from 'blockly/javascript';
+import { javascriptGenerator, Order } from 'blockly/javascript';
 import { workspaceToProgram } from './generators/jcreatepp';
 import { programToJS } from './codegen';
 import { validateWorkspace } from './validator';
@@ -25,6 +25,32 @@ import './index.css';
 // カスタムブロックを登録
 Blockly.common.defineBlocks(blocks);
 
+// ジェネレータにダミーを登録（IRへ変換するため、JSの直接生成はしないが、定義がないとエラーになる）
+const dummyGen = () => '';
+javascriptGenerator.forBlock['jcreatepp_on_start'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_on_update'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_on_interact'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_set_position'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_add_position'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_set_rotation'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_add_rotation'] = dummyGen;
+javascriptGenerator.forBlock['jcreatepp_if'] = dummyGen;
+
+javascriptGenerator.forBlock['jcreatepp_compare'] = (block: Blockly.Block) => {
+  const op = block.getFieldValue('OP');
+  const opMap: Record<string, string> = {
+    'EQ': '===',
+    'NEQ': '!==',
+    'LT': '<',
+    'LTE': '<=',
+    'GT': '>',
+    'GTE': '>='
+  };
+  const jsOp = opMap[op] || '===';
+  const a = javascriptGenerator.valueToCode(block, 'A', Order.RELATIONAL) || '0';
+  const b = javascriptGenerator.valueToCode(block, 'B', Order.RELATIONAL) || '0';
+  return [`${a} ${jsOp} ${b}`, Order.RELATIONAL];
+};
 // DOM 要素の取得
 const blocklyDiv = document.getElementById('blocklyDiv');
 const codeEl = document.getElementById('generatedCode')?.querySelector('code');

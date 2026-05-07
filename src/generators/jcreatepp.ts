@@ -14,7 +14,7 @@
 
 import * as Blockly from 'blockly/core';
 import { Order } from 'blockly/javascript';
-import type { Program, Handler, Stmt } from '../ir';
+import type { Program, Handler, Stmt, BoolExpr } from '../ir';
 import { raw } from '../ir';
 
 // ── イベントブロック type 一覧 ──
@@ -148,12 +148,46 @@ function blockToStmt(
       return { kind: 'add_rotation', x: raw(x), y: raw(y), z: raw(z) };
     }
 
+    case 'jcreatepp_if': {
+      // 制御ブロック
+      // CONDITION が繋がっていない場合は null になるため 'false' をデフォルトにする
+      const conditionCode = generator.valueToCode(block, 'CONDITION', Order.NONE) || 'false';
+      const condition: BoolExpr = { kind: 'raw_bool', code: conditionCode };
+      
+      const thenBody: Stmt[] = [];
+      let thenBlock = block.getInputTargetBlock('DO');
+      while (thenBlock) {
+        const stmt = blockToStmt(thenBlock, generator, errors);
+        if (stmt) thenBody.push(stmt);
+        thenBlock = thenBlock.getNextBlock();
+      }
+
+      return { kind: 'if', condition, thenBody };
+    }
+
     default:
+      // 未対応ブロックなら
+      // ただし Expr系ブロック (compare) が Stmt の場所に置かれた場合は無視するべきか？
+      if (block.type === 'jcreatepp_compare') {
+        // 値を返すブロックは Statement として実行できない
+        errors.push(`「${blockLabel(block.type)}」は単独で置くことはできません。`);
+        return null;
+      }
       // 将来: if / wait / send_signal 等をここに追加
       errors.push(`未対応のブロック: ${block.type}`);
       return null;
   }
 }
+
+// ── Expr 変換 ──
+// 現状は javascriptGenerator.valueToCode に任せているため、
+// 独自の Expr 生成を行う場合はここに関数を定義する。
+// 今回の compare ブロックは javascriptGenerator.forBlock ではなく、
+// 本来ならここで自前変換するべきだが、valueToCode が generator 内の定義を要求するため、
+// src/index.ts のダミージェネレータではなく、ここで本物の JS コードを返すように
+// javascriptGenerator に登録するか、valueToCode をオーバーライドする必要がある。
+// Jcreate++ の設計上、generator(javascriptGenerator) に直接定義を注入する方が Blockly 標準に沿う。
+// そのため、ここはIR変換とは別に generator の定義として実装する方が早い。
 
 // ── ヘルパー ──
 
@@ -181,6 +215,8 @@ function blockLabel(type: string): string {
     case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
     case 'jcreatepp_set_rotation': return '「角度を〜にする」';
     case 'jcreatepp_add_rotation': return '「角度を〜ずつ変える」';
+    case 'jcreatepp_if': return '「もし〜なら」';
+    case 'jcreatepp_compare': return '「比較条件」';
     default: return type;
   }
 }

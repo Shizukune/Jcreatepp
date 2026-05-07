@@ -126,6 +126,51 @@ const addRotationBlock = {
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setrotation',
 };
 
+// ── 制御ブロック ──
+
+const ifBlock = {
+  type: 'jcreatepp_if',
+  message0: 'もし %1 なら %2 %3',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'input_dummy' },
+    { type: 'input_statement', name: 'DO' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 120,
+  tooltip: '条件が true のときだけ中身を実行します',
+  helpUrl: '',
+};
+
+// ── 条件ブロック ──
+
+const compareBlock = {
+  type: 'jcreatepp_compare',
+  message0: '%1 %2 %3',
+  args0: [
+    { type: 'input_value', name: 'A', check: 'Number' },
+    {
+      type: 'field_dropdown',
+      name: 'OP',
+      options: [
+        ['=', 'EQ'],
+        ['!=', 'NEQ'],
+        ['<', 'LT'],
+        ['<=', 'LTE'],
+        ['>', 'GT'],
+        ['>=', 'GTE']
+      ]
+    },
+    { type: 'input_value', name: 'B', check: 'Number' }
+  ],
+  output: 'Boolean',
+  colour: 210,
+  inputsInline: true,
+  tooltip: '2つの値を比較して真偽値を返します',
+  helpUrl: '',
+};
+
 // ブロック定義をエクスポート
 export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   onStart,
@@ -135,4 +180,6 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   addPositionBlock,
   setRotationBlock,
   addRotationBlock,
+  ifBlock,
+  compareBlock,
 ]);
