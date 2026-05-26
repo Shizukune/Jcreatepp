@@ -17,10 +17,36 @@
  * - $.setPosition:  Vector3 を受け取る
  * - $.setRotation:  Quaternion を受け取る
  * - Vector3:        new Vector3(x, y, z)
- * - Quaternion:     Quaternion.euler(x, y, z) — 静的メソッド
+ * - Quaternion:     new Quaternion().setFromEulerAngles(new Vector3(x, y, z))
  */
 
 import type { Program, Handler, Stmt, Expr } from './ir';
+
+type SequenceStmt = Extract<Stmt, { kind: 'sequence' }>;
+
+// ── ヘルパー: Sequence抽出 ──
+function extractSequences(stmts: Stmt[]): SequenceStmt[] {
+  let seqs: SequenceStmt[] = [];
+  for (const stmt of stmts) {
+    if (stmt.kind === 'sequence') {
+      seqs.push(stmt);
+    } else if (stmt.kind === 'if') {
+      seqs = seqs.concat(extractSequences(stmt.thenBody));
+      if (stmt.elseBody) {
+        seqs = seqs.concat(extractSequences(stmt.elseBody));
+      }
+    }
+  }
+  return seqs;
+}
+
+function getAllSequences(program: Program): SequenceStmt[] {
+  let seqs: SequenceStmt[] = [];
+  if (program.onStart) seqs = seqs.concat(extractSequences(program.onStart.body));
+  if (program.onUpdate) seqs = seqs.concat(extractSequences(program.onUpdate.body));
+  if (program.onInteract) seqs = seqs.concat(extractSequences(program.onInteract.body));
+  return seqs;
+}
 
 // ── メイン ──
 
@@ -30,15 +56,76 @@ import type { Program, Handler, Stmt, Expr } from './ir';
  */
 export function programToJS(program: Program): string {
   const parts: string[] = [];
+  const allSequences = getAllSequences(program);
 
   if (program.onStart) {
     parts.push(handlerToJS('onStart', program.onStart));
   }
+
+  // onUpdate の生成（Sequenceのステートマシン実行ロジック、Rideテンプレート、Oscillateを注入する）
+  let updateBodyLines: string[] = [];
   if (program.onUpdate) {
-    parts.push(handlerToJS('onUpdate', program.onUpdate));
+    updateBodyLines = program.onUpdate.body.map((stmt) => '  ' + stmtToJS(stmt).replace(/\n/g, '\n  '));
   }
+  
+  if (allSequences.length > 0) {
+    for (const seq of allSequences) {
+      updateBodyLines.push('  ' + generateSequenceStateMachine(seq).replace(/\n/g, '\n  '));
+    }
+  }
+
+  if (program.rideTemplate) {
+    const fwd = exprToJS(program.rideTemplate.forwardSpeed);
+    const upd = exprToJS(program.rideTemplate.upDownSpeed);
+    const trn = exprToJS(program.rideTemplate.turnSpeed);
+    
+    parts.push(`$.onRide((isGetOn, player) => {\n  if (isGetOn) {\n    $.state.__jpp_ride_active = true;\n  } else {\n    $.state.__jpp_ride_active = false;\n    $.state.__jpp_ride_fwd = 0;\n    $.state.__jpp_ride_upd = 0;\n    $.state.__jpp_ride_trn = 0;\n  }\n});\n`);
+    parts.push(`$.onSteer((input, player) => {\n  if ($.state.__jpp_ride_active) {\n    $.state.__jpp_ride_fwd = input.y * (${fwd});\n    $.state.__jpp_ride_trn = input.x * (${trn});\n  }\n});\n`);
+    parts.push(`$.onSteerAdditionalAxis((input, player) => {\n  if ($.state.__jpp_ride_active) {\n    $.state.__jpp_ride_upd = input * (${upd});\n  }\n});\n`);
+    
+    updateBodyLines.push(`  if ($.state.__jpp_ride_active) {
+    const pos = $.getPosition() || new Vector3(0,0,0);
+    const rot = $.getRotation() || new Quaternion();
+    const trnAmount = ($.state.__jpp_ride_trn || 0) * deltaTime;
+    const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, trnAmount, 0)));
+    
+    const direction = nextRot.clone().createEulerAngles();
+    const forwardRadian = ((direction.y + 270) % 360) * Math.PI / 180;
+    const fwdAmount = $.state.__jpp_ride_fwd || 0;
+    const forwardVec = new Vector3(
+      Math.sin(forwardRadian) * fwdAmount * deltaTime,
+      0,
+      Math.cos(forwardRadian) * fwdAmount * deltaTime
+    );
+    const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state.__jpp_ride_upd || 0) * deltaTime);
+    
+    $.setPosition(pos.clone().add(forwardVec).add(upVec));
+    $.setRotation(nextRot);
+  }`);
+  }
+
+  if (updateBodyLines.length > 0) {
+    parts.push(`$.onUpdate((deltaTime) => {\n${updateBodyLines.join('\n')}\n});\n`);
+  }
+
   if (program.onInteract) {
     parts.push(handlerToJS('onInteract', program.onInteract));
+  }
+
+  if (program.onGrabStart || program.onGrabEnd) {
+    let grabCode = `$.onGrab((isGrab, isLeftHand, player) => {\n`;
+    if (program.onGrabStart) {
+      grabCode += `  if (isGrab) {\n`;
+      grabCode += program.onGrabStart.body.map((stmt) => '    ' + stmtToJS(stmt).replace(/\n/g, '\n    ')).join('\n') + '\n';
+      grabCode += `  }\n`;
+    }
+    if (program.onGrabEnd) {
+      grabCode += `  if (!isGrab) {\n`;
+      grabCode += program.onGrabEnd.body.map((stmt) => '    ' + stmtToJS(stmt).replace(/\n/g, '\n    ')).join('\n') + '\n';
+      grabCode += `  }\n`;
+    }
+    grabCode += `});\n`;
+    parts.push(grabCode);
   }
 
   if (parts.length === 0) {
@@ -46,6 +133,75 @@ export function programToJS(program: Program): string {
   }
 
   return parts.join('\n');
+}
+
+// ── Sequence ステートマシン生成 ──
+function generateSequenceStateMachine(seq: SequenceStmt): string {
+  const id = seq.id.replace(/[^a-zA-Z0-9]/g, '_');
+  const activeVar = `__jpp_seq_active_${id}`;
+  const stepVar = `__jpp_seq_step_${id}`;
+  const timeVar = `__jpp_seq_time_${id}`;
+
+  const cases: string[] = [];
+  for (let i = 0; i < seq.body.length; i++) {
+    const stmt = seq.body[i];
+    let caseBody = '';
+    
+    if (stmt.kind === 'wait_seconds') {
+      caseBody = `let time = ($.state.${timeVar} || 0) + deltaTime;
+$.state.${timeVar} = time;
+if (time >= ${exprToJS(stmt.seconds)}) {
+  $.state.${timeVar} = 0;
+  step++;
+} else {
+  yielded = true;
+}`;
+    } else if (stmt.kind === 'wait_until') {
+      caseBody = `if (${boolExprToJS(stmt.condition)}) {
+  step++;
+} else {
+  yielded = true;
+}`;
+    } else {
+      // 即時実行ステートメント
+      caseBody = `${stmtToJS(stmt)}\nstep++;`;
+    }
+
+    cases.push(`      case ${i}: {\n${caseBody.split('\n').map(l => '        ' + l).join('\n')}\n        break;\n      }`);
+  }
+
+  // 終了ケース
+  cases.push(`      case ${seq.body.length}: {
+        $.state.${activeVar} = false;
+        yielded = true;
+        break;
+      }`);
+
+  return `if ($.state.${activeVar}) {
+  let step = $.state.${stepVar} || 0;
+  let yielded = false;
+  let guard = 0;
+  const MAX_SYNC_STEPS_PER_TICK = 100;
+  
+  while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
+    guard++;
+    switch (step) {
+${cases.join('\n')}
+      default: {
+        yielded = true;
+        break;
+      }
+    }
+  }
+  
+  // guard 超過時の異常系ハンドリング (フリーズ防止)
+  if (guard >= MAX_SYNC_STEPS_PER_TICK) {
+    // 1フレームで処理しきれない異常なループまたは重すぎる処理が発生したため中断
+    // 次のフレームで続きから再開させる
+  }
+  
+  $.state.${stepVar} = step;
+}`;
 }
 
 // ── ハンドラ ──
@@ -72,23 +228,74 @@ function stmtToJS(stmt: Stmt): string {
     case 'set_position':
       return `$.setPosition(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));`;
 
-    case 'add_position':
+    case 'move_by':
       return `$.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
     case 'set_rotation':
-      return `$.setRotation(Quaternion.euler(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));`;
+      return `$.setRotation(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
-    case 'add_rotation':
-      return `$.setRotation(($.getRotation() || new Quaternion()).multiply(Quaternion.euler(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
+    case 'rotate_by':
+      return `$.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}))));`;
+
+    case 'random_warp':
+      return `{\n  const __jpp_pos = $.getPosition() || new Vector3(0,0,0);\n  $.setPosition(new Vector3(__jpp_pos.x + (Math.random()*2-1)*(${exprToJS(stmt.rangeX)}), __jpp_pos.y, __jpp_pos.z + (Math.random()*2-1)*(${exprToJS(stmt.rangeZ)})));\n}`;
+
+    case 'save_position':
+      return `$.state.__jpp_saved_position = $.getPosition() || new Vector3(0,0,0);`;
+
+    case 'load_position':
+      return `if ($.state.__jpp_saved_position) {\n  $.setPosition($.state.__jpp_saved_position);\n}`;
+
+    case 'add_force':
+      return `$.addImpulsiveForce(new Vector3(${exprToJS(stmt.dirX)}, ${exprToJS(stmt.dirY)}, ${exprToJS(stmt.dirZ)}).normalize().multiplyScalar(${exprToJS(stmt.power)}));`;
+
+    case 'set_flag': {
+      if (stmt.operation === 'true') {
+        return `$.state.__jpp_flag_${stmt.name} = true;`;
+      } else if (stmt.operation === 'false') {
+        return `$.state.__jpp_flag_${stmt.name} = false;`;
+      } else {
+        return `$.state.__jpp_flag_${stmt.name} = !$.state.__jpp_flag_${stmt.name};`;
+      }
+    }
+
+    case 'oscillate': {
+      const id = stmt.blockId.replace(/[^a-zA-Z0-9]/g, '_');
+      const axisKey = stmt.axis === 'X' ? 'x' : stmt.axis === 'Y' ? 'y' : 'z';
+      return `if (!$.state.__jpp_osc_init_pos_${id}) {
+  $.state.__jpp_osc_init_pos_${id} = $.getPosition() || new Vector3(0,0,0);
+  $.state.__jpp_osc_time_${id} = 0;
+}
+$.state.__jpp_osc_time_${id} += deltaTime * (${exprToJS(stmt.speed)});
+const __jpp_osc_pos_${id} = $.state.__jpp_osc_init_pos_${id};
+const __jpp_osc_offset_${id} = Math.sin($.state.__jpp_osc_time_${id}) * (${exprToJS(stmt.width)});
+$.setPosition(new Vector3(
+  __jpp_osc_pos_${id}.x + ${stmt.axis === 'X' ? `__jpp_osc_offset_${id}` : '0'},
+  __jpp_osc_pos_${id}.y + ${stmt.axis === 'Y' ? `__jpp_osc_offset_${id}` : '0'},
+  __jpp_osc_pos_${id}.z + ${stmt.axis === 'Z' ? `__jpp_osc_offset_${id}` : '0'}
+));`;
+    }
 
     case 'if': {
       const condCode = boolExprToJS(stmt.condition);
-      if (stmt.thenBody.length === 0) {
-        return `if (${condCode}) {\n}`;
-      }
       const thenBodyJS = stmt.thenBody.map((s) => '  ' + stmtToJS(s).replace(/\n/g, '\n  ')).join('\n');
-      return `if (${condCode}) {\n${thenBodyJS}\n}`;
+      
+      let out = `if (${condCode}) {\n${thenBodyJS}\n}`;
+      if (stmt.elseBody) {
+        const elseBodyJS = stmt.elseBody.map((s) => '  ' + stmtToJS(s).replace(/\n/g, '\n  ')).join('\n');
+        out += ` else {\n${elseBodyJS}\n}`;
+      }
+      return out;
     }
+
+    case 'sequence': {
+      const id = stmt.id.replace(/[^a-zA-Z0-9]/g, '_');
+      return `if (!$.state.__jpp_seq_active_${id}) {\n  $.state.__jpp_seq_active_${id} = true;\n  $.state.__jpp_seq_step_${id} = 0;\n  $.state.__jpp_seq_time_${id} = 0;\n}`;
+    }
+
+    case 'wait_seconds':
+    case 'wait_until':
+      return `// error: wait stmt should be generated inside state machine`;
 
     default: {
       // 将来の Stmt 追加時にコンパイルエラーで検出するための exhaustive check
@@ -104,7 +311,12 @@ function exprToJS(expr: Expr): string {
   switch (expr.kind) {
     case 'raw':
       return expr.code;
-    // 将来: Expr の kind が増えたらここにケースを追加する
+    case 'number_literal':
+      return String(expr.value);
+    case 'delta_time':
+      return 'deltaTime';
+    case 'player_ref':
+      return 'player';
   }
 }
 
@@ -112,10 +324,17 @@ function boolExprToJS(expr: import('./ir').BoolExpr): string {
   switch (expr.kind) {
     case 'raw_bool':
       return expr.code;
+    case 'compare':
+      return `(${exprToJS(expr.left)} ${expr.operator === 'EQ' ? '===' : expr.operator === 'NEQ' ? '!==' : expr.operator === 'LT' ? '<' : expr.operator === 'LTE' ? '<=' : expr.operator === 'GT' ? '>' : '>='} ${exprToJS(expr.right)})`;
+    case 'not':
+      return `!(${boolExprToJS(expr.expr)})`;
+    case 'and':
+      return `(${boolExprToJS(expr.left)} && ${boolExprToJS(expr.right)})`;
+    case 'or':
+      return `(${boolExprToJS(expr.left)} || ${boolExprToJS(expr.right)})`;
+    case 'flag':
+      return `!!$.state.__jpp_flag_${expr.name}`;
     default:
-      // compare等は現在 dummyGenerator側(index.ts)で javascriptGenerator に変換させており、
-      // raw_bool としてコードが渡ってくる構成にしているためここでは raw_bool のみを処理。
-      // 将来的に自前でIRから生成する場合はここに追加する。
       return 'false';
   }
 }

@@ -44,8 +44,10 @@ export const saveToFile = function (workspace: Blockly.Workspace) {
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'workspace.json';
+  a.download = 'jcreateplus_workspace.json';
+  document.body.appendChild(a); 
   a.click();
+  document.body.removeChild(a);
 
   URL.revokeObjectURL(url);
 };

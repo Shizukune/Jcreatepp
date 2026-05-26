@@ -9,26 +9,24 @@
  * 2. イベントブロックごとに Handler を構築
  * 3. statement チェインを走査して Stmt[] に変換
  * 4. 重複検出とエラーを errors に蓄積
- * 5. Program + errors + warnings を返す
+ * 5. 文脈つき値ブロックの文脈違反を検出
+ * 6. Program + errors + warnings を返す
  */
 
 import * as Blockly from 'blockly/core';
 import { Order } from 'blockly/javascript';
-import type { Program, Handler, Stmt, BoolExpr } from '../ir';
-import { raw } from '../ir';
-
-// ── イベントブロック type 一覧 ──
-const EVENT_BLOCK_TYPES = [
-  'jcreatepp_on_start',
-  'jcreatepp_on_update',
-  'jcreatepp_on_interact',
-] as const;
-
-type EventBlockType = typeof EVENT_BLOCK_TYPES[number];
-
-function isEventBlock(type: string): type is EventBlockType {
-  return EVENT_BLOCK_TYPES.includes(type as EventBlockType);
-}
+import type { Program, Handler, Stmt, Expr, BoolExpr } from '../ir';
+import { raw, numberLiteral, deltaTime, playerRef, not, and, or } from '../ir';
+import {
+  EVENT_BLOCK_TYPES,
+  BLOCK_CONTEXT_RULES,
+  isEventBlock,
+  isContextAllowed,
+  eventLabel,
+  valueBlockLabel,
+  type EventContext,
+} from '../blocks/context';
+import { findEventContext } from '../validator';
 
 // ── 変換結果 ──
 
@@ -72,8 +70,13 @@ export function workspaceToProgram(
         continue; // 2個目以降は無視
       }
 
-      const handler = blockToHandler(block, generator, errors);
+      const handler = blockToHandler(block, type, generator, errors);
       assignHandler(program, type, handler);
+    } else if (type === 'jcreatepp_ride_template') {
+      const forwardSpeed = resolveValueExpr(block, 'FORWARD_SPEED', null as any, generator, errors, false);
+      const upDownSpeed = resolveValueExpr(block, 'UP_DOWN_SPEED', null as any, generator, errors, false);
+      const turnSpeed = resolveValueExpr(block, 'TURN_SPEED', null as any, generator, errors, false);
+      program.rideTemplate = { forwardSpeed, upDownSpeed, turnSpeed };
     } else {
       // 動作ブロックがトップレベルにある場合
       if (
@@ -94,6 +97,7 @@ export function workspaceToProgram(
 
 function blockToHandler(
   eventBlock: Blockly.Block,
+  eventType: EventContext,
   generator: Blockly.CodeGenerator,
   errors: string[],
 ): Handler {
@@ -102,7 +106,7 @@ function blockToHandler(
   // statement チェインを走査
   let stmtBlock = eventBlock.getInputTargetBlock('DO');
   while (stmtBlock) {
-    const stmt = blockToStmt(stmtBlock, generator, errors);
+    const stmt = blockToStmt(stmtBlock, eventType, generator, errors, false);
     if (stmt) {
       body.push(stmt);
     }
@@ -116,82 +120,336 @@ function blockToHandler(
 
 function blockToStmt(
   block: Blockly.Block,
+  eventType: EventContext,
   generator: Blockly.CodeGenerator,
   errors: string[],
+  inSequence: boolean = false,
+  inIf: boolean = false,
 ): Stmt | null {
   switch (block.type) {
     case 'jcreatepp_set_position': {
-      const x = generator.valueToCode(block, 'X', Order.NONE) || '0';
-      const y = generator.valueToCode(block, 'Y', Order.NONE) || '0';
-      const z = generator.valueToCode(block, 'Z', Order.NONE) || '0';
-      return { kind: 'set_position', x: raw(x), y: raw(y), z: raw(z) };
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'set_position', x, y, z };
     }
 
     case 'jcreatepp_add_position': {
-      const x = generator.valueToCode(block, 'X', Order.NONE) || '0';
-      const y = generator.valueToCode(block, 'Y', Order.NONE) || '0';
-      const z = generator.valueToCode(block, 'Z', Order.NONE) || '0';
-      return { kind: 'add_position', x: raw(x), y: raw(y), z: raw(z) };
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'move_by', x, y, z };
     }
 
     case 'jcreatepp_set_rotation': {
-      const x = generator.valueToCode(block, 'X', Order.NONE) || '0';
-      const y = generator.valueToCode(block, 'Y', Order.NONE) || '0';
-      const z = generator.valueToCode(block, 'Z', Order.NONE) || '0';
-      return { kind: 'set_rotation', x: raw(x), y: raw(y), z: raw(z) };
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'set_rotation', x, y, z };
     }
 
     case 'jcreatepp_add_rotation': {
-      const x = generator.valueToCode(block, 'X', Order.NONE) || '0';
-      const y = generator.valueToCode(block, 'Y', Order.NONE) || '0';
-      const z = generator.valueToCode(block, 'Z', Order.NONE) || '0';
-      return { kind: 'add_rotation', x: raw(x), y: raw(y), z: raw(z) };
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'rotate_by', x, y, z };
     }
 
-    case 'jcreatepp_if': {
-      // 制御ブロック
-      // CONDITION が繋がっていない場合は null になるため 'false' をデフォルトにする
-      const conditionCode = generator.valueToCode(block, 'CONDITION', Order.NONE) || 'false';
-      const condition: BoolExpr = { kind: 'raw_bool', code: conditionCode };
-      
+    case 'jcreatepp_random_warp': {
+      const rangeX = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const rangeZ = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'random_warp', rangeX, rangeZ };
+    }
+
+    case 'jcreatepp_save_position': {
+      return { kind: 'save_position' };
+    }
+
+    case 'jcreatepp_load_position': {
+      return { kind: 'load_position' };
+    }
+
+    case 'jcreatepp_add_force': {
+      const power = resolveValueExpr(block, 'POWER', eventType, generator, errors, inSequence);
+      const dirX = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const dirY = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const dirZ = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'add_force', power, dirX, dirY, dirZ };
+    }
+
+    case 'jcreatepp_set_flag': {
+      const name = block.getFieldValue('FLAG_NAME') || '';
+      const operation = block.getFieldValue('OPERATION') as 'true' | 'false' | 'toggle';
+      return { kind: 'set_flag', name, operation };
+    }
+
+    case 'jcreatepp_oscillate': {
+      if (eventType !== 'jcreatepp_on_update') {
+        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
+        return null;
+      }
+      const axis = block.getFieldValue('AXIS') as 'X' | 'Y' | 'Z';
+      const width = resolveValueExpr(block, 'WIDTH', eventType, generator, errors, inSequence);
+      const speed = resolveValueExpr(block, 'SPEED', eventType, generator, errors, inSequence);
+      return { kind: 'oscillate', axis, width, speed, blockId: block.id };
+    }
+
+    case 'jcreatepp_if':
+    case 'jcreatepp_if_else': {
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      let condition: BoolExpr;
+      if (conditionBlock) {
+        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+      } else {
+        condition = { kind: 'raw_bool', code: 'false' };
+      }
+
       const thenBody: Stmt[] = [];
       let thenBlock = block.getInputTargetBlock('DO');
       while (thenBlock) {
-        const stmt = blockToStmt(thenBlock, generator, errors);
+        const stmt = blockToStmt(thenBlock, eventType, generator, errors, inSequence, true);
         if (stmt) thenBody.push(stmt);
         thenBlock = thenBlock.getNextBlock();
       }
 
-      return { kind: 'if', condition, thenBody };
+      const elseBody: Stmt[] = [];
+      if (block.type === 'jcreatepp_if_else') {
+        let elseBlock = block.getInputTargetBlock('ELSE');
+        while (elseBlock) {
+          const stmt = blockToStmt(elseBlock, eventType, generator, errors, inSequence, true);
+          if (stmt) elseBody.push(stmt);
+          elseBlock = elseBlock.getNextBlock();
+        }
+      }
+
+      return { kind: 'if', condition, thenBody, elseBody: block.type === 'jcreatepp_if_else' ? elseBody : undefined };
+    }
+
+    case 'jcreatepp_sequence': {
+      if (eventType === 'jcreatepp_on_update') {
+        errors.push(`「${blockLabel(block.type)}」ブロックは「毎フレーム」の中には置けません。「開始時」または「インタラクト時」で使用してください。`);
+        return null;
+      }
+      if (inSequence) {
+        errors.push(`「${blockLabel(block.type)}」ブロックの中に、さらに「一連の動作」を入れることはできません（ネスト禁止）。`);
+        return null;
+      }
+      const body: Stmt[] = [];
+      let stmtBlock = block.getInputTargetBlock('DO');
+      while (stmtBlock) {
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, inIf); // inSequence = true
+        if (stmt) body.push(stmt);
+        stmtBlock = stmtBlock.getNextBlock();
+      }
+      return { kind: 'sequence', id: block.id, body };
+    }
+
+    case 'jcreatepp_wait_seconds': {
+      if (!inSequence) {
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。`);
+        return null;
+      }
+      if (inIf) {
+        errors.push(`「${blockLabel(block.type)}」は「もし〜なら」などの条件分岐の中には置けません。`);
+        return null;
+      }
+      const seconds = resolveValueExpr(block, 'SECONDS', eventType, generator, errors, inSequence);
+      return { kind: 'wait_seconds', seconds };
+    }
+
+    case 'jcreatepp_wait_until': {
+      if (!inSequence) {
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。`);
+        return null;
+      }
+      if (inIf) {
+        errors.push(`「${blockLabel(block.type)}」は「もし〜なら」などの条件分岐の中には置けません。`);
+        return null;
+      }
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      let condition: BoolExpr;
+      if (conditionBlock) {
+        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+      } else {
+        condition = { kind: 'raw_bool', code: 'false' };
+      }
+      return { kind: 'wait_until', condition };
     }
 
     default:
-      // 未対応ブロックなら
-      // ただし Expr系ブロック (compare) が Stmt の場所に置かれた場合は無視するべきか？
-      if (block.type === 'jcreatepp_compare') {
-        // 値を返すブロックは Statement として実行できない
+      if (block.type === 'jcreatepp_compare' || block.type === 'jcreatepp_not' || block.type === 'jcreatepp_and' || block.type === 'jcreatepp_or') {
         errors.push(`「${blockLabel(block.type)}」は単独で置くことはできません。`);
         return null;
       }
-      // 将来: if / wait / send_signal 等をここに追加
       errors.push(`未対応のブロック: ${block.type}`);
       return null;
   }
 }
 
 // ── Expr 変換 ──
-// 現状は javascriptGenerator.valueToCode に任せているため、
-// 独自の Expr 生成を行う場合はここに関数を定義する。
-// 今回の compare ブロックは javascriptGenerator.forBlock ではなく、
-// 本来ならここで自前変換するべきだが、valueToCode が generator 内の定義を要求するため、
-// src/index.ts のダミージェネレータではなく、ここで本物の JS コードを返すように
-// javascriptGenerator に登録するか、valueToCode をオーバーライドする必要がある。
-// Jcreate++ の設計上、generator(javascriptGenerator) に直接定義を注入する方が Blockly 標準に沿う。
-// そのため、ここはIR変換とは別に generator の定義として実装する方が早い。
+
+/**
+ * value input に接続されたブロックを型付き Expr に変換する。
+ * 文脈チェックも同時に行う。
+ */
+function resolveValueExpr(
+  parentBlock: Blockly.Block,
+  inputName: string,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean = false,
+): Expr {
+  const valueBlock = parentBlock.getInputTargetBlock(inputName);
+
+  if (!valueBlock) {
+    // 接続なし → デフォルト 0
+    return numberLiteral(0);
+  }
+
+  // 文脈チェック
+  validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+
+  return blockToExpr(valueBlock, eventType, generator, errors, inSequence);
+}
+
+/**
+ * 値ブロックを IR Expr に変換する。
+ */
+function blockToExpr(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean = false,
+): Expr {
+  switch (block.type) {
+    case 'math_number': {
+      const value = Number(block.getFieldValue('NUM')) || 0;
+      return numberLiteral(value);
+    }
+
+    case 'jcreatepp_delta_time':
+      return deltaTime();
+
+    case 'jcreatepp_player':
+      return playerRef();
+
+    default: {
+      // フォールバック: valueToCode で JS 文字列を取得
+      // 親ブロックから valueToCode を呼ぶ必要があるため、raw でラップ
+      const parent = block.getParent();
+      if (parent) {
+        // 親の input を見つけてそこから valueToCode
+        for (const input of parent.inputList) {
+          if (input.connection && input.connection.targetBlock() === block) {
+            const code = generator.valueToCode(parent, input.name, Order.NONE) || '0';
+            return raw(code);
+          }
+        }
+      }
+      return raw('0');
+    }
+  }
+}
+
+/**
+ * 条件ブロックを BoolExpr に変換する。
+ */
+function blockToBoolExpr(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean = false,
+): BoolExpr {
+  switch (block.type) {
+    case 'jcreatepp_compare': {
+      const opRaw = block.getFieldValue('OP');
+      const validOps = new Set(['EQ', 'NEQ', 'LT', 'LTE', 'GT', 'GTE']);
+      const operator = (validOps.has(opRaw) ? opRaw : 'EQ') as 'EQ' | 'NEQ' | 'LT' | 'LTE' | 'GT' | 'GTE';
+      const left = resolveValueExpr(block, 'A', eventType, generator, errors, inSequence);
+      const right = resolveValueExpr(block, 'B', eventType, generator, errors, inSequence);
+      return { kind: 'compare', operator, left, right };
+    }
+
+    case 'jcreatepp_not': {
+      const targetBlock = block.getInputTargetBlock('BOOL');
+      if (!targetBlock) {
+        return { kind: 'raw_bool', code: 'false' };
+      }
+      return not(blockToBoolExpr(targetBlock, eventType, generator, errors, inSequence));
+    }
+
+    case 'jcreatepp_and': {
+      const blockA = block.getInputTargetBlock('A');
+      const blockB = block.getInputTargetBlock('B');
+      const exprA = blockA ? blockToBoolExpr(blockA, eventType, generator, errors, inSequence) : { kind: 'raw_bool', code: 'false' } as BoolExpr;
+      const exprB = blockB ? blockToBoolExpr(blockB, eventType, generator, errors, inSequence) : { kind: 'raw_bool', code: 'false' } as BoolExpr;
+      return and(exprA, exprB);
+    }
+
+    case 'jcreatepp_or': {
+      const blockA = block.getInputTargetBlock('A');
+      const blockB = block.getInputTargetBlock('B');
+      const exprA = blockA ? blockToBoolExpr(blockA, eventType, generator, errors, inSequence) : { kind: 'raw_bool', code: 'false' } as BoolExpr;
+      const exprB = blockB ? blockToBoolExpr(blockB, eventType, generator, errors, inSequence) : { kind: 'raw_bool', code: 'false' } as BoolExpr;
+      return or(exprA, exprB);
+    }
+
+    case 'jcreatepp_flag': {
+      const name = block.getFieldValue('FLAG_NAME') || '';
+      return { kind: 'flag', name };
+    }
+
+    default:
+      // 未知のブロックが繋がっている場合
+      errors.push(`条件として使えないブロックが接続されています: ${block.type}`);
+      return { kind: 'raw_bool', code: 'false' };
+  }
+}
+
+/**
+ * 値ブロックの文脈チェック。違反があれば errors に追加する。
+ * ネストされた値ブロック（compare の A/B 入力など）も再帰的にチェックする。
+ */
+function validateValueBlockContext(
+  block: Blockly.Block,
+  eventType: EventContext,
+  errors: string[],
+  inSequence: boolean = false,
+): void {
+  const rules = BLOCK_CONTEXT_RULES[block.type];
+  if (rules !== undefined && rules.length > 0) {
+    if (!isContextAllowed(block.type, eventType)) {
+      const allowedNames = rules.map(r => `「${eventLabel(r)}」`).join(' / ');
+      errors.push(
+        `「${valueBlockLabel(block.type)}」は${allowedNames}の中でのみ使えます。`
+      );
+    }
+  }
+
+  // Sequence 内での player 使用禁止
+  if (block.type === 'jcreatepp_player' && inSequence) {
+    errors.push(`「プレイヤー」は Sequence（一連の動作）の中では使えません。プレイヤー値はインタラクト直下の即時処理でのみ使用できます。`);
+  }
+
+  // 再帰: このブロックの value input に接続された子ブロックもチェック
+  for (const input of block.inputList) {
+    if (input.connection && input.connection.targetBlock()) {
+      const child = input.connection.targetBlock();
+      if (child) {
+        validateValueBlockContext(child, eventType, errors, inSequence);
+      }
+    }
+  }
+}
 
 // ── ヘルパー ──
 
-function assignHandler(program: Program, type: EventBlockType, handler: Handler): void {
+function assignHandler(program: Program, type: EventContext, handler: Handler): void {
   switch (type) {
     case 'jcreatepp_on_start':
       program.onStart = handler;
@@ -202,6 +460,12 @@ function assignHandler(program: Program, type: EventBlockType, handler: Handler)
     case 'jcreatepp_on_interact':
       program.onInteract = handler;
       break;
+    case 'jcreatepp_on_grab_start':
+      program.onGrabStart = handler;
+      break;
+    case 'jcreatepp_on_grab_end':
+      program.onGrabEnd = handler;
+      break;
   }
 }
 
@@ -211,12 +475,23 @@ function blockLabel(type: string): string {
     case 'jcreatepp_on_start': return '「開始時」';
     case 'jcreatepp_on_update': return '「毎フレーム」';
     case 'jcreatepp_on_interact': return '「インタラクト時」';
+    case 'jcreatepp_on_grab_start': return '「持ったとき」';
+    case 'jcreatepp_on_grab_end': return '「離したとき」';
     case 'jcreatepp_set_position': return '「位置を〜にする」';
     case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
     case 'jcreatepp_set_rotation': return '「角度を〜にする」';
     case 'jcreatepp_add_rotation': return '「角度を〜ずつ変える」';
     case 'jcreatepp_if': return '「もし〜なら」';
+    case 'jcreatepp_if_else': return '「もし〜なら、でなければ」';
+    case 'jcreatepp_sequence': return '「一連の動作（完了まで待つ）」';
+    case 'jcreatepp_wait_seconds': return '「〜秒待つ」';
+    case 'jcreatepp_wait_until': return '「〜まで待つ」';
     case 'jcreatepp_compare': return '「比較条件」';
+    case 'jcreatepp_not': return '「〜ではない」';
+    case 'jcreatepp_and': return '「かつ」';
+    case 'jcreatepp_or': return '「または」';
+    case 'jcreatepp_delta_time': return '「経過時間」';
+    case 'jcreatepp_player': return '「プレイヤー」';
     default: return type;
   }
 }

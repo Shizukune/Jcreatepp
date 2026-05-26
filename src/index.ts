@@ -12,8 +12,9 @@
  * 5. JS保存 / workspace保存 / workspace読込
  */
 
-import * as Blockly from 'blockly';
-import { blocks } from './blocks/jcreatepp';
+import * as Blockly from 'blockly/core';
+import * as libraryBlocks from 'blockly/blocks';
+import * as Ja from 'blockly/msg/ja';
 import { javascriptGenerator, Order } from 'blockly/javascript';
 import { workspaceToProgram } from './generators/jcreatepp';
 import { programToJS } from './codegen';
@@ -22,35 +23,30 @@ import { save, load, saveToFile, loadFromFile } from './serialization';
 import { toolbox } from './toolbox';
 import './index.css';
 
+// 言語設定
+Blockly.setLocale(Ja);
+
+// 基本ブロック（math_number等）を登録
+Blockly.common.defineBlocks(libraryBlocks);
+
 // カスタムブロックを登録
+import { blocks } from './blocks/jcreatepp';
 Blockly.common.defineBlocks(blocks);
 
 // ジェネレータにダミーを登録（IRへ変換するため、JSの直接生成はしないが、定義がないとエラーになる）
 const dummyGen = () => '';
-javascriptGenerator.forBlock['jcreatepp_on_start'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_on_update'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_on_interact'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_set_position'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_add_position'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_set_rotation'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_add_rotation'] = dummyGen;
-javascriptGenerator.forBlock['jcreatepp_if'] = dummyGen;
+const dummyValueGen = (): [string, number] => ['0', Order.ATOMIC];
 
-javascriptGenerator.forBlock['jcreatepp_compare'] = (block: Blockly.Block) => {
-  const op = block.getFieldValue('OP');
-  const opMap: Record<string, string> = {
-    'EQ': '===',
-    'NEQ': '!==',
-    'LT': '<',
-    'LTE': '<=',
-    'GT': '>',
-    'GTE': '>='
-  };
-  const jsOp = opMap[op] || '===';
-  const a = javascriptGenerator.valueToCode(block, 'A', Order.RELATIONAL) || '0';
-  const b = javascriptGenerator.valueToCode(block, 'B', Order.RELATIONAL) || '0';
-  return [`${a} ${jsOp} ${b}`, Order.RELATIONAL];
-};
+// 全てのカスタムブロックに対してダミージェネレータを登録
+Object.keys(blocks).forEach(type => {
+  const def = (blocks as any)[type];
+  if (def.output !== undefined) {
+    javascriptGenerator.forBlock[type] = dummyValueGen;
+  } else {
+    javascriptGenerator.forBlock[type] = dummyGen;
+  }
+});
+
 // DOM 要素の取得
 const blocklyDiv = document.getElementById('blocklyDiv');
 const codeEl = document.getElementById('generatedCode')?.querySelector('code');
@@ -88,76 +84,164 @@ const ws = Blockly.inject(blocklyDiv, {
 // ── JS生成 ──
 
 let lastGeneratedCode = '';
+let isGenerating = false; // 再入ガード
 
-const generateCode = () => {
-  // 1. ブロック → IR 変換（エラー検出含む）
-  const result = workspaceToProgram(ws as Blockly.Workspace, javascriptGenerator as any);
-
-  // 2. エラーがあれば表示して中断
-  if (result.errors.length > 0) {
-    if (errorEl) {
-      errorEl.textContent = result.errors.join('\n');
-      errorEl.style.display = 'block';
-    }
-    if (codeEl) {
-      codeEl.textContent = '// エラーがあるため生成できません';
-    }
-    lastGeneratedCode = '';
-    return;
+/** 出力ペインをクリアする */
+function clearOutputPane() {
+  if (codeEl) {
+    codeEl.textContent = '// ブロックを配置して「JS生成」を押してください';
   }
-
-  // エラーなし → エラー表示をクリア
   if (errorEl) {
     errorEl.textContent = '';
     errorEl.style.display = 'none';
   }
+  lastGeneratedCode = '';
+}
 
-  // 3. IR → JS 変換
-  const code = programToJS(result.program);
-  lastGeneratedCode = code;
+const generateCode = () => {
+  // 再入防止
+  if (isGenerating) return;
+  isGenerating = true;
 
-  if (codeEl) {
-    codeEl.textContent = code;
+  try {
+    // ワークスペースが空の場合は即座にクリアして返す
+    const topBlocks = ws.getTopBlocks(false);
+    if (topBlocks.length === 0) {
+      clearOutputPane();
+      return;
+    }
+
+    // 1. ブロック → IR 変換（エラー検出含む）
+    const result = workspaceToProgram(ws as Blockly.Workspace, javascriptGenerator as any);
+
+    // 2. エラーがあれば表示して中断
+    if (result.errors.length > 0) {
+      if (errorEl) {
+        errorEl.textContent = result.errors.join('\n');
+        errorEl.style.display = 'block';
+      }
+      if (codeEl) {
+        codeEl.textContent = '// エラーがあるため生成できません';
+      }
+      lastGeneratedCode = '';
+      return;
+    }
+
+    // エラーなし → エラー表示をクリア
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.style.display = 'none';
+    }
+
+    // 3. IR → JS 変換
+    const code = programToJS(result.program);
+    lastGeneratedCode = code;
+
+    if (codeEl) {
+      codeEl.textContent = code;
+    }
+  } catch (err) {
+    console.error('generateCode error:', err);
+    if (codeEl) {
+      codeEl.textContent = '// 内部エラーが発生しました。コンソールを確認してください。';
+    }
+    lastGeneratedCode = '';
+  } finally {
+    isGenerating = false;
   }
 };
 
 // ── ボタンイベント ──
 
-btnGenerate?.addEventListener('click', generateCode);
-
-btnDownloadJS?.addEventListener('click', () => {
-  // 最新のコードを生成
+// JS生成ボタン
+btnGenerate?.addEventListener('click', () => {
+  console.log('[btnGenerate] clicked');
   generateCode();
-
-  if (!lastGeneratedCode) {
-    alert('生成できるコードがありません');
-    return;
-  }
-
-  const blob = new Blob([lastGeneratedCode], { type: 'text/javascript' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const name = prompt('ファイル名を入力してください', 'main.js');
-  if (!name) {
-    URL.revokeObjectURL(url);
-    return;
-  }
-  a.download = name.endsWith('.js') ? name : name + '.js';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 });
 
-btnSave?.addEventListener('click', () => saveToFile(ws));
-btnLoad?.addEventListener('click', () => loadFromFile(ws));
-
-btnClear?.addEventListener('click', () => {
-  if (confirm('ワークスペースのブロックをすべて消去しますか？（画面外の見えないブロックも削除されます）')) {
-    ws.clear();
-    window.localStorage?.removeItem('jcreatepp-workspace');
+// JS保存ボタン: 生成された JavaScript コードを .js ファイルとしてダウンロードする
+btnDownloadJS?.addEventListener('click', () => {
+  console.log('[btnDownloadJS] clicked');
+  try {
+    // 保存時に最新のコードを再生成
     generateCode();
+
+    if (!lastGeneratedCode) {
+      alert('生成できるコードがありません。\nブロックを配置してから「JS保存」を押してください。');
+      return;
+    }
+
+    // JS コードを Blob にして保存
+    const blob = new Blob([lastGeneratedCode], { type: 'application/javascript; charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'jcreateplus_script.js';
+    document.body.appendChild(a);
+    a.click();
+    // 即座に削除すると Firefox で問題になる場合があるので setTimeout
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    console.log('[btnDownloadJS] download triggered: jcreateplus_script.js');
+  } catch (e) {
+    console.error('[btnDownloadJS] failed:', e);
+    alert('JS保存に失敗しました: ' + (e as Error).message);
+  }
+});
+
+// workspace保存ボタン: Blockly ワークスペースの JSON データをダウンロードする
+btnSave?.addEventListener('click', () => {
+  console.log('[btnSave] clicked');
+  try {
+    saveToFile(ws);
+    console.log('[btnSave] download triggered: jcreateplus_workspace.json');
+  } catch (e) {
+    console.error('[btnSave] failed:', e);
+    alert('workspace保存に失敗しました: ' + (e as Error).message);
+  }
+});
+
+// workspace読込ボタン
+btnLoad?.addEventListener('click', () => {
+  console.log('[btnLoad] clicked');
+  try {
+    loadFromFile(ws);
+  } catch (e) {
+    console.error('[btnLoad] failed:', e);
+    alert('workspace読込に失敗しました: ' + (e as Error).message);
+  }
+});
+
+// すべてクリアボタン
+btnClear?.addEventListener('click', () => {
+  console.log('[btnClear] clicked');
+  if (!confirm('ワークスペースのブロックをすべて消去しますか？\n（画面外の見えないブロックも削除されます）')) {
+    return;
+  }
+
+  try {
+    // イベントを一時的に無効化してクリア（ChangeListener の再入を防ぐ）
+    Blockly.Events.disable();
+    ws.clear();
+    Blockly.Events.enable();
+
+    // localStorage の保存データも消す
+    try {
+      window.localStorage?.removeItem('jcreatepp-workspace');
+    } catch (_) {
+      // localStorage アクセスに失敗しても無視
+    }
+
+    // 出力ペインをリセット
+    clearOutputPane();
+    console.log('[btnClear] workspace cleared');
+  } catch (e) {
+    // 万が一エラーが出ても Events は必ず有効に戻す
+    Blockly.Events.enable();
+    console.error('[btnClear] failed:', e);
+    alert('クリアに失敗しました: ' + (e as Error).message);
   }
 });
 
@@ -173,11 +257,27 @@ if (ws) {
   // ワークスペース変更時: 自動保存 + リアルタイム警告 + コード生成
   ws.addChangeListener((e: Blockly.Events.Abstract) => {
     if (e.isUiEvent) return;
-    save(ws);
-    validateWorkspace(ws);
-    generateCode();
+    try {
+      save(ws);
+    } catch (err) {
+      console.error('ChangeListener save error:', err);
+    }
+    try {
+      validateWorkspace(ws);
+    } catch (err) {
+      console.error('ChangeListener validate error:', err);
+    }
+    try {
+      generateCode();
+    } catch (err) {
+      console.error('ChangeListener generateCode error:', err);
+    }
   });
 
   // 初回の警告チェック
-  validateWorkspace(ws);
+  try {
+    validateWorkspace(ws);
+  } catch (err) {
+    console.error('Initial validateWorkspace error:', err);
+  }
 }

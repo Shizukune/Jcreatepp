@@ -8,16 +8,23 @@
  * ── 検出する警告 ──
  * 1. 同種イベントブロックが複数ある
  * 2. 動作ブロックがイベントブロックの外にある（トップレベルに置かれている）
+ * 3. 文脈つき値ブロックが不正な文脈で使われている
+ * 4. 待機ブロックが一連の動作（Sequence）の外にある
+ * 5. 待機ブロックが if / if_else の中にある
+ * 6. Sequence が「毎フレーム」直下にある
+ * 7. Sequence がネストしている
  */
 
 import * as Blockly from 'blockly/core';
-
-// イベントブロック type 一覧
-const EVENT_BLOCK_TYPES = [
-  'jcreatepp_on_start',
-  'jcreatepp_on_update',
-  'jcreatepp_on_interact',
-];
+import {
+  EVENT_BLOCK_TYPES,
+  BLOCK_CONTEXT_RULES,
+  isEventBlock,
+  isContextAllowed,
+  eventLabel,
+  valueBlockLabel,
+  type EventContext,
+} from './blocks/context';
 
 // 動作ブロック type 一覧
 const ACTION_BLOCK_TYPES = [
@@ -27,15 +34,11 @@ const ACTION_BLOCK_TYPES = [
   'jcreatepp_add_rotation',
 ];
 
-/** ブロック type → 日本語ラベル */
-function eventLabel(type: string): string {
-  switch (type) {
-    case 'jcreatepp_on_start': return '開始時';
-    case 'jcreatepp_on_update': return '毎フレーム';
-    case 'jcreatepp_on_interact': return 'インタラクト時';
-    default: return type;
-  }
-}
+// 待機ブロック type 一覧
+const WAIT_BLOCK_TYPES = [
+  'jcreatepp_wait_seconds',
+  'jcreatepp_wait_until',
+];
 
 /**
  * ワークスペースの全ブロックを走査し、リアルタイム警告を更新する。
@@ -48,7 +51,7 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
   const eventBlocksByType: Record<string, Blockly.Block[]> = {};
 
   for (const block of allBlocks) {
-    if (EVENT_BLOCK_TYPES.includes(block.type)) {
+    if (isEventBlock(block.type)) {
       if (!eventBlocksByType[block.type]) {
         eventBlocksByType[block.type] = [];
       }
@@ -73,10 +76,22 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
     }
   }
 
+  // 1.5 乗り物テンプレートの重複と場所検出
+  let rideTemplates = allBlocks.filter(b => b.type === 'jcreatepp_ride_template');
+  for (const block of rideTemplates) {
+    if (rideTemplates.length > 1) {
+      block.setWarningText('「乗り物ギミック」はワークスペースに1つしか置けません。');
+    } else if (findEventContext(block)) {
+      block.setWarningText('「乗り物ギミック」はイベントブロックの中に入れず、単独で配置してください。');
+    } else {
+      block.setWarningText(null);
+    }
+  }
+
   // 2. 動作ブロックがイベント外にある検出
   for (const block of allBlocks) {
     if (ACTION_BLOCK_TYPES.includes(block.type)) {
-      if (!isInsideEvent(block)) {
+      if (!findEventContext(block)) {
         block.setWarningText(
           'このブロックはイベントブロックの中に配置してください。\n（開始時 / 毎フレーム / インタラクト時）',
         );
@@ -85,16 +100,138 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       }
     }
   }
+
+  // 3. 文脈つき値ブロックの文脈チェック
+  for (const block of allBlocks) {
+    const rules = BLOCK_CONTEXT_RULES[block.type];
+    if (rules === undefined) continue;      // 未登録 → チェック対象外
+    if (rules.length === 0) continue;       // 全文脈OK → チェック不要
+
+    const ctx = findEventContext(block);
+
+    if (!ctx) {
+      // イベント外
+      block.setWarningText(
+        `「${valueBlockLabel(block.type)}」はイベントブロックの中でのみ使えます。`,
+      );
+    } else if (!isContextAllowed(block.type, ctx)) {
+      // 文脈違反
+      const allowedNames = rules.map(r => `「${eventLabel(r)}」`).join(' / ');
+      block.setWarningText(
+        `「${valueBlockLabel(block.type)}」は${allowedNames}の中でのみ使えます。`,
+      );
+    } else if (block.type === 'jcreatepp_player' && isInsideSequence(block)) {
+      // Sequence 内での player 使用禁止
+      block.setWarningText(
+        `「プレイヤー」は Sequence（一連の動作）の中では使えません。\nプレイヤー値はインタラクト直下の即時処理でのみ使用できます。`,
+      );
+    } else {
+      block.setWarningText(null);
+    }
+  }
+
+  // 4. 待機ブロックの場所チェック
+  for (const block of allBlocks) {
+    if (WAIT_BLOCK_TYPES.includes(block.type)) {
+      if (!isInsideSequence(block)) {
+        block.setWarningText(
+          '待機ブロック（「〜秒待つ」「〜まで待つ」等）は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。',
+        );
+      } else if (isInsideIf(block)) {
+        block.setWarningText(
+          '待機ブロックは「もし〜なら」などの条件分岐の中には置けません。',
+        );
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_sequence') {
+      const ctx = findEventContext(block);
+      if (ctx === 'jcreatepp_on_update') {
+        block.setWarningText(
+          '「一連の動作（完了まで待つ）」ブロックは「毎フレーム」の中には置けません。\n「開始時」または「インタラクト時」で使用してください。',
+        );
+      } else if (isInsideSequence(block)) {
+        block.setWarningText(
+          '「一連の動作（完了まで待つ）」ブロックの中に、さらに「一連の動作」を入れることはできません（ネスト禁止）。',
+        );
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    // 5. フラグ変数名のチェック
+    if (block.type === 'jcreatepp_flag' || block.type === 'jcreatepp_set_flag') {
+      const name = block.getFieldValue('FLAG_NAME') || '';
+      if (!name.trim()) {
+        block.setWarningText('フラグ名を入力してください。');
+      } else if (name.startsWith('__jpp_')) {
+        block.setWarningText('「__jpp_」から始まる名前はシステムで予約されているため使用できません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+    // 6. 往復移動の場所チェック
+    if (block.type === 'jcreatepp_oscillate') {
+      const ctx = findEventContext(block);
+      if (ctx !== 'jcreatepp_on_update') {
+        block.setWarningText('「往復する」ブロックは「毎フレーム」の中でしか使えません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+  }
 }
 
 /**
- * ブロックがイベントブロックの中にあるかどうかを判定する。
- * parent チェインを辿ってイベントブロックに到達すれば true。
+ * ブロックが属するイベント文脈を返す。
+ * 値ブロック (output あり) は getSurroundParent() ではイベントに到達できない場合があるため、
+ * getParent() チェインも使って辿る。
  */
-function isInsideEvent(block: Blockly.Block): boolean {
+export function findEventContext(block: Blockly.Block): EventContext | null {
+  // まず getSurroundParent で辿る（statement ブロック向け）
   let current: Blockly.Block | null = block.getSurroundParent();
   while (current) {
-    if (EVENT_BLOCK_TYPES.includes(current.type)) {
+    if (isEventBlock(current.type)) {
+      return current.type;
+    }
+    current = current.getSurroundParent();
+  }
+
+  // getSurroundParent で見つからなかった場合、getParent で辿る（値ブロック向け）
+  let parent: Blockly.Block | null = block.getParent();
+  while (parent) {
+    if (isEventBlock(parent.type)) {
+      return parent.type;
+    }
+    parent = parent.getParent();
+  }
+
+  return null;
+}
+
+/**
+ * ブロックが一連の動作（Sequence）の中に配置されているか判定する
+ */
+export function isInsideSequence(block: Blockly.Block): boolean {
+  let current: Blockly.Block | null = block.getSurroundParent();
+  while (current) {
+    if (current.type === 'jcreatepp_sequence') {
+      return true;
+    }
+    current = current.getSurroundParent();
+  }
+  return false;
+}
+
+/**
+ * ブロックが if または if_else の中に配置されているか判定する
+ */
+export function isInsideIf(block: Blockly.Block): boolean {
+  let current: Blockly.Block | null = block.getSurroundParent();
+  while (current) {
+    if (current.type === 'jcreatepp_if' || current.type === 'jcreatepp_if_else') {
       return true;
     }
     current = current.getSurroundParent();
