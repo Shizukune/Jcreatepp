@@ -43,6 +43,7 @@ export type Program = {
   onInteract?: Handler;
   onGrabStart?: Handler;
   onGrabEnd?: Handler;
+  onReceives?: ReceiveHandler[];
   rideTemplate?: {
     forwardSpeed: Expr;
     upDownSpeed: Expr;
@@ -52,6 +53,11 @@ export type Program = {
 
 export type Handler = {
   body: Stmt[];
+};
+
+export type ReceiveHandler = {
+  message: string;
+  handler: Handler;
 };
 
 export type Stmt =
@@ -80,21 +86,13 @@ export type Expr =
   // 将来: | VariableExpr
   // 将来: | BinaryExpr
 
-export type TargetRef = 
-  | { kind: 'self' }
-  | { kind: 'player' }
-  | { kind: 'item', id: string }
-  | { kind: 'node', name: string }
-  | { kind: 'var', name: string };
-
 export type BoolExpr =
   | { kind: 'raw_bool', code: string }
   | { kind: 'compare', operator: 'EQ' | 'NEQ' | 'LT' | 'LTE' | 'GT' | 'GTE', left: Expr, right: Expr }
   | { kind: 'not', expr: BoolExpr }
   | { kind: 'and', left: BoolExpr, right: BoolExpr }
   | { kind: 'or', left: BoolExpr, right: BoolExpr }
-  | { kind: 'flag', name: string }
-  | { kind: 'near', a: TargetRef, b: TargetRef, distance: Expr };
+  | { kind: 'flag', name: string };
 
 export type RawExpr = {
   kind: 'raw';

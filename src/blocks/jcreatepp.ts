@@ -85,6 +85,20 @@ const onGrabEnd = {
   hat: 'cap',
 };
 
+const onReceive = {
+  type: "jcreatepp_on_receive",
+  message0: "メッセージ %1 を受け取ったとき %2 %3",
+  args0: [
+    { type: "field_input", name: "MESSAGE", text: "open" },
+    { type: "input_dummy" },
+    { type: "input_statement", name: "DO" },
+  ],
+  colour: 45,
+  tooltip: "指定したメッセージを受け取ったときに実行されます",
+  helpUrl: "https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive",
+  hat: "cap",
+};
+
 // ── 動作ブロック ──
 // previousStatement / nextStatement あり → イベントの body に接続可能
 
@@ -477,6 +491,7 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   setFlagBlock,
   onGrabStart,
   onGrabEnd,
+  onReceive,
   oscillateBlock,
   rideTemplateBlock,
 ]);

@@ -17,7 +17,7 @@
 
 import * as Blockly from 'blockly/core';
 import {
-  EVENT_BLOCK_TYPES,
+  UNIQUE_EVENT_BLOCK_TYPES,
   BLOCK_CONTEXT_RULES,
   isEventBlock,
   isContextAllowed,
@@ -25,14 +25,6 @@ import {
   valueBlockLabel,
   type EventContext,
 } from './blocks/context';
-
-// 動作ブロック type 一覧
-const ACTION_BLOCK_TYPES = [
-  'jcreatepp_set_position',
-  'jcreatepp_add_position',
-  'jcreatepp_set_rotation',
-  'jcreatepp_add_rotation',
-];
 
 // 待機ブロック type 一覧
 const WAIT_BLOCK_TYPES = [
@@ -60,7 +52,7 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
   }
 
   // イベントブロックの警告を更新
-  for (const type of EVENT_BLOCK_TYPES) {
+  for (const type of UNIQUE_EVENT_BLOCK_TYPES) {
     const blocks = eventBlocksByType[type] || [];
     if (blocks.length > 1) {
       for (const block of blocks) {
@@ -88,12 +80,12 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
     }
   }
 
-  // 2. 動作ブロックがイベント外にある検出
+  // 2. 動作・制御ブロックがイベント外にある検出
   for (const block of allBlocks) {
-    if (ACTION_BLOCK_TYPES.includes(block.type)) {
+    if (isStatementBlock(block)) {
       if (!findEventContext(block)) {
         block.setWarningText(
-          'このブロックはイベントブロックの中に配置してください。\n（開始時 / 毎フレーム / インタラクト時）',
+          'このブロックはイベントブロックの中に配置してください。\n（開始時 / 毎フレーム / インタラクト時 / メッセージ受信 など）',
         );
       } else {
         block.setWarningText(null);
@@ -137,7 +129,7 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
         block.setWarningText(
           '待機ブロック（「〜秒待つ」「〜まで待つ」等）は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。',
         );
-      } else if (isInsideIf(block)) {
+      } else if (isInsideIfWithinCurrentSequence(block)) {
         block.setWarningText(
           '待機ブロックは「もし〜なら」などの条件分岐の中には置けません。',
         );
@@ -177,6 +169,15 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       const ctx = findEventContext(block);
       if (ctx !== 'jcreatepp_on_update') {
         block.setWarningText('「往復する」ブロックは「毎フレーム」の中でしか使えません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_on_receive') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        block.setWarningText('メッセージ名を入力してください。');
       } else {
         block.setWarningText(null);
       }
@@ -237,4 +238,26 @@ export function isInsideIf(block: Blockly.Block): boolean {
     current = current.getSurroundParent();
   }
   return false;
+}
+
+/**
+ * Sequence 内の待機ブロックが、その同じ Sequence 内の if に入っているか判定する。
+ * Sequence 自体が外側の if から開始されているケースは合法にする。
+ */
+export function isInsideIfWithinCurrentSequence(block: Blockly.Block): boolean {
+  let current: Blockly.Block | null = block.getSurroundParent();
+  while (current) {
+    if (current.type === 'jcreatepp_sequence') {
+      return false;
+    }
+    if (current.type === 'jcreatepp_if' || current.type === 'jcreatepp_if_else') {
+      return true;
+    }
+    current = current.getSurroundParent();
+  }
+  return false;
+}
+
+function isStatementBlock(block: Blockly.Block): boolean {
+  return !!(block.previousConnection || block.nextConnection);
 }

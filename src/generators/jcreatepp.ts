@@ -18,12 +18,12 @@ import { Order } from 'blockly/javascript';
 import type { Program, Handler, Stmt, Expr, BoolExpr } from '../ir';
 import { raw, numberLiteral, deltaTime, playerRef, not, and, or } from '../ir';
 import {
-  EVENT_BLOCK_TYPES,
   BLOCK_CONTEXT_RULES,
   isEventBlock,
   isContextAllowed,
   eventLabel,
   valueBlockLabel,
+  UNIQUE_EVENT_BLOCK_TYPES,
   type EventContext,
 } from '../blocks/context';
 import { findEventContext } from '../validator';
@@ -61,13 +61,27 @@ export function workspaceToProgram(
   for (const block of topBlocks) {
     const type = block.type;
 
-    if (isEventBlock(type)) {
-      // 重複カウント
-      eventCounts[type] = (eventCounts[type] || 0) + 1;
+    if (type === 'jcreatepp_on_receive') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        errors.push('「メッセージを受け取ったとき」のメッセージ名を入力してください。');
+        continue;
+      }
+      const handler = blockToHandler(block, type as EventContext, generator, errors);
+      program.onReceives ??= [];
+      program.onReceives.push({ message, handler });
+      continue;
+    }
 
-      if (eventCounts[type] > 1) {
-        errors.push(`${blockLabel(type)} が複数あります。同種イベントは1つまでです。`);
-        continue; // 2個目以降は無視
+    if (isEventBlock(type)) {
+      // 重複カウント（jcreatepp_on_receive は重複可能なのでそれ以外）
+      if (UNIQUE_EVENT_BLOCK_TYPES.includes(type as EventContext)) {
+        eventCounts[type] = (eventCounts[type] || 0) + 1;
+
+        if (eventCounts[type] > 1) {
+          errors.push(`${blockLabel(type)} が複数あります。同種イベントは1つまでです。`);
+          continue; // 2個目以降は無視
+        }
       }
 
       const handler = blockToHandler(block, type, generator, errors);
@@ -78,13 +92,9 @@ export function workspaceToProgram(
       const turnSpeed = resolveValueExpr(block, 'TURN_SPEED', null as any, generator, errors, false);
       program.rideTemplate = { forwardSpeed, upDownSpeed, turnSpeed };
     } else {
-      // 動作ブロックがトップレベルにある場合
-      if (
-        block.type === 'jcreatepp_set_position' ||
-        block.type === 'jcreatepp_add_position' ||
-        block.type === 'jcreatepp_set_rotation' ||
-        block.type === 'jcreatepp_add_rotation'
-      ) {
+      // 動作ブロックなど、イベント・テンプレート以外がトップレベルにある場合はエラー
+      // （※条件・数値ブロックなどは孤立していてもジェネレータは無視するか、接続されていないエラーになるが、ここでは動作ブロックを明示的に弾く意図）
+      if (block.previousConnection || block.nextConnection) {
         errors.push(`「${blockLabel(type)}」がイベントブロックの外にあります。イベントブロックの中に配置してください。`);
       }
     }
@@ -238,7 +248,10 @@ function blockToStmt(
       const body: Stmt[] = [];
       let stmtBlock = block.getInputTargetBlock('DO');
       while (stmtBlock) {
-        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, inIf); // inSequence = true
+        // Sequence body is advanced later by the onUpdate runner. If the sequence
+        // itself is started from inside an if, waits inside the sequence body are
+        // still valid sequence steps, not immediate waits inside that if branch.
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, false); // inSequence = true
         if (stmt) body.push(stmt);
         stmtBlock = stmtBlock.getNextBlock();
       }
@@ -477,6 +490,7 @@ function blockLabel(type: string): string {
     case 'jcreatepp_on_interact': return '「インタラクト時」';
     case 'jcreatepp_on_grab_start': return '「持ったとき」';
     case 'jcreatepp_on_grab_end': return '「離したとき」';
+    case 'jcreatepp_on_receive': return '「メッセージを受け取ったとき」';
     case 'jcreatepp_set_position': return '「位置を〜にする」';
     case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
     case 'jcreatepp_set_rotation': return '「角度を〜にする」';

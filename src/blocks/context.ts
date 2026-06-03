@@ -17,11 +17,22 @@ export type EventContext =
   | 'jcreatepp_on_update'
   | 'jcreatepp_on_interact'
   | 'jcreatepp_on_grab_start'
-  | 'jcreatepp_on_grab_end';
+  | 'jcreatepp_on_grab_end'
+  | 'jcreatepp_on_receive';
 
 // ── イベントブロック type 一覧 ──
 
 export const EVENT_BLOCK_TYPES: readonly EventContext[] = [
+  'jcreatepp_on_start',
+  'jcreatepp_on_update',
+  'jcreatepp_on_interact',
+  'jcreatepp_on_grab_start',
+  'jcreatepp_on_grab_end',
+  'jcreatepp_on_receive',
+] as const;
+
+// 同種イベントは1つまでとするイベント群
+export const UNIQUE_EVENT_BLOCK_TYPES: readonly EventContext[] = [
   'jcreatepp_on_start',
   'jcreatepp_on_update',
   'jcreatepp_on_interact',
@@ -55,6 +66,7 @@ export function eventLabel(type: string): string {
     case 'jcreatepp_on_interact': return 'インタラクト時';
     case 'jcreatepp_on_grab_start': return '持ったとき';
     case 'jcreatepp_on_grab_end': return '離したとき';
+    case 'jcreatepp_on_receive': return 'メッセージを受け取ったとき';
     default: return type;
   }
 }

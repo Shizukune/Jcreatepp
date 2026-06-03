@@ -1,5 +1,5 @@
 /**
- * Jcreate++ MVP - workspace の保存・読込
+ * Jcreate++ - workspace の保存・読込
  * - localStorage への自動保存（既存機能踏襲）
  * - JSON ファイルとしてのダウンロード保存
  * - JSON ファイルからの読み込み復元

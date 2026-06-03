@@ -24,6 +24,15 @@ import type { Program, Handler, Stmt, Expr } from './ir';
 
 type SequenceStmt = Extract<Stmt, { kind: 'sequence' }>;
 
+// ── ヘルパー ──
+function jsString(value: string): string {
+  return JSON.stringify(value);
+}
+
+function stateKey(prefix: string, name: string): string {
+  return jsString(prefix + name);
+}
+
 // ── ヘルパー: Sequence抽出 ──
 function extractSequences(stmts: Stmt[]): SequenceStmt[] {
   let seqs: SequenceStmt[] = [];
@@ -45,6 +54,13 @@ function getAllSequences(program: Program): SequenceStmt[] {
   if (program.onStart) seqs = seqs.concat(extractSequences(program.onStart.body));
   if (program.onUpdate) seqs = seqs.concat(extractSequences(program.onUpdate.body));
   if (program.onInteract) seqs = seqs.concat(extractSequences(program.onInteract.body));
+  if (program.onGrabStart) seqs = seqs.concat(extractSequences(program.onGrabStart.body));
+  if (program.onGrabEnd) seqs = seqs.concat(extractSequences(program.onGrabEnd.body));
+  if (program.onReceives) {
+    for (const recv of program.onReceives) {
+      seqs = seqs.concat(extractSequences(recv.handler.body));
+    }
+  }
   return seqs;
 }
 
@@ -79,25 +95,25 @@ export function programToJS(program: Program): string {
     const upd = exprToJS(program.rideTemplate.upDownSpeed);
     const trn = exprToJS(program.rideTemplate.turnSpeed);
     
-    parts.push(`$.onRide((isGetOn, player) => {\n  if (isGetOn) {\n    $.state.__jpp_ride_active = true;\n  } else {\n    $.state.__jpp_ride_active = false;\n    $.state.__jpp_ride_fwd = 0;\n    $.state.__jpp_ride_upd = 0;\n    $.state.__jpp_ride_trn = 0;\n  }\n});\n`);
-    parts.push(`$.onSteer((input, player) => {\n  if ($.state.__jpp_ride_active) {\n    $.state.__jpp_ride_fwd = input.y * (${fwd});\n    $.state.__jpp_ride_trn = input.x * (${trn});\n  }\n});\n`);
-    parts.push(`$.onSteerAdditionalAxis((input, player) => {\n  if ($.state.__jpp_ride_active) {\n    $.state.__jpp_ride_upd = input * (${upd});\n  }\n});\n`);
+    parts.push(`$.onRide((isGetOn, player) => {\n  if (isGetOn) {\n    $.state["__jpp_ride_active"] = true;\n  } else {\n    $.state["__jpp_ride_active"] = false;\n    $.state["__jpp_ride_fwd"] = 0;\n    $.state["__jpp_ride_upd"] = 0;\n    $.state["__jpp_ride_trn"] = 0;\n  }\n});\n`);
+    parts.push(`$.onSteer((input, player) => {\n  if ($.state["__jpp_ride_active"]) {\n    $.state["__jpp_ride_fwd"] = input.y * (${fwd});\n    $.state["__jpp_ride_trn"] = input.x * (${trn});\n  }\n});\n`);
+    parts.push(`$.onSteerAdditionalAxis((input, player) => {\n  if ($.state["__jpp_ride_active"]) {\n    $.state["__jpp_ride_upd"] = input * (${upd});\n  }\n});\n`);
     
-    updateBodyLines.push(`  if ($.state.__jpp_ride_active) {
+    updateBodyLines.push(`  if ($.state["__jpp_ride_active"]) {
     const pos = $.getPosition() || new Vector3(0,0,0);
     const rot = $.getRotation() || new Quaternion();
-    const trnAmount = ($.state.__jpp_ride_trn || 0) * deltaTime;
+    const trnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
     const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, trnAmount, 0)));
     
     const direction = nextRot.clone().createEulerAngles();
     const forwardRadian = ((direction.y + 270) % 360) * Math.PI / 180;
-    const fwdAmount = $.state.__jpp_ride_fwd || 0;
+    const fwdAmount = $.state["__jpp_ride_fwd"] || 0;
     const forwardVec = new Vector3(
       Math.sin(forwardRadian) * fwdAmount * deltaTime,
       0,
       Math.cos(forwardRadian) * fwdAmount * deltaTime
     );
-    const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state.__jpp_ride_upd || 0) * deltaTime);
+    const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state["__jpp_ride_upd"] || 0) * deltaTime);
     
     $.setPosition(pos.clone().add(forwardVec).add(upVec));
     $.setRotation(nextRot);
@@ -128,6 +144,29 @@ export function programToJS(program: Program): string {
     parts.push(grabCode);
   }
 
+  if (program.onReceives && program.onReceives.length > 0) {
+    // groupByMessage
+    const groups = new Map<string, Handler[]>();
+    for (const recv of program.onReceives) {
+      if (!groups.has(recv.message)) {
+        groups.set(recv.message, []);
+      }
+      groups.get(recv.message)!.push(recv.handler);
+    }
+
+    const lines: string[] = [];
+    for (const [message, handlers] of groups) {
+      lines.push(`  if (msg === ${jsString(message)}) {`);
+      for (const handler of handlers) {
+        for (const stmt of handler.body) {
+          lines.push('    ' + stmtToJS(stmt).replace(/\n/g, '\n    '));
+        }
+      }
+      lines.push('  }');
+    }
+    parts.push(`$.onReceive((msg, arg, sender) => {\n${lines.join('\n')}\n}, { item: true, player: true });\n`);
+  }
+
   if (parts.length === 0) {
     return '// ブロックが配置されていません';
   }
@@ -148,10 +187,10 @@ function generateSequenceStateMachine(seq: SequenceStmt): string {
     let caseBody = '';
     
     if (stmt.kind === 'wait_seconds') {
-      caseBody = `let time = ($.state.${timeVar} || 0) + deltaTime;
-$.state.${timeVar} = time;
+      caseBody = `let time = ($.state["${timeVar}"] || 0) + deltaTime;
+$.state["${timeVar}"] = time;
 if (time >= ${exprToJS(stmt.seconds)}) {
-  $.state.${timeVar} = 0;
+  $.state["${timeVar}"] = 0;
   step++;
 } else {
   yielded = true;
@@ -172,13 +211,13 @@ if (time >= ${exprToJS(stmt.seconds)}) {
 
   // 終了ケース
   cases.push(`      case ${seq.body.length}: {
-        $.state.${activeVar} = false;
+        $.state["${activeVar}"] = false;
         yielded = true;
         break;
       }`);
 
-  return `if ($.state.${activeVar}) {
-  let step = $.state.${stepVar} || 0;
+  return `if ($.state["${activeVar}"]) {
+  let step = $.state["${stepVar}"] || 0;
   let yielded = false;
   let guard = 0;
   const MAX_SYNC_STEPS_PER_TICK = 100;
@@ -200,7 +239,7 @@ ${cases.join('\n')}
     // 次のフレームで続きから再開させる
   }
   
-  $.state.${stepVar} = step;
+  $.state["${stepVar}"] = step;
 }`;
 }
 
@@ -241,34 +280,34 @@ function stmtToJS(stmt: Stmt): string {
       return `{\n  const __jpp_pos = $.getPosition() || new Vector3(0,0,0);\n  $.setPosition(new Vector3(__jpp_pos.x + (Math.random()*2-1)*(${exprToJS(stmt.rangeX)}), __jpp_pos.y, __jpp_pos.z + (Math.random()*2-1)*(${exprToJS(stmt.rangeZ)})));\n}`;
 
     case 'save_position':
-      return `$.state.__jpp_saved_position = $.getPosition() || new Vector3(0,0,0);`;
+      return `$.state["__jpp_saved_position"] = $.getPosition() || new Vector3(0,0,0);`;
 
     case 'load_position':
-      return `if ($.state.__jpp_saved_position) {\n  $.setPosition($.state.__jpp_saved_position);\n}`;
+      return `if ($.state["__jpp_saved_position"]) {\n  $.setPosition($.state["__jpp_saved_position"]);\n}`;
 
     case 'add_force':
       return `$.addImpulsiveForce(new Vector3(${exprToJS(stmt.dirX)}, ${exprToJS(stmt.dirY)}, ${exprToJS(stmt.dirZ)}).normalize().multiplyScalar(${exprToJS(stmt.power)}));`;
 
     case 'set_flag': {
       if (stmt.operation === 'true') {
-        return `$.state.__jpp_flag_${stmt.name} = true;`;
+        return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = true;`;
       } else if (stmt.operation === 'false') {
-        return `$.state.__jpp_flag_${stmt.name} = false;`;
+        return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = false;`;
       } else {
-        return `$.state.__jpp_flag_${stmt.name} = !$.state.__jpp_flag_${stmt.name};`;
+        return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = !$.state[${stateKey('__jpp_flag_', stmt.name)}];`;
       }
     }
 
     case 'oscillate': {
       const id = stmt.blockId.replace(/[^a-zA-Z0-9]/g, '_');
       const axisKey = stmt.axis === 'X' ? 'x' : stmt.axis === 'Y' ? 'y' : 'z';
-      return `if (!$.state.__jpp_osc_init_pos_${id}) {
-  $.state.__jpp_osc_init_pos_${id} = $.getPosition() || new Vector3(0,0,0);
-  $.state.__jpp_osc_time_${id} = 0;
+      return `if (!$.state["__jpp_osc_init_pos_${id}"]) {
+  $.state["__jpp_osc_init_pos_${id}"] = $.getPosition() || new Vector3(0,0,0);
+  $.state["__jpp_osc_time_${id}"] = 0;
 }
-$.state.__jpp_osc_time_${id} += deltaTime * (${exprToJS(stmt.speed)});
-const __jpp_osc_pos_${id} = $.state.__jpp_osc_init_pos_${id};
-const __jpp_osc_offset_${id} = Math.sin($.state.__jpp_osc_time_${id}) * (${exprToJS(stmt.width)});
+$.state["__jpp_osc_time_${id}"] += deltaTime * (${exprToJS(stmt.speed)});
+const __jpp_osc_pos_${id} = $.state["__jpp_osc_init_pos_${id}"];
+const __jpp_osc_offset_${id} = Math.sin($.state["__jpp_osc_time_${id}"]) * (${exprToJS(stmt.width)});
 $.setPosition(new Vector3(
   __jpp_osc_pos_${id}.x + ${stmt.axis === 'X' ? `__jpp_osc_offset_${id}` : '0'},
   __jpp_osc_pos_${id}.y + ${stmt.axis === 'Y' ? `__jpp_osc_offset_${id}` : '0'},
@@ -290,7 +329,7 @@ $.setPosition(new Vector3(
 
     case 'sequence': {
       const id = stmt.id.replace(/[^a-zA-Z0-9]/g, '_');
-      return `if (!$.state.__jpp_seq_active_${id}) {\n  $.state.__jpp_seq_active_${id} = true;\n  $.state.__jpp_seq_step_${id} = 0;\n  $.state.__jpp_seq_time_${id} = 0;\n}`;
+      return `if (!$.state["__jpp_seq_active_${id}"]) {\n  $.state["__jpp_seq_active_${id}"] = true;\n  $.state["__jpp_seq_step_${id}"] = 0;\n  $.state["__jpp_seq_time_${id}"] = 0;\n}`;
     }
 
     case 'wait_seconds':
@@ -333,7 +372,7 @@ function boolExprToJS(expr: import('./ir').BoolExpr): string {
     case 'or':
       return `(${boolExprToJS(expr.left)} || ${boolExprToJS(expr.right)})`;
     case 'flag':
-      return `!!$.state.__jpp_flag_${expr.name}`;
+      return `!!$.state[${stateKey('__jpp_flag_', expr.name)}]`;
     default:
       return 'false';
   }

@@ -1,7 +1,7 @@
 {
-  "name": "jcreatepp-demo",
+  "name": "jcreatepp",
   "version": "1.0.0",
-  "description": "A sample app using Blockly",
+  "description": "Blockly-based visual editor for generating Cluster Script compatible JavaScript",
   "main": "index.js",
   "private": true,
   "scripts": {

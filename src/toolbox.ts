@@ -1,5 +1,5 @@
 /**
- * Jcreate++ MVP ツールボックス定義
+ * Jcreate++ ツールボックス定義
  * カテゴリ: イベント / 動作 / 数値
  */
 
@@ -37,6 +37,10 @@ export const toolbox = {
         },
         {
           kind: 'block',
+          type: 'jcreatepp_on_receive',
+        },
+        {
+          kind: 'block',
           type: 'jcreatepp_player',
         },
       ],
@@ -49,10 +53,30 @@ export const toolbox = {
         {
           kind: 'block',
           type: 'jcreatepp_if',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: {
+                  FLAG_NAME: '名前',
+                },
+              },
+            },
+          },
         },
         {
           kind: 'block',
           type: 'jcreatepp_if_else',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: {
+                  FLAG_NAME: '名前',
+                },
+              },
+            },
+          },
         },
         {
           kind: 'label',
@@ -206,6 +230,18 @@ export const toolbox = {
       name: '条件・演算',
       colour: '210',
       contents: [
+        {
+          kind: 'label',
+          text: 'フラグ条件',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_flag',
+        },
+        {
+          kind: 'label',
+          text: '比較・組み合わせ',
+        },
         {
           kind: 'block',
           type: 'jcreatepp_compare',
