@@ -161,8 +161,15 @@ export const toolbox = {
           },
         },
         {
+          kind: 'block',
+          type: 'jcreatepp_continuous_rotation',
+          inputs: {
+            SPEED: { shadow: { type: 'math_number', fields: { NUM: 90 } } },
+          },
+        },
+        {
           kind: 'label',
-          text: '特殊',
+          text: 'ランダム・時間',
         },
         {
           kind: 'block',
@@ -171,6 +178,47 @@ export const toolbox = {
             X: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
             Z: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_timed_random_warp',
+          inputs: {
+            INTERVAL: { shadow: { type: 'math_number', fields: { NUM: 3 } } },
+            RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_timed_move_return',
+          inputs: {
+            X: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+            Y: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Z: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            SPEED: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+            DURATION: { shadow: { type: 'math_number', fields: { NUM: 2 } } },
+          },
+        },
+        {
+          kind: 'label',
+          text: 'プレイヤー',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_set_move_speed',
+          inputs: {
+            RATE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_set_jump_speed',
+          inputs: {
+            RATE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'label',
+          text: '特殊',
         },
         {
           kind: 'block',
@@ -272,6 +320,15 @@ export const toolbox = {
             FORWARD_SPEED: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
             UP_DOWN_SPEED: { shadow: { type: 'math_number', fields: { NUM: 2 } } },
             TURN_SPEED: { shadow: { type: 'math_number', fields: { NUM: 90 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_chase_template',
+          inputs: {
+            MOVE_SPEED: { shadow: { type: 'math_number', fields: { NUM: 2 } } },
+            MAX_DISTANCE: { shadow: { type: 'math_number', fields: { NUM: 10 } } },
+            MIN_DISTANCE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
       ],

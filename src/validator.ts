@@ -80,6 +80,17 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
     }
   }
 
+  let chaseTemplates = allBlocks.filter(b => b.type === 'jcreatepp_chase_template');
+  for (const block of chaseTemplates) {
+    if (chaseTemplates.length > 1) {
+      block.setWarningText('「追いかけるギミック」はワークスペースに1つしか置けません。');
+    } else if (findEventContext(block)) {
+      block.setWarningText('「追いかけるギミック」はイベントブロックの中に入れず、単独で配置してください。');
+    } else {
+      block.setWarningText(null);
+    }
+  }
+
   // 2. 動作・制御ブロックがイベント外にある検出
   for (const block of allBlocks) {
     if (isStatementBlock(block)) {
@@ -174,6 +185,30 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       }
     }
 
+    if (
+      block.type === 'jcreatepp_continuous_rotation' ||
+      block.type === 'jcreatepp_timed_random_warp' ||
+      block.type === 'jcreatepp_timed_move_return'
+    ) {
+      const ctx = findEventContext(block);
+      if (ctx !== 'jcreatepp_on_update') {
+        block.setWarningText('このブロックは「毎フレーム」の中でしか使えません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_set_move_speed' || block.type === 'jcreatepp_set_jump_speed') {
+      const ctx = findEventContext(block);
+      if (!isPlayerEventContext(ctx)) {
+        block.setWarningText('このブロックは「インタラクト時」「持ったとき」「離したとき」の中でしか使えません。');
+      } else if (isInsideSequence(block)) {
+        block.setWarningText('このブロックは「一連の動作」の中では使えません。プレイヤーがあるイベント直下で使ってください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
     if (block.type === 'jcreatepp_on_receive') {
       const message = block.getFieldValue('MESSAGE') || '';
       if (!message.trim()) {
@@ -260,4 +295,8 @@ export function isInsideIfWithinCurrentSequence(block: Blockly.Block): boolean {
 
 function isStatementBlock(block: Blockly.Block): boolean {
   return !!(block.previousConnection || block.nextConnection);
+}
+
+function isPlayerEventContext(type: EventContext | null): boolean {
+  return type === 'jcreatepp_on_interact' || type === 'jcreatepp_on_grab_start' || type === 'jcreatepp_on_grab_end';
 }

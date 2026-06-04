@@ -54,6 +54,8 @@ export function workspaceToProgram(
   generator.init(workspace);
 
   const eventCounts: Record<string, number> = {};
+  let rideTemplateCount = 0;
+  let chaseTemplateCount = 0;
 
   const topBlocks = workspace.getTopBlocks(true);
   console.log('topBlocks:', topBlocks.map(b => b.type + '(' + b.id + ')'));
@@ -87,10 +89,25 @@ export function workspaceToProgram(
       const handler = blockToHandler(block, type, generator, errors);
       assignHandler(program, type, handler);
     } else if (type === 'jcreatepp_ride_template') {
+      rideTemplateCount++;
+      if (rideTemplateCount > 1) {
+        errors.push('「乗り物ギミック」はワークスペースに1つまでです。');
+        continue;
+      }
       const forwardSpeed = resolveValueExpr(block, 'FORWARD_SPEED', null as any, generator, errors, false);
       const upDownSpeed = resolveValueExpr(block, 'UP_DOWN_SPEED', null as any, generator, errors, false);
       const turnSpeed = resolveValueExpr(block, 'TURN_SPEED', null as any, generator, errors, false);
       program.rideTemplate = { forwardSpeed, upDownSpeed, turnSpeed };
+    } else if (type === 'jcreatepp_chase_template') {
+      chaseTemplateCount++;
+      if (chaseTemplateCount > 1) {
+        errors.push('「追いかけるギミック」はワークスペースに1つまでです。');
+        continue;
+      }
+      const moveSpeed = resolveValueExpr(block, 'MOVE_SPEED', null as any, generator, errors, false);
+      const maxDistance = resolveValueExpr(block, 'MAX_DISTANCE', null as any, generator, errors, false);
+      const minDistance = resolveValueExpr(block, 'MIN_DISTANCE', null as any, generator, errors, false);
+      program.chaseTemplate = { moveSpeed, maxDistance, minDistance };
     } else {
       // 動作ブロックなど、イベント・テンプレート以外がトップレベルにある場合はエラー
       // （※条件・数値ブロックなどは孤立していてもジェネレータは無視するか、接続されていないエラーになるが、ここでは動作ブロックを明示的に弾く意図）
@@ -185,6 +202,65 @@ function blockToStmt(
       const dirY = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
       const dirZ = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
       return { kind: 'add_force', power, dirX, dirY, dirZ };
+    }
+
+    case 'jcreatepp_continuous_rotation': {
+      if (eventType !== 'jcreatepp_on_update') {
+        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
+        return null;
+      }
+      const axis = block.getFieldValue('AXIS') as 'X' | 'Y' | 'Z';
+      const speed = resolveValueExpr(block, 'SPEED', eventType, generator, errors, inSequence);
+      return { kind: 'continuous_rotation', axis, speed };
+    }
+
+    case 'jcreatepp_timed_random_warp': {
+      if (eventType !== 'jcreatepp_on_update') {
+        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
+        return null;
+      }
+      const interval = resolveValueExpr(block, 'INTERVAL', eventType, generator, errors, inSequence);
+      const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
+      return { kind: 'timed_random_warp', interval, range, blockId: block.id };
+    }
+
+    case 'jcreatepp_timed_move_return': {
+      if (eventType !== 'jcreatepp_on_update') {
+        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
+        return null;
+      }
+      const dirX = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const dirY = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const dirZ = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      const speed = resolveValueExpr(block, 'SPEED', eventType, generator, errors, inSequence);
+      const duration = resolveValueExpr(block, 'DURATION', eventType, generator, errors, inSequence);
+      return { kind: 'timed_move_return', dirX, dirY, dirZ, speed, duration, blockId: block.id };
+    }
+
+    case 'jcreatepp_set_move_speed': {
+      if (!isPlayerEventContext(eventType)) {
+        errors.push(`「${blockLabel(block.type)}」は「インタラクト時」「持ったとき」「離したとき」の中でしか使えません。`);
+        return null;
+      }
+      if (inSequence) {
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作」の中では使えません。プレイヤーがあるイベント直下で使ってください。`);
+        return null;
+      }
+      const rate = resolveValueExpr(block, 'RATE', eventType, generator, errors, inSequence);
+      return { kind: 'set_move_speed', rate };
+    }
+
+    case 'jcreatepp_set_jump_speed': {
+      if (!isPlayerEventContext(eventType)) {
+        errors.push(`「${blockLabel(block.type)}」は「インタラクト時」「持ったとき」「離したとき」の中でしか使えません。`);
+        return null;
+      }
+      if (inSequence) {
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作」の中では使えません。プレイヤーがあるイベント直下で使ってください。`);
+        return null;
+      }
+      const rate = resolveValueExpr(block, 'RATE', eventType, generator, errors, inSequence);
+      return { kind: 'set_jump_speed', rate };
     }
 
     case 'jcreatepp_set_flag': {
@@ -482,6 +558,10 @@ function assignHandler(program: Program, type: EventContext, handler: Handler): 
   }
 }
 
+function isPlayerEventContext(type: EventContext): boolean {
+  return type === 'jcreatepp_on_interact' || type === 'jcreatepp_on_grab_start' || type === 'jcreatepp_on_grab_end';
+}
+
 /** ブロック type → 日本語ラベル */
 function blockLabel(type: string): string {
   switch (type) {
@@ -495,6 +575,11 @@ function blockLabel(type: string): string {
     case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
     case 'jcreatepp_set_rotation': return '「角度を〜にする」';
     case 'jcreatepp_add_rotation': return '「角度を〜ずつ変える」';
+    case 'jcreatepp_continuous_rotation': return '「回転し続ける」';
+    case 'jcreatepp_timed_random_warp': return '「一定間隔でランダムワープ」';
+    case 'jcreatepp_timed_move_return': return '「一定時間移動して戻る」';
+    case 'jcreatepp_set_move_speed': return '「プレイヤーの移動速度倍率を変える」';
+    case 'jcreatepp_set_jump_speed': return '「プレイヤーのジャンプ速度倍率を変える」';
     case 'jcreatepp_if': return '「もし〜なら」';
     case 'jcreatepp_if_else': return '「もし〜なら、でなければ」';
     case 'jcreatepp_sequence': return '「一連の動作（完了まで待つ）」';

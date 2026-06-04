@@ -33,6 +33,17 @@ function stateKey(prefix: string, name: string): string {
   return jsString(prefix + name);
 }
 
+function axisVector(axis: 'X' | 'Y' | 'Z'): string {
+  switch (axis) {
+    case 'X':
+      return 'new Vector3(1, 0, 0)';
+    case 'Y':
+      return 'new Vector3(0, 1, 0)';
+    case 'Z':
+      return 'new Vector3(0, 0, 1)';
+  }
+}
+
 // ── ヘルパー: Sequence抽出 ──
 function extractSequences(stmts: Stmt[]): SequenceStmt[] {
   let seqs: SequenceStmt[] = [];
@@ -117,6 +128,42 @@ export function programToJS(program: Program): string {
     
     $.setPosition(pos.clone().add(forwardVec).add(upVec));
     $.setRotation(nextRot);
+  }`);
+  }
+
+  if (program.chaseTemplate) {
+    const moveSpeed = exprToJS(program.chaseTemplate.moveSpeed);
+    const maxDistance = exprToJS(program.chaseTemplate.maxDistance);
+    const minDistance = exprToJS(program.chaseTemplate.minDistance);
+
+    updateBodyLines.push(`  {
+    const __jpp_chase_pos = $.getPosition() || new Vector3(0,0,0);
+    const __jpp_chase_players = $.getPlayersNear(__jpp_chase_pos, (${maxDistance}));
+    let __jpp_chase_target = null;
+    let __jpp_chase_distance = Infinity;
+    for (const __jpp_chase_player of __jpp_chase_players) {
+      const __jpp_chase_player_pos = __jpp_chase_player.getPosition();
+      if (!__jpp_chase_player_pos) continue;
+      const __jpp_chase_dist = __jpp_chase_player_pos.clone().sub(__jpp_chase_pos).length();
+      if (__jpp_chase_dist < __jpp_chase_distance) {
+        __jpp_chase_distance = __jpp_chase_dist;
+        __jpp_chase_target = __jpp_chase_player;
+      }
+    }
+    if (__jpp_chase_target && __jpp_chase_target.exists()) {
+      const __jpp_chase_target_pos = __jpp_chase_target.getPosition();
+      if (__jpp_chase_target_pos) {
+        const __jpp_chase_dir = __jpp_chase_target_pos.clone().sub(__jpp_chase_pos);
+        const __jpp_chase_len = __jpp_chase_dir.length();
+        if (__jpp_chase_len > 0) {
+          const __jpp_chase_angle = Math.atan2(__jpp_chase_dir.x, __jpp_chase_dir.z) * 180 / Math.PI;
+          $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, __jpp_chase_angle, 0)));
+          if (__jpp_chase_len > (${minDistance})) {
+            $.setPosition(__jpp_chase_pos.add(__jpp_chase_dir.normalize().multiplyScalar((${moveSpeed}) * deltaTime)));
+          }
+        }
+      }
+    }
   }`);
   }
 
@@ -287,6 +334,61 @@ function stmtToJS(stmt: Stmt): string {
 
     case 'add_force':
       return `$.addImpulsiveForce(new Vector3(${exprToJS(stmt.dirX)}, ${exprToJS(stmt.dirY)}, ${exprToJS(stmt.dirZ)}).normalize().multiplyScalar(${exprToJS(stmt.power)}));`;
+
+    case 'continuous_rotation':
+      return `$.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(${axisVector(stmt.axis)}, (${exprToJS(stmt.speed)}) * deltaTime)));`;
+
+    case 'timed_random_warp': {
+      const id = stmt.blockId.replace(/[^a-zA-Z0-9]/g, '_');
+      return `{
+  const __jpp_timer_key_${id} = "__jpp_timed_warp_time_${id}";
+  $.state[__jpp_timer_key_${id}] = ($.state[__jpp_timer_key_${id}] || 0) + deltaTime;
+  if ($.state[__jpp_timer_key_${id}] >= (${exprToJS(stmt.interval)})) {
+    const __jpp_pos_${id} = $.getPosition() || new Vector3(0,0,0);
+    const __jpp_range_${id} = (${exprToJS(stmt.range)});
+    $.setPosition(new Vector3(
+      __jpp_pos_${id}.x + (Math.random() * 2 - 1) * __jpp_range_${id},
+      __jpp_pos_${id}.y,
+      __jpp_pos_${id}.z + (Math.random() * 2 - 1) * __jpp_range_${id}
+    ));
+    $.state[__jpp_timer_key_${id}] = 0;
+  }
+}`;
+    }
+
+    case 'timed_move_return': {
+      const id = stmt.blockId.replace(/[^a-zA-Z0-9]/g, '_');
+      return `{
+  const __jpp_active_key_${id} = "__jpp_move_return_active_${id}";
+  const __jpp_time_key_${id} = "__jpp_move_return_time_${id}";
+  const __jpp_pos_key_${id} = "__jpp_move_return_pos_${id}";
+  if (!$.state[__jpp_active_key_${id}]) {
+    $.state[__jpp_active_key_${id}] = true;
+    $.state[__jpp_time_key_${id}] = 0;
+    $.state[__jpp_pos_key_${id}] = $.getPosition() || new Vector3(0,0,0);
+  }
+  $.state[__jpp_time_key_${id}] = ($.state[__jpp_time_key_${id}] || 0) + deltaTime;
+  if ($.state[__jpp_time_key_${id}] < (${exprToJS(stmt.duration)})) {
+    const __jpp_dir_${id} = new Vector3(${exprToJS(stmt.dirX)}, ${exprToJS(stmt.dirY)}, ${exprToJS(stmt.dirZ)});
+    if (__jpp_dir_${id}.length() > 0) {
+      const __jpp_pos_${id} = $.getPosition() || new Vector3(0,0,0);
+      $.setPosition(__jpp_pos_${id}.add(__jpp_dir_${id}.normalize().multiplyScalar((${exprToJS(stmt.speed)}) * deltaTime)));
+    }
+  } else {
+    if ($.state[__jpp_pos_key_${id}]) {
+      $.setPosition($.state[__jpp_pos_key_${id}]);
+    }
+    $.state[__jpp_active_key_${id}] = false;
+    $.state[__jpp_time_key_${id}] = 0;
+  }
+}`;
+    }
+
+    case 'set_move_speed':
+      return `player.setMoveSpeedRate(${exprToJS(stmt.rate)});`;
+
+    case 'set_jump_speed':
+      return `player.setJumpSpeedRate(${exprToJS(stmt.rate)});`;
 
     case 'set_flag': {
       if (stmt.operation === 'true') {

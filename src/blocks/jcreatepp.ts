@@ -244,6 +244,88 @@ const oscillateBlock = {
   helpUrl: '',
 };
 
+const continuousRotationBlock = {
+  type: 'jcreatepp_continuous_rotation',
+  message0: '%1 軸を 速度 %2 で回転し続ける',
+  args0: [
+    {
+      type: 'field_dropdown',
+      name: 'AXIS',
+      options: [
+        ['X', 'X'],
+        ['Y', 'Y'],
+        ['Z', 'Z'],
+      ],
+    },
+    { type: 'input_value', name: 'SPEED', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '指定した軸を中心に毎フレーム回転し続けます（毎フレーム内で使用）。',
+  helpUrl: '',
+};
+
+const timedRandomWarpBlock = {
+  type: 'jcreatepp_timed_random_warp',
+  message0: '%1 秒ごとに 範囲 %2 へランダムワープ',
+  args0: [
+    { type: 'input_value', name: 'INTERVAL', check: 'Number' },
+    { type: 'input_value', name: 'RANGE', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '現在位置を中心に、指定秒ごとにXZ範囲内へランダム移動します（毎フレーム内で使用）。',
+  helpUrl: '',
+};
+
+const timedMoveReturnBlock = {
+  type: 'jcreatepp_timed_move_return',
+  message0: 'X:%1 Y:%2 Z:%3 方向へ 速度 %4 で %5 秒移動して戻る',
+  args0: [
+    { type: 'input_value', name: 'X', check: 'Number' },
+    { type: 'input_value', name: 'Y', check: 'Number' },
+    { type: 'input_value', name: 'Z', check: 'Number' },
+    { type: 'input_value', name: 'SPEED', check: 'Number' },
+    { type: 'input_value', name: 'DURATION', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '初期位置を記録し、指定方向へ一定時間移動したあと元の位置に戻ります（毎フレーム内で使用）。',
+  helpUrl: '',
+};
+
+const setMoveSpeedBlock = {
+  type: 'jcreatepp_set_move_speed',
+  message0: 'プレイヤーの移動速度倍率を %1 にする',
+  args0: [
+    { type: 'input_value', name: 'RATE', check: 'Number' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: 'インタラクト時、持ったとき、離したときにプレイヤーの移動速度倍率を変更します。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/PlayerHandle.html#setmovespeedrate',
+};
+
+const setJumpSpeedBlock = {
+  type: 'jcreatepp_set_jump_speed',
+  message0: 'プレイヤーのジャンプ速度倍率を %1 にする',
+  args0: [
+    { type: 'input_value', name: 'RATE', check: 'Number' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: 'インタラクト時、持ったとき、離したときにプレイヤーのジャンプ速度倍率を変更します。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/PlayerHandle.html#setjumpspeedrate',
+};
+
 // ── 完成済みギミック ──
 
 const rideTemplateBlock = {
@@ -258,6 +340,21 @@ const rideTemplateBlock = {
   colour: 0,
   tooltip: '置いて数値を設定するだけで乗り物が完成する特別なブロックです。',
   helpUrl: '',
+  hat: 'cap',
+};
+
+const chaseTemplateBlock = {
+  type: 'jcreatepp_chase_template',
+  message0: '追いかけるギミック %1 速度: %2 最大距離: %3 最小距離: %4',
+  args0: [
+    { type: 'input_dummy' },
+    { type: 'input_value', name: 'MOVE_SPEED', check: 'Number' },
+    { type: 'input_value', name: 'MAX_DISTANCE', check: 'Number' },
+    { type: 'input_value', name: 'MIN_DISTANCE', check: 'Number' },
+  ],
+  colour: 0,
+  tooltip: '近くのプレイヤーを探して向きを合わせ、一定距離まで追いかける完成済みギミックです。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#getplayersnear',
   hat: 'cap',
 };
 
@@ -487,6 +584,11 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   savePositionBlock,
   loadPositionBlock,
   addForceBlock,
+  continuousRotationBlock,
+  timedRandomWarpBlock,
+  timedMoveReturnBlock,
+  setMoveSpeedBlock,
+  setJumpSpeedBlock,
   flagBlock,
   setFlagBlock,
   onGrabStart,
@@ -494,4 +596,5 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   onReceive,
   oscillateBlock,
   rideTemplateBlock,
+  chaseTemplateBlock,
 ]);

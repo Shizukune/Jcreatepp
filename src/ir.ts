@@ -49,6 +49,11 @@ export type Program = {
     upDownSpeed: Expr;
     turnSpeed: Expr;
   };
+  chaseTemplate?: {
+    moveSpeed: Expr;
+    maxDistance: Expr;
+    minDistance: Expr;
+  };
 };
 
 export type Handler = {
@@ -69,6 +74,11 @@ export type Stmt =
   | { kind: 'save_position' }
   | { kind: 'load_position' }
   | { kind: 'add_force', dirX: Expr, dirY: Expr, dirZ: Expr, power: Expr }
+  | { kind: 'continuous_rotation', axis: 'X' | 'Y' | 'Z', speed: Expr }
+  | { kind: 'timed_random_warp', interval: Expr, range: Expr, blockId: string }
+  | { kind: 'timed_move_return', dirX: Expr, dirY: Expr, dirZ: Expr, speed: Expr, duration: Expr, blockId: string }
+  | { kind: 'set_move_speed', rate: Expr }
+  | { kind: 'set_jump_speed', rate: Expr }
   | { kind: 'set_flag', name: string, operation: 'true' | 'false' | 'toggle' }
   | { kind: 'if', condition: BoolExpr, thenBody: Stmt[], elseBody?: Stmt[] }
   | { kind: 'sequence', id: string, body: Stmt[] }
