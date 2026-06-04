@@ -176,6 +176,21 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       }
     }
     // 6. 往復移動の場所チェック
+    if (
+      block.type === 'jcreatepp_number_var' ||
+      block.type === 'jcreatepp_set_number_var' ||
+      block.type === 'jcreatepp_change_number_var'
+    ) {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!name.trim()) {
+        block.setWarningText('数値変数名を入力してください。');
+      } else if (name.startsWith('__jpp_') || name.startsWith('jpp.')) {
+        block.setWarningText('jpp / __jpp_ から始まる名前はシステム用のため使用できません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
     if (block.type === 'jcreatepp_oscillate') {
       const ctx = findEventContext(block);
       if (ctx !== 'jcreatepp_on_update') {

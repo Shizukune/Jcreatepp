@@ -16,7 +16,7 @@
 import * as Blockly from 'blockly/core';
 import { Order } from 'blockly/javascript';
 import type { Program, Handler, Stmt, Expr, BoolExpr } from '../ir';
-import { raw, numberLiteral, deltaTime, playerRef, not, and, or } from '../ir';
+import { raw, numberLiteral, deltaTime, playerRef, numberVar, binary, not, and, or } from '../ir';
 import {
   BLOCK_CONTEXT_RULES,
   isEventBlock,
@@ -269,6 +269,34 @@ function blockToStmt(
       return { kind: 'set_flag', name, operation };
     }
 
+    case 'jcreatepp_set_number_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!name.trim()) {
+        errors.push('数値変数名を入力してください。');
+        return null;
+      }
+      if (isReservedNumberVarName(name)) {
+        errors.push('jpp / __jpp_ から始まる数値変数名は使用できません。');
+        return null;
+      }
+      const value = resolveValueExpr(block, 'VALUE', eventType, generator, errors, inSequence);
+      return { kind: 'set_number_var', name, value };
+    }
+
+    case 'jcreatepp_change_number_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!name.trim()) {
+        errors.push('数値変数名を入力してください。');
+        return null;
+      }
+      if (isReservedNumberVarName(name)) {
+        errors.push('jpp / __jpp_ から始まる数値変数名は使用できません。');
+        return null;
+      }
+      const delta = resolveValueExpr(block, 'DELTA', eventType, generator, errors, inSequence);
+      return { kind: 'change_number_var', name, delta };
+    }
+
     case 'jcreatepp_oscillate': {
       if (eventType !== 'jcreatepp_on_update') {
         errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
@@ -426,6 +454,28 @@ function blockToExpr(
     case 'jcreatepp_player':
       return playerRef();
 
+    case 'jcreatepp_number_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!name.trim()) {
+        errors.push('数値変数名を入力してください。');
+        return numberLiteral(0);
+      }
+      if (isReservedNumberVarName(name)) {
+        errors.push('jpp / __jpp_ から始まる数値変数名は使用できません。');
+        return numberLiteral(0);
+      }
+      return numberVar(name);
+    }
+
+    case 'jcreatepp_arithmetic': {
+      const opRaw = block.getFieldValue('OP');
+      const validOps = new Set(['ADD', 'SUB', 'MUL', 'DIV']);
+      const operator = (validOps.has(opRaw) ? opRaw : 'ADD') as 'ADD' | 'SUB' | 'MUL' | 'DIV';
+      const left = resolveValueExpr(block, 'A', eventType, generator, errors, inSequence);
+      const right = resolveValueExpr(block, 'B', eventType, generator, errors, inSequence);
+      return binary(operator, left, right);
+    }
+
     default: {
       // フォールバック: valueToCode で JS 文字列を取得
       // 親ブロックから valueToCode を呼ぶ必要があるため、raw でラップ
@@ -560,6 +610,10 @@ function assignHandler(program: Program, type: EventContext, handler: Handler): 
 
 function isPlayerEventContext(type: EventContext): boolean {
   return type === 'jcreatepp_on_interact' || type === 'jcreatepp_on_grab_start' || type === 'jcreatepp_on_grab_end';
+}
+
+function isReservedNumberVarName(name: string): boolean {
+  return name.startsWith('__jpp_') || name.startsWith('jpp.');
 }
 
 /** ブロック type → 日本語ラベル */

@@ -80,6 +80,8 @@ export type Stmt =
   | { kind: 'set_move_speed', rate: Expr }
   | { kind: 'set_jump_speed', rate: Expr }
   | { kind: 'set_flag', name: string, operation: 'true' | 'false' | 'toggle' }
+  | { kind: 'set_number_var', name: string, value: Expr }
+  | { kind: 'change_number_var', name: string, delta: Expr }
   | { kind: 'if', condition: BoolExpr, thenBody: Stmt[], elseBody?: Stmt[] }
   | { kind: 'sequence', id: string, body: Stmt[] }
   | { kind: 'wait_seconds', seconds: Expr }
@@ -90,7 +92,9 @@ export type Expr =
   | RawExpr
   | NumberLiteralExpr
   | DeltaTimeExpr
-  | PlayerRefExpr;
+  | PlayerRefExpr
+  | NumberVarExpr
+  | BinaryExpr;
   // 将来: | SelfPositionExpr
   // 将来: | SelfRotationExpr
   // 将来: | VariableExpr
@@ -122,6 +126,18 @@ export type PlayerRefExpr = {
   kind: 'player_ref';
 };
 
+export type NumberVarExpr = {
+  kind: 'number_var';
+  name: string;
+};
+
+export type BinaryExpr = {
+  kind: 'binary';
+  operator: 'ADD' | 'SUB' | 'MUL' | 'DIV';
+  left: Expr;
+  right: Expr;
+};
+
 // ── ヘルパー ──
 
 /** Blockly の valueToCode() で取得した JS 式文字列を Expr に変換する */
@@ -139,6 +155,14 @@ export function deltaTime(): DeltaTimeExpr {
 
 export function playerRef(): PlayerRefExpr {
   return { kind: 'player_ref' };
+}
+
+export function numberVar(name: string): NumberVarExpr {
+  return { kind: 'number_var', name };
+}
+
+export function binary(operator: BinaryExpr['operator'], left: Expr, right: Expr): BinaryExpr {
+  return { kind: 'binary', operator, left, right };
 }
 
 export function not(expr: BoolExpr): BoolExpr {

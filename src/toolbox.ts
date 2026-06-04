@@ -253,6 +253,24 @@ export const toolbox = {
           kind: 'block',
           type: 'jcreatepp_set_flag',
         },
+        {
+          kind: 'block',
+          type: 'jcreatepp_number_var',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_set_number_var',
+          inputs: {
+            VALUE: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_change_number_var',
+          inputs: {
+            DELTA: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
       ],
     },
     {
@@ -269,6 +287,14 @@ export const toolbox = {
           type: 'math_number',
           fields: {
             NUM: 0,
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_arithmetic',
+          inputs: {
+            A: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            B: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
           },
         },
       ],

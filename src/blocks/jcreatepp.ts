@@ -542,6 +542,70 @@ const setFlagBlock = {
 // 文脈ルール（どのイベントで使えるか）は blocks/context.ts が正本。
 // ここでは形状・色・表示名のみ定義する。
 
+const numberVarBlock = {
+  type: 'jcreatepp_number_var',
+  message0: '数値変数 %1',
+  args0: [
+    { type: 'field_input', name: 'VAR_NAME', text: 'score' }
+  ],
+  output: 'Number',
+  colour: 330,
+  tooltip: '指定した名前の数値変数を読み取ります。',
+  helpUrl: '',
+};
+
+const setNumberVarBlock = {
+  type: 'jcreatepp_set_number_var',
+  message0: '数値変数 %1 を %2 にする',
+  args0: [
+    { type: 'field_input', name: 'VAR_NAME', text: 'score' },
+    { type: 'input_value', name: 'VALUE', check: 'Number' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 330,
+  tooltip: '指定した名前の数値変数に値を入れます。',
+  helpUrl: '',
+};
+
+const changeNumberVarBlock = {
+  type: 'jcreatepp_change_number_var',
+  message0: '数値変数 %1 を %2 だけ増やす',
+  args0: [
+    { type: 'field_input', name: 'VAR_NAME', text: 'score' },
+    { type: 'input_value', name: 'DELTA', check: 'Number' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 330,
+  tooltip: '指定した名前の数値変数を増減します。負の値を入れると減ります。',
+  helpUrl: '',
+};
+
+const arithmeticBlock = {
+  type: 'jcreatepp_arithmetic',
+  message0: '%1 %2 %3',
+  args0: [
+    { type: 'input_value', name: 'A', check: 'Number' },
+    {
+      type: 'field_dropdown',
+      name: 'OP',
+      options: [
+        ['+', 'ADD'],
+        ['-', 'SUB'],
+        ['*', 'MUL'],
+        ['/', 'DIV']
+      ]
+    },
+    { type: 'input_value', name: 'B', check: 'Number' }
+  ],
+  output: 'Number',
+  colour: 230,
+  inputsInline: true,
+  tooltip: '2つの数値を計算します。',
+  helpUrl: '',
+};
+
 const deltaTimeBlock = {
   type: 'jcreatepp_delta_time',
   message0: '経過時間',
@@ -591,6 +655,10 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   setJumpSpeedBlock,
   flagBlock,
   setFlagBlock,
+  numberVarBlock,
+  setNumberVarBlock,
+  changeNumberVarBlock,
+  arithmeticBlock,
   onGrabStart,
   onGrabEnd,
   onReceive,

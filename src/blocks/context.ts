@@ -45,6 +45,8 @@ export const UNIQUE_EVENT_BLOCK_TYPES: readonly EventContext[] = [
 export const BLOCK_CONTEXT_RULES: Record<string, EventContext[]> = {
   // 全文脈 OK
   math_number: [],
+  jcreatepp_number_var: [],
+  jcreatepp_arithmetic: [],
 
   // onUpdate 専用
   jcreatepp_delta_time: ['jcreatepp_on_update'],
