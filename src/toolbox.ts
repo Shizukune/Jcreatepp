@@ -97,6 +97,13 @@ export const toolbox = {
           kind: 'block',
           type: 'jcreatepp_wait_until',
         },
+        {
+          kind: 'block',
+          type: 'jcreatepp_run_for_seconds',
+          inputs: {
+            SECONDS: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
       ],
     },
     {
@@ -331,6 +338,43 @@ export const toolbox = {
         {
           kind: 'block',
           type: 'jcreatepp_or',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_send_message_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'open' },
+              },
+            },
+            RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_send_message_to_item_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'open' },
+              },
+            },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_reply_message_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'ok' },
+              },
+            },
+          },
         },
       ],
     },

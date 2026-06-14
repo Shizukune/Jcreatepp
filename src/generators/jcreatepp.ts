@@ -395,6 +395,97 @@ function blockToStmt(
       return { kind: 'wait_until', condition };
     }
 
+    case 'jcreatepp_run_for_seconds': {
+      if (!inSequence) {
+        errors.push('「N秒間、毎フレーム実行する」は「一連の動作」の中でしか使えません。');
+        return null;
+      }
+      if (inIf) {
+        errors.push('「N秒間、毎フレーム実行する」は「もし」などの条件分岐の中には置けません。');
+        return null;
+      }
+      const seconds = resolveValueExpr(block, 'SECONDS', eventType, generator, errors, inSequence);
+      const body: Stmt[] = [];
+      let stmtBlock = block.getInputTargetBlock('DO');
+      while (stmtBlock) {
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, true);
+        if (stmt) body.push(stmt);
+        stmtBlock = stmtBlock.getNextBlock();
+      }
+      return { kind: 'run_for_seconds', seconds, body };
+    }
+
+    case 'jcreatepp_send_message_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      let condition: BoolExpr;
+      if (conditionBlock) {
+        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+      } else {
+        condition = { kind: 'raw_bool', code: 'false' };
+      }
+      const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
+      return { kind: 'send_message_near_once', message, range, condition, blockId: block.id };
+    }
+
+    case 'jcreatepp_send_message_to_item_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      const itemName = block.getFieldValue('ITEM_NAME') || '';
+      if (!itemName.trim()) {
+        errors.push('送信先アイテムの参照名を入力してください。');
+        return null;
+      }
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      let condition: BoolExpr;
+      if (conditionBlock) {
+        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+      } else {
+        condition = { kind: 'raw_bool', code: 'false' };
+      }
+      return {
+        kind: 'send_message_to_item_once',
+        message,
+        itemName,
+        condition,
+        blockId: block.id,
+      };
+    }
+
+    case 'jcreatepp_reply_message_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (eventType !== 'jcreatepp_on_receive') {
+        errors.push('「送ってきた相手に返す」は「メッセージを受け取ったとき」の中でのみ使えます。');
+        return null;
+      }
+      if (inSequence) {
+        errors.push('「送ってきた相手に返す」は「一連の動作」の中では使えません。受信した瞬間の処理として置いてください。');
+        return null;
+      }
+      if (!message.trim()) {
+        errors.push('返信するメッセージ名を入力してください。');
+        return null;
+      }
+      const conditionBlock = block.getInputTargetBlock('CONDITION');
+      let condition: BoolExpr;
+      if (conditionBlock) {
+        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+      } else {
+        condition = { kind: 'raw_bool', code: 'false' };
+      }
+      return { kind: 'reply_message_once', message, condition, blockId: block.id };
+    }
+
     default:
       if (block.type === 'jcreatepp_compare' || block.type === 'jcreatepp_not' || block.type === 'jcreatepp_and' || block.type === 'jcreatepp_or') {
         errors.push(`「${blockLabel(block.type)}」は単独で置くことはできません。`);
@@ -639,6 +730,7 @@ function blockLabel(type: string): string {
     case 'jcreatepp_sequence': return '「一連の動作（完了まで待つ）」';
     case 'jcreatepp_wait_seconds': return '「〜秒待つ」';
     case 'jcreatepp_wait_until': return '「〜まで待つ」';
+    case 'jcreatepp_run_for_seconds': return '「N秒間、毎フレーム実行する」';
     case 'jcreatepp_compare': return '「比較条件」';
     case 'jcreatepp_not': return '「〜ではない」';
     case 'jcreatepp_and': return '「かつ」';

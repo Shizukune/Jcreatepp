@@ -82,10 +82,14 @@ export type Stmt =
   | { kind: 'set_flag', name: string, operation: 'true' | 'false' | 'toggle' }
   | { kind: 'set_number_var', name: string, value: Expr }
   | { kind: 'change_number_var', name: string, delta: Expr }
+  | { kind: 'send_message_near_once', message: string, range: Expr, condition: BoolExpr, blockId: string }
+  | { kind: 'send_message_to_item_once', message: string, itemName: string, condition: BoolExpr, blockId: string }
+  | { kind: 'reply_message_once', message: string, condition: BoolExpr, blockId: string }
   | { kind: 'if', condition: BoolExpr, thenBody: Stmt[], elseBody?: Stmt[] }
   | { kind: 'sequence', id: string, body: Stmt[] }
   | { kind: 'wait_seconds', seconds: Expr }
   | { kind: 'wait_until', condition: BoolExpr }
+  | { kind: 'run_for_seconds', seconds: Expr, body: Stmt[] }
   | { kind: 'oscillate', axis: 'X' | 'Y' | 'Z', width: Expr, speed: Expr, blockId: string };
 
 export type Expr =

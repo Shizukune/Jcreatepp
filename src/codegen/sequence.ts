@@ -28,6 +28,17 @@ if (time >= ${exprToJS(stmt.seconds)}) {
 } else {
   yielded = true;
 }`;
+    } else if (stmt.kind === 'run_for_seconds') {
+      const body = stmt.body.map((bodyStmt) => stmtToJS(bodyStmt)).join('\n');
+      caseBody = `let time = ($.state["${timeVar}"] || 0) + deltaTime;
+$.state["${timeVar}"] = time;
+if (time <= ${exprToJS(stmt.seconds)}) {
+${body.split('\n').map((line) => `  ${line}`).join('\n')}
+  yielded = true;
+} else {
+  $.state["${timeVar}"] = 0;
+  step++;
+}`;
     } else {
       caseBody = `${stmtToJS(stmt)}\nstep++;`;
     }
@@ -37,6 +48,9 @@ if (time >= ${exprToJS(stmt.seconds)}) {
 
   cases.push(`      case ${seq.body.length}: {
         $.state["${activeVar}"] = false;
+        step = 0;
+        $.state["${stepVar}"] = 0;
+        $.state["${timeVar}"] = 0;
         yielded = true;
         break;
       }`);

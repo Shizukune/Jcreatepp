@@ -30,6 +30,7 @@ import {
 const WAIT_BLOCK_TYPES = [
   'jcreatepp_wait_seconds',
   'jcreatepp_wait_until',
+  'jcreatepp_run_for_seconds',
 ];
 
 /**
@@ -144,6 +145,8 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
         block.setWarningText(
           '待機ブロックは「もし〜なら」などの条件分岐の中には置けません。',
         );
+      } else if (block.type === 'jcreatepp_run_for_seconds' && isInsideRunForSeconds(block)) {
+        block.setWarningText('「N秒間、毎フレーム実行する」はネストできません。');
       } else {
         block.setWarningText(null);
       }
@@ -232,6 +235,38 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
         block.setWarningText(null);
       }
     }
+    if (block.type === 'jcreatepp_send_message_once') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        block.setWarningText('送信するメッセージ名を入力してください。');
+      }
+    }
+
+    if (block.type === 'jcreatepp_send_message_to_item_once') {
+      const itemName = block.getFieldValue('ITEM_NAME') || '';
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!itemName.trim()) {
+        block.setWarningText('送信先アイテムの参照名を入力してください。');
+      } else if (!message.trim()) {
+        block.setWarningText('送信するメッセージ名を入力してください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_reply_message_once') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      const ctx = findEventContext(block);
+      if (ctx !== 'jcreatepp_on_receive') {
+        block.setWarningText('このブロックは「メッセージを受け取ったとき」の中でのみ使えます。');
+      } else if (isInsideSequence(block)) {
+        block.setWarningText('このブロックは「一連の動作」の中では使えません。受信した瞬間の処理として置いてください。');
+      } else if (!message.trim()) {
+        block.setWarningText('返信するメッセージ名を入力してください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
   }
 }
 
@@ -301,6 +336,20 @@ export function isInsideIfWithinCurrentSequence(block: Blockly.Block): boolean {
       return false;
     }
     if (current.type === 'jcreatepp_if' || current.type === 'jcreatepp_if_else') {
+      return true;
+    }
+    current = current.getSurroundParent();
+  }
+  return false;
+}
+
+export function isInsideRunForSeconds(block: Blockly.Block): boolean {
+  let current: Blockly.Block | null = block.getSurroundParent();
+  while (current) {
+    if (current.type === 'jcreatepp_sequence') {
+      return false;
+    }
+    if (current.type === 'jcreatepp_run_for_seconds') {
       return true;
     }
     current = current.getSurroundParent();

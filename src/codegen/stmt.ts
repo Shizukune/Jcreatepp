@@ -1,6 +1,6 @@
 import type { Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
-import { axisVector, safeId, stateKey } from './shared';
+import { axisVector, jsString, safeId, stateKey } from './shared';
 
 export function stmtToJS(stmt: Stmt): string {
   switch (stmt.kind) {
@@ -57,6 +57,15 @@ export function stmtToJS(stmt: Stmt): string {
     case 'change_number_var':
       return `$.state[${stateKey('var.', stmt.name)}] = ($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)});`;
 
+    case 'send_message_near_once':
+      return sendMessageNearOnceToJS(stmt);
+
+    case 'send_message_to_item_once':
+      return sendMessageToItemOnceToJS(stmt);
+
+    case 'reply_message_once':
+      return replyMessageOnceToJS(stmt);
+
     case 'oscillate':
       return oscillateToJS(stmt);
 
@@ -68,6 +77,7 @@ export function stmtToJS(stmt: Stmt): string {
 
     case 'wait_seconds':
     case 'wait_until':
+    case 'run_for_seconds':
       return `// error: wait stmt should be generated inside state machine`;
 
     default: {
@@ -75,6 +85,60 @@ export function stmtToJS(stmt: Stmt): string {
       return `// unknown stmt: ${(exhaustive as any).kind}`;
     }
   }
+}
+
+function sendMessageNearOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_near_once' }>): string {
+  const id = safeId(stmt.blockId);
+  const sentKey = `__jpp_send_once_${id}`;
+  return `{
+  const __jpp_send_cond_${id} = ${boolExprToJS(stmt.condition)};
+  if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
+    const __jpp_send_pos_${id} = $.getPosition() || new Vector3(0,0,0);
+    const __jpp_send_items_${id} = $.getItemsNear(__jpp_send_pos_${id}, (${exprToJS(stmt.range)}));
+    for (const __jpp_send_item_${id} of __jpp_send_items_${id}) {
+      __jpp_send_item_${id}.send(${JSON.stringify(stmt.message)}, null);
+    }
+    $.state["${sentKey}"] = true;
+  }
+  if (!__jpp_send_cond_${id}) {
+    $.state["${sentKey}"] = false;
+  }
+}`;
+}
+
+function sendMessageToItemOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_to_item_once' }>): string {
+  const id = safeId(stmt.blockId);
+  const sentKey = `__jpp_send_item_once_${id}`;
+  return `{
+  const __jpp_send_cond_${id} = ${boolExprToJS(stmt.condition)};
+  if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
+    const __jpp_send_item_${id} = $.worldItemReference(${jsString(stmt.itemName)});
+    if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
+      __jpp_send_item_${id}.send(${jsString(stmt.message)}, null);
+    }
+    $.state["${sentKey}"] = true;
+  }
+  if (!__jpp_send_cond_${id}) {
+    $.state["${sentKey}"] = false;
+  }
+}`;
+}
+
+function replyMessageOnceToJS(stmt: Extract<Stmt, { kind: 'reply_message_once' }>): string {
+  const id = safeId(stmt.blockId);
+  const sentKey = `__jpp_reply_once_${id}`;
+  return `{
+  const __jpp_reply_cond_${id} = ${boolExprToJS(stmt.condition)};
+  if (__jpp_reply_cond_${id} && !$.state["${sentKey}"]) {
+    if (sender && typeof sender.send === "function") {
+      sender.send(${jsString(stmt.message)}, null);
+    }
+    $.state["${sentKey}"] = true;
+  }
+  if (!__jpp_reply_cond_${id}) {
+    $.state["${sentKey}"] = false;
+  }
+}`;
 }
 
 function timedRandomWarpToJS(stmt: Extract<Stmt, { kind: 'timed_random_warp' }>): string {

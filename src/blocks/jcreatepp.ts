@@ -436,6 +436,21 @@ const waitUntilBlock = {
 
 // ── 条件ブロック ──
 
+const runForSecondsBlock = {
+  type: 'jcreatepp_run_for_seconds',
+  message0: '%1 秒間、毎フレーム実行する %2 %3',
+  args0: [
+    { type: 'input_value', name: 'SECONDS', check: 'Number' },
+    { type: 'input_dummy' },
+    { type: 'input_statement', name: 'DO' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 280,
+  tooltip: '指定した秒数の間、中のブロックを毎フレーム実行します（一連の動作の中でのみ使用できます）。',
+  helpUrl: '',
+};
+
 const compareBlock = {
   type: 'jcreatepp_compare',
   message0: '%1 %2 %3',
@@ -606,6 +621,53 @@ const arithmeticBlock = {
   helpUrl: '',
 };
 
+const sendMessageOnceBlock = {
+  type: 'jcreatepp_send_message_once',
+  message0: 'もし %1 になったら 範囲 %2 m のアイテムに メッセージ %3 を1回だけ送る',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'input_value', name: 'RANGE', check: 'Number' },
+    { type: 'field_input', name: 'MESSAGE', text: 'open' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: '条件が false から true になった瞬間だけ、近くのアイテムへメッセージを送ります。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
+};
+
+const sendMessageToItemOnceBlock = {
+  type: 'jcreatepp_send_message_to_item_once',
+  message0: 'もし %1 になったら 指定アイテム %2 に メッセージ %3 を1回だけ送る',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'field_input', name: 'ITEM_NAME', text: 'door' },
+    { type: 'field_input', name: 'MESSAGE', text: 'open' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: '条件が false から true になった瞬間だけ、Unity/Cluster 側で指定したアイテム参照へメッセージを送ります。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
+};
+
+const replyMessageOnceBlock = {
+  type: 'jcreatepp_reply_message_once',
+  message0: 'もし %1 になったら 送ってきた相手に メッセージ %2 を1回だけ返す',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'field_input', name: 'MESSAGE', text: 'ok' }
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: 'メッセージ受信イベントの中で、送信元へ1回だけ返信します。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/ClusterScript.html#onreceive',
+};
+
 const deltaTimeBlock = {
   type: 'jcreatepp_delta_time',
   message0: '経過時間',
@@ -638,6 +700,7 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   sequenceBlock,
   waitSecondsBlock,
   waitUntilBlock,
+  runForSecondsBlock,
   compareBlock,
   notBlock,
   andBlock,
@@ -659,6 +722,9 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   setNumberVarBlock,
   changeNumberVarBlock,
   arithmeticBlock,
+  sendMessageOnceBlock,
+  sendMessageToItemOnceBlock,
+  replyMessageOnceBlock,
   onGrabStart,
   onGrabEnd,
   onReceive,
