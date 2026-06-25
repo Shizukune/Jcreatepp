@@ -41,6 +41,8 @@ function extractSequences(stmts: Stmt[]): SequenceStmt[] {
       if (stmt.elseBody) {
         sequences = sequences.concat(extractSequences(stmt.elseBody));
       }
+    } else if (stmt.kind === 'if_edge') {
+      sequences = sequences.concat(extractSequences(stmt.body));
     }
   }
 

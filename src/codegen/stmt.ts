@@ -1,4 +1,4 @@
-import type { Stmt } from '../ir';
+import type { MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
 import { axisVector, jsString, safeId, stateKey } from './shared';
 
@@ -57,23 +57,26 @@ export function stmtToJS(stmt: Stmt): string {
     case 'change_number_var':
       return `$.state[${stateKey('var.', stmt.name)}] = ($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)});`;
 
+    case 'set_string_var':
+      return `$.state[${stateKey('str.', stmt.name)}] = ${exprToJS(stmt.value)};`;
+
+    case 'set_bool_var':
+      return `$.state[${stateKey('bool.', stmt.name)}] = ${boolExprToJS(stmt.value)};`;
+
     case 'start_cooldown':
       return `$.state[${stateKey('__jpp_cd_', stmt.name)}] = Math.max(0, (${exprToJS(stmt.seconds)}));`;
 
-    case 'send_message_near_once':
-      return sendMessageNearOnceToJS(stmt);
-
-    case 'send_message_to_item_once':
-      return sendMessageToItemOnceToJS(stmt);
-
-    case 'reply_message_once':
-      return replyMessageOnceToJS(stmt);
+    case 'send_message':
+      return sendMessageToJS(stmt);
 
     case 'oscillate':
       return oscillateToJS(stmt);
 
     case 'if':
       return ifToJS(stmt);
+
+    case 'if_edge':
+      return ifEdgeToJS(stmt);
 
     case 'sequence':
       return sequenceStarterToJS(stmt);
@@ -90,61 +93,63 @@ export function stmtToJS(stmt: Stmt): string {
   }
 }
 
-function sendMessageNearOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_near_once' }>): string {
+function sendMessageToJS(stmt: Extract<Stmt, { kind: 'send_message' }>): string {
   const id = safeId(stmt.blockId);
+  const condition = stmt.condition ? boolExprToJS(stmt.condition) : 'true';
   const sentKey = `__jpp_send_once_${id}`;
-  return `{
-  const __jpp_send_cond_${id} = ${boolExprToJS(stmt.condition)};
+  const body = indentMessageBody(messageTargetToJS(stmt.target, id, stmt.message, messageSendValueToJS(stmt.value)), 4);
+
+  if (stmt.edgeOnce) {
+    return `{
+  const __jpp_send_cond_${id} = ${condition};
   if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
-    const __jpp_send_pos_${id} = $.getPosition() || new Vector3(0,0,0);
-    const __jpp_send_items_${id} = $.getItemsNear(__jpp_send_pos_${id}, (${exprToJS(stmt.range)}));
-    for (const __jpp_send_item_${id} of __jpp_send_items_${id}) {
-      __jpp_send_item_${id}.send(${JSON.stringify(stmt.message)}, ${messageSendValueToJS(stmt.value)});
-    }
+${body}
     $.state["${sentKey}"] = true;
   }
   if (!__jpp_send_cond_${id}) {
     $.state["${sentKey}"] = false;
   }
 }`;
-}
-
-function sendMessageToItemOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_to_item_once' }>): string {
-  const id = safeId(stmt.blockId);
-  const sentKey = `__jpp_send_item_once_${id}`;
-  return `{
-  const __jpp_send_cond_${id} = ${boolExprToJS(stmt.condition)};
-  if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
-    const __jpp_send_item_${id} = $.worldItemReference(${jsString(stmt.itemName)});
-    if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
-      __jpp_send_item_${id}.send(${jsString(stmt.message)}, ${messageSendValueToJS(stmt.value)});
-    }
-    $.state["${sentKey}"] = true;
   }
-  if (!__jpp_send_cond_${id}) {
-    $.state["${sentKey}"] = false;
+
+  return `{
+  if (${condition}) {
+${body}
   }
 }`;
 }
 
-function replyMessageOnceToJS(stmt: Extract<Stmt, { kind: 'reply_message_once' }>): string {
-  const id = safeId(stmt.blockId);
-  const sentKey = `__jpp_reply_once_${id}`;
-  return `{
-  const __jpp_reply_cond_${id} = ${boolExprToJS(stmt.condition)};
-  if (__jpp_reply_cond_${id} && !$.state["${sentKey}"]) {
-    if (sender && typeof sender.send === "function") {
-      sender.send(${jsString(stmt.message)}, ${messageSendValueToJS(stmt.value)});
-    }
-    $.state["${sentKey}"] = true;
-  }
-  if (!__jpp_reply_cond_${id}) {
-    $.state["${sentKey}"] = false;
-  }
+function messageTargetToJS(target: MessageTarget, id: string, message: string, value: string): string {
+  switch (target.kind) {
+    case 'near':
+      return `const __jpp_send_pos_${id} = $.getPosition() || new Vector3(0,0,0);
+const __jpp_send_items_${id} = $.getItemsNear(__jpp_send_pos_${id}, (${exprToJS(target.range)}));
+for (const __jpp_send_item_${id} of __jpp_send_items_${id}) {
+  __jpp_send_item_${id}.send(${jsString(message)}, ${value});
 }`;
+    case 'world_item':
+      return `const __jpp_send_item_${id} = $.worldItemReference(${jsString(target.itemName)});
+if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
+  __jpp_send_item_${id}.send(${jsString(message)}, ${value});
+}`;
+    case 'sender':
+      return `if (sender && typeof sender.send === "function") {
+  sender.send(${jsString(message)}, ${value});
+}`;
+    case 'handle':
+      return `const __jpp_send_handle_${id} = ${exprToJS(target.handle)};
+if (__jpp_send_handle_${id} && typeof __jpp_send_handle_${id}.send === "function") {
+  __jpp_send_handle_${id}.send(${jsString(message)}, ${value});
+}`;
+  }
 }
 
-function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message_near_once' }>['value']): string {
+function indentMessageBody(code: string, spaces: number): string {
+  const pad = ' '.repeat(spaces);
+  return code.split('\n').map((line) => `${pad}${line}`).join('\n');
+}
+
+function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message' }>['value']): string {
   if (!value) {
     return 'null';
   }
@@ -242,6 +247,24 @@ function ifToJS(stmt: Extract<Stmt, { kind: 'if' }>): string {
   }
 
   return code;
+}
+
+function ifEdgeToJS(stmt: Extract<Stmt, { kind: 'if_edge' }>): string {
+  const id = safeId(stmt.blockId);
+  const condition = boolExprToJS(stmt.condition);
+  const sentKey = `__jpp_edge_${id}`;
+  const body = stmt.body.map((bodyStmt) => `    ${stmtToJS(bodyStmt).replace(/\n/g, '\n    ')}`).join('\n');
+
+  return `{
+  const __jpp_edge_cond_${id} = ${condition};
+  if (__jpp_edge_cond_${id} && !$.state["${sentKey}"]) {
+${body}
+    $.state["${sentKey}"] = true;
+  }
+  if (!__jpp_edge_cond_${id}) {
+    $.state["${sentKey}"] = false;
+  }
+}`;
 }
 
 function sequenceStarterToJS(stmt: Extract<Stmt, { kind: 'sequence' }>): string {

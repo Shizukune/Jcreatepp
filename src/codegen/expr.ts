@@ -15,8 +15,12 @@ export function exprToJS(expr: Expr): string {
       return 'deltaTime';
     case 'player_ref':
       return 'player';
+    case 'collision_handle':
+      return '(collision && collision.handle ? collision.handle : null)';
     case 'number_var':
       return `($.state[${stateKey('var.', expr.name)}] || 0)`;
+    case 'string_var':
+      return `($.state[${stateKey('str.', expr.name)}] || "")`;
     case 'random_number': {
       const min = exprToJS(expr.min);
       const max = exprToJS(expr.max);
@@ -53,6 +57,8 @@ export function boolExprToJS(expr: BoolExpr): string {
       return `(${boolExprToJS(expr.left)} || ${boolExprToJS(expr.right)})`;
     case 'flag':
       return `!!$.state[${stateKey('__jpp_flag_', expr.name)}]`;
+    case 'bool_var':
+      return `!!$.state[${stateKey('bool.', expr.name)}]`;
     case 'cooldown_active':
       return `(($.state[${stateKey('__jpp_cd_', expr.name)}] || 0) > 0)`;
     case 'message_value_bool':

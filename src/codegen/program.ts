@@ -97,6 +97,9 @@ function getCooldownNames(program: Program): string[] {
         stmt.thenBody.forEach(visitStmt);
         stmt.elseBody?.forEach(visitStmt);
         break;
+      case 'if_edge':
+        stmt.body.forEach(visitStmt);
+        break;
       case 'sequence':
         stmt.body.forEach(visitStmt);
         break;

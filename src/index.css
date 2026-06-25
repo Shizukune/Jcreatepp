@@ -104,6 +104,20 @@ body {
   min-width: 400px;
 }
 
+.blocklyToolboxDiv {
+  min-width: 190px;
+}
+
+.blocklyTreeRow {
+  height: 34px;
+  line-height: 34px;
+}
+
+.blocklyTreeLabel {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* ── コード表示ペイン ── */
 #codePane {
   width: 360px;

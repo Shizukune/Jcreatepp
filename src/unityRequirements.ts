@@ -5,6 +5,7 @@ export type UnityRequirement =
   | { kind: 'world_item_reference'; id: string; reason: string; blockId: string }
   | { kind: 'overlap_detector'; reason: string; blockId: string }
   | { kind: 'collision_shape'; reason: string; blockId: string }
+  | { kind: 'send_rate_limit'; reason: string; blockId: string }
   | { kind: 'audio_set'; id: string; reason: string; blockId: string }
   | { kind: 'material_set'; id: string; reason: string; blockId: string };
 
@@ -22,35 +23,55 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
     switch (stmt.kind) {
       case 'set_position':
       case 'move_by':
+      case 'set_rotation':
+      case 'rotate_by':
+      case 'add_force':
+      case 'continuous_rotation':
+      case 'timed_random_warp':
       case 'timed_move_return':
       case 'oscillate':
         add({
           kind: 'movable_item',
-          reason: '位置をスクリプトから変更するため、このアイテムは移動可能な設定が必要です。',
+          reason: '位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。',
           blockId: 'blockId' in stmt ? stmt.blockId : '',
         });
         break;
 
-      case 'send_message_near_once':
+      case 'send_message':
         add({
-          kind: 'overlap_detector',
-          reason: '近くのアイテムへ送信するには、対象アイテムが取得可能なCollider / Shape / Layer設定になっている必要があります。',
+          kind: 'send_rate_limit',
+          reason: 'メッセージ送信にはCluster Scriptのsend頻度制限があります。毎フレームや大量対象への送信ではクールダウンやonce制御を併用してください。',
           blockId: stmt.blockId,
         });
-        break;
-
-      case 'send_message_to_item_once':
-        add({
-          kind: 'world_item_reference',
-          id: stmt.itemName,
-          reason: '指定アイテムへ送信するには、World Item Reference List に同じ参照名を登録してください。',
-          blockId: stmt.blockId,
-        });
+        if (stmt.target.kind === 'near') {
+          add({
+            kind: 'overlap_detector',
+            reason: '近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。',
+            blockId: stmt.blockId,
+          });
+        } else if (stmt.target.kind === 'world_item') {
+          add({
+            kind: 'world_item_reference',
+            id: stmt.target.itemName,
+            reason: '指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。',
+            blockId: stmt.blockId,
+          });
+        } else if (stmt.target.kind === 'handle') {
+          add({
+            kind: 'collision_shape',
+            reason: '衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。',
+            blockId: stmt.blockId,
+          });
+        }
         break;
 
       case 'if':
         stmt.thenBody.forEach(visitStmt);
         stmt.elseBody?.forEach(visitStmt);
+        break;
+
+      case 'if_edge':
+        stmt.body.forEach(visitStmt);
         break;
 
       case 'sequence':
@@ -97,11 +118,14 @@ export function formatUnityRequirements(requirements: UnityRequirement[]): strin
     return '';
   }
 
-  const lines = ['Unity側で必要な設定:'];
+  const lines = ['Unity側で必要な設定'];
   for (const requirement of requirements) {
     switch (requirement.kind) {
       case 'world_item_reference':
         lines.push(`- World Item Reference List に "${requirement.id}" を登録してください。${requirement.reason}`);
+        break;
+      case 'send_rate_limit':
+        lines.push(`- ${requirement.reason}`);
         break;
       case 'movable_item':
       case 'overlap_detector':
