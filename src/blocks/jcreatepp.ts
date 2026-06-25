@@ -59,6 +59,19 @@ const onInteract = {
   hat: 'cap',
 };
 
+const onCollide = {
+  type: 'jcreatepp_on_collide',
+  message0: '衝突したとき %1 %2',
+  args0: [
+    { type: 'input_dummy' },
+    { type: 'input_statement', name: 'DO' },
+  ],
+  colour: 45,
+  tooltip: 'このアイテムが他のオブジェクトと衝突したときに実行されます。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#oncollide',
+  hat: 'cap',
+};
+
 const onGrabStart = {
   type: 'jcreatepp_on_grab_start',
   message0: '持ったとき %1 %2',
@@ -621,6 +634,94 @@ const arithmeticBlock = {
   helpUrl: '',
 };
 
+const randomNumberBlock = {
+  type: 'jcreatepp_random_number',
+  message0: '%1 から %2 までのランダム数 %3',
+  args0: [
+    { type: 'input_value', name: 'MIN', check: 'Number' },
+    { type: 'input_value', name: 'MAX', check: 'Number' },
+    {
+      type: 'field_dropdown',
+      name: 'MODE',
+      options: [
+        ['小数', 'float'],
+        ['整数', 'integer'],
+      ],
+    },
+  ],
+  output: 'Number',
+  colour: 230,
+  inputsInline: true,
+  tooltip: '指定した範囲のランダムな数値を返します。',
+  helpUrl: '',
+};
+
+const cooldownActiveBlock = {
+  type: 'jcreatepp_cooldown_active',
+  message0: 'クールダウン %1 中',
+  args0: [
+    { type: 'field_input', name: 'COOLDOWN_NAME', text: 'action' },
+  ],
+  output: 'Boolean',
+  colour: 330,
+  tooltip: '指定した名前のクールダウンが残っているかを返します。',
+  helpUrl: '',
+};
+
+const cooldownRemainingBlock = {
+  type: 'jcreatepp_cooldown_remaining',
+  message0: 'クールダウン %1 の残り秒数',
+  args0: [
+    { type: 'field_input', name: 'COOLDOWN_NAME', text: 'action' },
+  ],
+  output: 'Number',
+  colour: 330,
+  tooltip: '指定した名前のクールダウンの残り秒数を返します。',
+  helpUrl: '',
+};
+
+const startCooldownBlock = {
+  type: 'jcreatepp_start_cooldown',
+  message0: 'クールダウン %1 を %2 秒で開始する',
+  args0: [
+    { type: 'field_input', name: 'COOLDOWN_NAME', text: 'action' },
+    { type: 'input_value', name: 'SECONDS', check: 'Number' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 330,
+  inputsInline: true,
+  tooltip: '指定した名前のクールダウンを開始します。',
+  helpUrl: '',
+};
+
+const messageValueNumberBlock = {
+  type: 'jcreatepp_message_value_number',
+  message0: '受け取った数値',
+  output: 'Number',
+  colour: 20,
+  tooltip: 'メッセージ受信イベントで受け取った値を数値として使います。数値でなければ0になります。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive',
+};
+
+const messageValueStringBlock = {
+  type: 'jcreatepp_message_value_string',
+  message0: '受け取った文字',
+  output: 'String',
+  colour: 20,
+  tooltip: 'メッセージ受信イベントで受け取った値を文字として使います。文字でなければ空文字になります。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive',
+};
+
+const messageValueBooleanBlock = {
+  type: 'jcreatepp_message_value_boolean',
+  message0: '受け取った真偽値',
+  output: 'Boolean',
+  colour: 20,
+  tooltip: 'メッセージ受信イベントで受け取った値を真偽値として使います。真偽値でなければfalseになります。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive',
+};
+
 const sendMessageOnceBlock = {
   type: 'jcreatepp_send_message_once',
   message0: 'もし %1 になったら 範囲 %2 m のアイテムに メッセージ %3 を1回だけ送る',
@@ -634,6 +735,33 @@ const sendMessageOnceBlock = {
   colour: 20,
   inputsInline: true,
   tooltip: '条件が false から true になった瞬間だけ、近くのアイテムへメッセージを送ります。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
+};
+
+const sendMessageValueOnceBlock = {
+  type: 'jcreatepp_send_message_value_once',
+  message0: 'もし %1 になったら 範囲 %2 m のアイテムに メッセージ %3 と %4 値 %5 文字値 %6 を1回だけ送る',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'input_value', name: 'RANGE', check: 'Number' },
+    { type: 'field_input', name: 'MESSAGE', text: 'open' },
+    {
+      type: 'field_dropdown',
+      name: 'VALUE_TYPE',
+      options: [
+        ['数値', 'number'],
+        ['文字', 'string'],
+        ['真偽値', 'boolean'],
+      ],
+    },
+    { type: 'input_value', name: 'VALUE' },
+    { type: 'field_input', name: 'TEXT_VALUE', text: 'value' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: '条件がfalseからtrueになった瞬間だけ、近くのアイテムへ型付きの値つきメッセージを送ります。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
@@ -653,6 +781,33 @@ const sendMessageToItemOnceBlock = {
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
+const sendMessageValueToItemOnceBlock = {
+  type: 'jcreatepp_send_message_value_to_item_once',
+  message0: 'もし %1 になったら 指定アイテム %2 に メッセージ %3 と %4 値 %5 文字値 %6 を1回だけ送る',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'field_input', name: 'ITEM_NAME', text: 'door' },
+    { type: 'field_input', name: 'MESSAGE', text: 'open' },
+    {
+      type: 'field_dropdown',
+      name: 'VALUE_TYPE',
+      options: [
+        ['数値', 'number'],
+        ['文字', 'string'],
+        ['真偽値', 'boolean'],
+      ],
+    },
+    { type: 'input_value', name: 'VALUE' },
+    { type: 'field_input', name: 'TEXT_VALUE', text: 'value' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: '条件がfalseからtrueになった瞬間だけ、指定アイテムへ型付きの値つきメッセージを送ります。',
+  helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
+};
+
 const replyMessageOnceBlock = {
   type: 'jcreatepp_reply_message_once',
   message0: 'もし %1 になったら 送ってきた相手に メッセージ %2 を1回だけ返す',
@@ -666,6 +821,32 @@ const replyMessageOnceBlock = {
   inputsInline: true,
   tooltip: 'メッセージ受信イベントの中で、送信元へ1回だけ返信します。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ClusterScript.html#onreceive',
+};
+
+const replyMessageValueOnceBlock = {
+  type: 'jcreatepp_reply_message_value_once',
+  message0: 'もし %1 になったら 送ってきた相手に メッセージ %2 と %3 値 %4 文字値 %5 を1回だけ返す',
+  args0: [
+    { type: 'input_value', name: 'CONDITION', check: 'Boolean' },
+    { type: 'field_input', name: 'MESSAGE', text: 'ok' },
+    {
+      type: 'field_dropdown',
+      name: 'VALUE_TYPE',
+      options: [
+        ['数値', 'number'],
+        ['文字', 'string'],
+        ['真偽値', 'boolean'],
+      ],
+    },
+    { type: 'input_value', name: 'VALUE' },
+    { type: 'field_input', name: 'TEXT_VALUE', text: 'value' },
+  ],
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  inputsInline: true,
+  tooltip: 'メッセージ受信イベントの中で、送信元へ型付きの値つきメッセージを返します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive',
 };
 
 const deltaTimeBlock = {
@@ -691,6 +872,7 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   onStart,
   onUpdate,
   onInteract,
+  onCollide,
   setPositionBlock,
   addPositionBlock,
   setRotationBlock,
@@ -721,10 +903,20 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   numberVarBlock,
   setNumberVarBlock,
   changeNumberVarBlock,
+  randomNumberBlock,
+  cooldownActiveBlock,
+  cooldownRemainingBlock,
+  startCooldownBlock,
   arithmeticBlock,
   sendMessageOnceBlock,
+  sendMessageValueOnceBlock,
   sendMessageToItemOnceBlock,
+  sendMessageValueToItemOnceBlock,
   replyMessageOnceBlock,
+  replyMessageValueOnceBlock,
+  messageValueNumberBlock,
+  messageValueStringBlock,
+  messageValueBooleanBlock,
   onGrabStart,
   onGrabEnd,
   onReceive,

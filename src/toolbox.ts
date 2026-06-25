@@ -29,6 +29,10 @@ export const toolbox = {
         },
         {
           kind: 'block',
+          type: 'jcreatepp_on_collide',
+        },
+        {
+          kind: 'block',
           type: 'jcreatepp_on_grab_start',
         },
         {
@@ -278,6 +282,25 @@ export const toolbox = {
             DELTA: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
+        {
+          kind: 'label',
+          text: 'クールダウン',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_cooldown_active',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_cooldown_remaining',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_start_cooldown',
+          inputs: {
+            SECONDS: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
       ],
     },
     {
@@ -302,6 +325,14 @@ export const toolbox = {
           inputs: {
             A: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
             B: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_random_number',
+          inputs: {
+            MIN: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            MAX: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
       ],
@@ -354,6 +385,20 @@ export const toolbox = {
         },
         {
           kind: 'block',
+          type: 'jcreatepp_send_message_value_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'open' },
+              },
+            },
+            RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
+            VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'block',
           type: 'jcreatepp_send_message_to_item_once',
           inputs: {
             CONDITION: {
@@ -362,6 +407,19 @@ export const toolbox = {
                 fields: { FLAG_NAME: 'open' },
               },
             },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_send_message_value_to_item_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'open' },
+              },
+            },
+            VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
         {
@@ -375,6 +433,35 @@ export const toolbox = {
               },
             },
           },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_reply_message_value_once',
+          inputs: {
+            CONDITION: {
+              shadow: {
+                type: 'jcreatepp_flag',
+                fields: { FLAG_NAME: 'ok' },
+              },
+            },
+            VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'label',
+          text: '受信値',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_message_value_number',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_message_value_string',
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_message_value_boolean',
         },
       ],
     },

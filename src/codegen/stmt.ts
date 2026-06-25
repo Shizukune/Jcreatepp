@@ -57,6 +57,9 @@ export function stmtToJS(stmt: Stmt): string {
     case 'change_number_var':
       return `$.state[${stateKey('var.', stmt.name)}] = ($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)});`;
 
+    case 'start_cooldown':
+      return `$.state[${stateKey('__jpp_cd_', stmt.name)}] = Math.max(0, (${exprToJS(stmt.seconds)}));`;
+
     case 'send_message_near_once':
       return sendMessageNearOnceToJS(stmt);
 
@@ -96,7 +99,7 @@ function sendMessageNearOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_near_
     const __jpp_send_pos_${id} = $.getPosition() || new Vector3(0,0,0);
     const __jpp_send_items_${id} = $.getItemsNear(__jpp_send_pos_${id}, (${exprToJS(stmt.range)}));
     for (const __jpp_send_item_${id} of __jpp_send_items_${id}) {
-      __jpp_send_item_${id}.send(${JSON.stringify(stmt.message)}, null);
+      __jpp_send_item_${id}.send(${JSON.stringify(stmt.message)}, ${messageSendValueToJS(stmt.value)});
     }
     $.state["${sentKey}"] = true;
   }
@@ -114,7 +117,7 @@ function sendMessageToItemOnceToJS(stmt: Extract<Stmt, { kind: 'send_message_to_
   if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
     const __jpp_send_item_${id} = $.worldItemReference(${jsString(stmt.itemName)});
     if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
-      __jpp_send_item_${id}.send(${jsString(stmt.message)}, null);
+      __jpp_send_item_${id}.send(${jsString(stmt.message)}, ${messageSendValueToJS(stmt.value)});
     }
     $.state["${sentKey}"] = true;
   }
@@ -131,7 +134,7 @@ function replyMessageOnceToJS(stmt: Extract<Stmt, { kind: 'reply_message_once' }
   const __jpp_reply_cond_${id} = ${boolExprToJS(stmt.condition)};
   if (__jpp_reply_cond_${id} && !$.state["${sentKey}"]) {
     if (sender && typeof sender.send === "function") {
-      sender.send(${jsString(stmt.message)}, null);
+      sender.send(${jsString(stmt.message)}, ${messageSendValueToJS(stmt.value)});
     }
     $.state["${sentKey}"] = true;
   }
@@ -139,6 +142,18 @@ function replyMessageOnceToJS(stmt: Extract<Stmt, { kind: 'reply_message_once' }
     $.state["${sentKey}"] = false;
   }
 }`;
+}
+
+function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message_near_once' }>['value']): string {
+  if (!value) {
+    return 'null';
+  }
+
+  if (value.valueType === 'boolean') {
+    return boolExprToJS(value.value);
+  }
+
+  return exprToJS(value.value);
 }
 
 function timedRandomWarpToJS(stmt: Extract<Stmt, { kind: 'timed_random_warp' }>): string {

@@ -134,6 +134,17 @@ body {
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }
 
+#unityRequirements {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #ffd166;
+  background: #2a2616;
+  border-bottom: 1px solid #5c4a1a;
+  white-space: pre-wrap;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+}
+
 #generatedCode {
   flex: 1;
   overflow: auto;

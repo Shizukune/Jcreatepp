@@ -194,6 +194,36 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       }
     }
 
+    if (
+      block.type === 'jcreatepp_cooldown_active' ||
+      block.type === 'jcreatepp_cooldown_remaining' ||
+      block.type === 'jcreatepp_start_cooldown'
+    ) {
+      const name = block.getFieldValue('COOLDOWN_NAME') || '';
+      if (!name.trim()) {
+        block.setWarningText('クールダウン名を入力してください。');
+      } else if (name.startsWith('__jpp_') || name.startsWith('jpp.')) {
+        block.setWarningText('jpp / __jpp_ から始まる名前はシステム用のため使用できません。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (
+      block.type === 'jcreatepp_message_value_number' ||
+      block.type === 'jcreatepp_message_value_string' ||
+      block.type === 'jcreatepp_message_value_boolean'
+    ) {
+      const ctx = findEventContext(block);
+      if (ctx !== 'jcreatepp_on_receive') {
+        block.setWarningText('受け取った値は「メッセージを受け取ったとき」の中でのみ使えます。');
+      } else if (isInsideSequence(block)) {
+        block.setWarningText('受け取った値は一連の動作の中では使えません。受信した瞬間の処理として使ってください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
     if (block.type === 'jcreatepp_oscillate') {
       const ctx = findEventContext(block);
       if (ctx !== 'jcreatepp_on_update') {
@@ -254,6 +284,27 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       }
     }
 
+    if (block.type === 'jcreatepp_send_message_value_once') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        block.setWarningText('送信するメッセージ名を入力してください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_send_message_value_to_item_once') {
+      const itemName = block.getFieldValue('ITEM_NAME') || '';
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!itemName.trim()) {
+        block.setWarningText('送信先アイテムの参照名を入力してください。');
+      } else if (!message.trim()) {
+        block.setWarningText('送信するメッセージ名を入力してください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
     if (block.type === 'jcreatepp_reply_message_once') {
       const message = block.getFieldValue('MESSAGE') || '';
       const ctx = findEventContext(block);
@@ -261,6 +312,20 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
         block.setWarningText('このブロックは「メッセージを受け取ったとき」の中でのみ使えます。');
       } else if (isInsideSequence(block)) {
         block.setWarningText('このブロックは「一連の動作」の中では使えません。受信した瞬間の処理として置いてください。');
+      } else if (!message.trim()) {
+        block.setWarningText('返信するメッセージ名を入力してください。');
+      } else {
+        block.setWarningText(null);
+      }
+    }
+
+    if (block.type === 'jcreatepp_reply_message_value_once') {
+      const message = block.getFieldValue('MESSAGE') || '';
+      const ctx = findEventContext(block);
+      if (ctx !== 'jcreatepp_on_receive') {
+        block.setWarningText('このブロックは「メッセージを受け取ったとき」の中でのみ使えます。');
+      } else if (isInsideSequence(block)) {
+        block.setWarningText('このブロックは一連の動作の中では使えません。受信した瞬間の処理として置いてください。');
       } else if (!message.trim()) {
         block.setWarningText('返信するメッセージ名を入力してください。');
       } else {

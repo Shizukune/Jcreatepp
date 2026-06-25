@@ -16,6 +16,7 @@ export type EventContext =
   | 'jcreatepp_on_start'
   | 'jcreatepp_on_update'
   | 'jcreatepp_on_interact'
+  | 'jcreatepp_on_collide'
   | 'jcreatepp_on_grab_start'
   | 'jcreatepp_on_grab_end'
   | 'jcreatepp_on_receive';
@@ -26,6 +27,7 @@ export const EVENT_BLOCK_TYPES: readonly EventContext[] = [
   'jcreatepp_on_start',
   'jcreatepp_on_update',
   'jcreatepp_on_interact',
+  'jcreatepp_on_collide',
   'jcreatepp_on_grab_start',
   'jcreatepp_on_grab_end',
   'jcreatepp_on_receive',
@@ -36,6 +38,7 @@ export const UNIQUE_EVENT_BLOCK_TYPES: readonly EventContext[] = [
   'jcreatepp_on_start',
   'jcreatepp_on_update',
   'jcreatepp_on_interact',
+  'jcreatepp_on_collide',
   'jcreatepp_on_grab_start',
   'jcreatepp_on_grab_end',
 ] as const;
@@ -47,12 +50,20 @@ export const BLOCK_CONTEXT_RULES: Record<string, EventContext[]> = {
   math_number: [],
   jcreatepp_number_var: [],
   jcreatepp_arithmetic: [],
+  jcreatepp_random_number: [],
+  jcreatepp_cooldown_remaining: [],
+  jcreatepp_cooldown_active: [],
 
   // onUpdate 専用
   jcreatepp_delta_time: ['jcreatepp_on_update'],
 
   // onInteract, onGrab 専用
   jcreatepp_player: ['jcreatepp_on_interact', 'jcreatepp_on_grab_start', 'jcreatepp_on_grab_end'],
+
+  // onReceive 専用
+  jcreatepp_message_value_number: ['jcreatepp_on_receive'],
+  jcreatepp_message_value_string: ['jcreatepp_on_receive'],
+  jcreatepp_message_value_boolean: ['jcreatepp_on_receive'],
 
   // 将来:
   // jcreatepp_self_position: [],
@@ -66,6 +77,7 @@ export function eventLabel(type: string): string {
     case 'jcreatepp_on_start': return '開始時';
     case 'jcreatepp_on_update': return '毎フレーム';
     case 'jcreatepp_on_interact': return 'インタラクト時';
+    case 'jcreatepp_on_collide': return '衝突したとき';
     case 'jcreatepp_on_grab_start': return '持ったとき';
     case 'jcreatepp_on_grab_end': return '離したとき';
     case 'jcreatepp_on_receive': return 'メッセージを受け取ったとき';
@@ -79,6 +91,9 @@ export function valueBlockLabel(type: string): string {
   switch (type) {
     case 'jcreatepp_delta_time': return '経過時間';
     case 'jcreatepp_player': return 'プレイヤー';
+    case 'jcreatepp_message_value_number': return '受け取った数値';
+    case 'jcreatepp_message_value_string': return '受け取った文字';
+    case 'jcreatepp_message_value_boolean': return '受け取った真偽値';
     default: return type;
   }
 }

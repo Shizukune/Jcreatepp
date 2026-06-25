@@ -41,6 +41,7 @@ export type Program = {
   onStart?: Handler;
   onUpdate?: Handler;
   onInteract?: Handler;
+  onCollide?: Handler;
   onGrabStart?: Handler;
   onGrabEnd?: Handler;
   onReceives?: ReceiveHandler[];
@@ -82,9 +83,10 @@ export type Stmt =
   | { kind: 'set_flag', name: string, operation: 'true' | 'false' | 'toggle' }
   | { kind: 'set_number_var', name: string, value: Expr }
   | { kind: 'change_number_var', name: string, delta: Expr }
-  | { kind: 'send_message_near_once', message: string, range: Expr, condition: BoolExpr, blockId: string }
-  | { kind: 'send_message_to_item_once', message: string, itemName: string, condition: BoolExpr, blockId: string }
-  | { kind: 'reply_message_once', message: string, condition: BoolExpr, blockId: string }
+  | { kind: 'start_cooldown', name: string, seconds: Expr }
+  | { kind: 'send_message_near_once', message: string, range: Expr, condition: BoolExpr, value?: MessageSendValue, blockId: string }
+  | { kind: 'send_message_to_item_once', message: string, itemName: string, condition: BoolExpr, value?: MessageSendValue, blockId: string }
+  | { kind: 'reply_message_once', message: string, condition: BoolExpr, value?: MessageSendValue, blockId: string }
   | { kind: 'if', condition: BoolExpr, thenBody: Stmt[], elseBody?: Stmt[] }
   | { kind: 'sequence', id: string, body: Stmt[] }
   | { kind: 'wait_seconds', seconds: Expr }
@@ -95,9 +97,13 @@ export type Stmt =
 export type Expr =
   | RawExpr
   | NumberLiteralExpr
+  | StringLiteralExpr
   | DeltaTimeExpr
   | PlayerRefExpr
   | NumberVarExpr
+  | RandomNumberExpr
+  | CooldownRemainingExpr
+  | MessageValueExpr
   | BinaryExpr;
   // 将来: | SelfPositionExpr
   // 将来: | SelfRotationExpr
@@ -110,7 +116,13 @@ export type BoolExpr =
   | { kind: 'not', expr: BoolExpr }
   | { kind: 'and', left: BoolExpr, right: BoolExpr }
   | { kind: 'or', left: BoolExpr, right: BoolExpr }
-  | { kind: 'flag', name: string };
+  | { kind: 'flag', name: string }
+  | { kind: 'cooldown_active', name: string }
+  | { kind: 'message_value_bool' };
+
+export type MessageSendValue =
+  | { valueType: 'number' | 'string', value: Expr }
+  | { valueType: 'boolean', value: BoolExpr };
 
 export type RawExpr = {
   kind: 'raw';
@@ -120,6 +132,11 @@ export type RawExpr = {
 export type NumberLiteralExpr = {
   kind: 'number_literal';
   value: number;
+};
+
+export type StringLiteralExpr = {
+  kind: 'string_literal';
+  value: string;
 };
 
 export type DeltaTimeExpr = {
@@ -133,6 +150,23 @@ export type PlayerRefExpr = {
 export type NumberVarExpr = {
   kind: 'number_var';
   name: string;
+};
+
+export type RandomNumberExpr = {
+  kind: 'random_number';
+  min: Expr;
+  max: Expr;
+  mode: 'float' | 'integer';
+};
+
+export type CooldownRemainingExpr = {
+  kind: 'cooldown_remaining';
+  name: string;
+};
+
+export type MessageValueExpr = {
+  kind: 'message_value';
+  valueType: 'number' | 'string';
 };
 
 export type BinaryExpr = {
@@ -153,6 +187,10 @@ export function numberLiteral(value: number): NumberLiteralExpr {
   return { kind: 'number_literal', value };
 }
 
+export function stringLiteral(value: string): StringLiteralExpr {
+  return { kind: 'string_literal', value };
+}
+
 export function deltaTime(): DeltaTimeExpr {
   return { kind: 'delta_time' };
 }
@@ -163,6 +201,18 @@ export function playerRef(): PlayerRefExpr {
 
 export function numberVar(name: string): NumberVarExpr {
   return { kind: 'number_var', name };
+}
+
+export function randomNumber(min: Expr, max: Expr, mode: RandomNumberExpr['mode']): RandomNumberExpr {
+  return { kind: 'random_number', min, max, mode };
+}
+
+export function cooldownRemaining(name: string): CooldownRemainingExpr {
+  return { kind: 'cooldown_remaining', name };
+}
+
+export function messageValue(valueType: MessageValueExpr['valueType']): MessageValueExpr {
+  return { kind: 'message_value', valueType };
 }
 
 export function binary(operator: BinaryExpr['operator'], left: Expr, right: Expr): BinaryExpr {

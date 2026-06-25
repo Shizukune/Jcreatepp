@@ -18,6 +18,7 @@ import * as Ja from 'blockly/msg/ja';
 import { javascriptGenerator, Order } from 'blockly/javascript';
 import { workspaceToProgram } from './generators/jcreatepp';
 import { programToJS } from './codegen';
+import { collectUnityRequirements, formatUnityRequirements } from './unityRequirements';
 import { validateWorkspace } from './validator';
 import { save, load, saveToFile, loadFromFile } from './serialization';
 import { toolbox } from './toolbox';
@@ -51,6 +52,7 @@ Object.keys(blocks).forEach(type => {
 const blocklyDiv = document.getElementById('blocklyDiv');
 const codeEl = document.getElementById('generatedCode')?.querySelector('code');
 const errorEl = document.getElementById('errorMessages');
+const unityRequirementsEl = document.getElementById('unityRequirements');
 const btnGenerate = document.getElementById('btnGenerate');
 const btnDownloadJS = document.getElementById('btnDownloadJS');
 const btnSave = document.getElementById('btnSave');
@@ -95,6 +97,10 @@ function clearOutputPane() {
     errorEl.textContent = '';
     errorEl.style.display = 'none';
   }
+  if (unityRequirementsEl) {
+    unityRequirementsEl.textContent = '';
+    unityRequirementsEl.style.display = 'none';
+  }
   lastGeneratedCode = '';
 }
 
@@ -123,6 +129,10 @@ const generateCode = () => {
       if (codeEl) {
         codeEl.textContent = '// エラーがあるため生成できません';
       }
+      if (unityRequirementsEl) {
+        unityRequirementsEl.textContent = '';
+        unityRequirementsEl.style.display = 'none';
+      }
       lastGeneratedCode = '';
       return;
     }
@@ -136,6 +146,12 @@ const generateCode = () => {
     // 3. IR → JS 変換
     const code = programToJS(result.program);
     lastGeneratedCode = code;
+
+    const requirementText = formatUnityRequirements(collectUnityRequirements(result.program));
+    if (unityRequirementsEl) {
+      unityRequirementsEl.textContent = requirementText;
+      unityRequirementsEl.style.display = requirementText ? 'block' : 'none';
+    }
 
     if (codeEl) {
       codeEl.textContent = code;
