@@ -133,12 +133,12 @@ if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
   __jpp_send_item_${id}.send(${jsString(message)}, ${value});
 }`;
     case 'sender':
-      return `if (sender && typeof sender.send === "function") {
+      return `if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
   sender.send(${jsString(message)}, ${value});
 }`;
     case 'handle':
       return `const __jpp_send_handle_${id} = ${exprToJS(target.handle)};
-if (__jpp_send_handle_${id} && typeof __jpp_send_handle_${id}.send === "function") {
+if (__jpp_send_handle_${id} && typeof __jpp_send_handle_${id}.send === "function" && (typeof __jpp_send_handle_${id}.exists !== "function" || __jpp_send_handle_${id}.exists())) {
   __jpp_send_handle_${id}.send(${jsString(message)}, ${value});
 }`;
   }

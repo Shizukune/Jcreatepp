@@ -40,7 +40,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
       case 'send_message':
         add({
           kind: 'send_rate_limit',
-          reason: 'メッセージ送信にはCluster Scriptのsend頻度制限があります。毎フレームや大量対象への送信ではクールダウンやonce制御を併用してください。',
+          reason: 'メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。',
           blockId: stmt.blockId,
         });
         if (stmt.target.kind === 'near') {
@@ -59,7 +59,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
         } else if (stmt.target.kind === 'handle') {
           add({
             kind: 'collision_shape',
-            reason: '衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。',
+            reason: '衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。衝突相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになり送信されません。',
             blockId: stmt.blockId,
           });
         }
@@ -97,7 +97,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
   if (program.onCollide) {
     add({
       kind: 'collision_shape',
-      reason: '衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。',
+      reason: '衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。',
       blockId: '',
     });
   }

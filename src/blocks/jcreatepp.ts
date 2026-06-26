@@ -804,7 +804,9 @@ const sendMessageValueToItemOnceBlock = {
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
-const replyMessageOnceBlock = {
+// NOTE: block type keeps the historical "_once" suffix for saved-workspace compatibility.
+// Runtime behavior is "reply for this receive event when the condition is true".
+const replyMessageBlock = {
   type: 'jcreatepp_reply_message_once',
   message0: 'もし %1 になったら 送ってきた相手に メッセージ %2 を返す',
   args0: [
@@ -819,7 +821,9 @@ const replyMessageOnceBlock = {
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#onreceive',
 };
 
-const replyMessageValueOnceBlock = {
+// NOTE: block type keeps the historical "_once" suffix for saved-workspace compatibility.
+// Runtime behavior is "reply for this receive event when the condition is true".
+const replyMessageValueBlock = {
   type: 'jcreatepp_reply_message_value_once',
   message0: 'もし %1 になったら 送ってきた相手に メッセージ %2 と %3 値 %4 を返す',
   args0: [
@@ -943,8 +947,8 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   sendMessageValueOnceBlock,
   sendMessageToItemOnceBlock,
   sendMessageValueToItemOnceBlock,
-  replyMessageOnceBlock,
-  replyMessageValueOnceBlock,
+  replyMessageBlock,
+  replyMessageValueBlock,
   sendMessageToCollisionOnceBlock,
   sendMessageValueToCollisionOnceBlock,
   messageValueNumberBlock,
