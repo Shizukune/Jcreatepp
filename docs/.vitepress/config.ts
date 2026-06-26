@@ -2,7 +2,7 @@
   title: 'Jcreate++ はじめてガイド',
   description: 'Cluster ScriptをBlocklyで作るための初心者向けレシピ集',
   lang: 'ja-JP',
-  base: '/jcreatepp/',
+  base: '/Jcreatepp/',
   cleanUrls: true,
   ignoreDeadLinks: [/^\/app\//],
   themeConfig: {
@@ -49,3 +49,4 @@
     },
   },
 };
+

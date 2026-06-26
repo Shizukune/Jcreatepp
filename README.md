@@ -8,11 +8,11 @@ Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成
 
 Web版はこちらです。
 
-[Jcreate++を開く](https://shizukune.github.io/jcreatepp/app/)
+[Jcreate++を開く](https://shizukune.github.io/Jcreatepp/app/)
 
 使い方の説明とレシピ集はこちらです。
 
-[Jcreate++ はじめてガイド](https://shizukune.github.io/jcreatepp/)
+[Jcreate++ はじめてガイド](https://shizukune.github.io/Jcreatepp/)
 
 ## 何ができる？
 
@@ -23,7 +23,7 @@ Web版はこちらです。
 
 ## 使い方の流れ
 
-1. [Jcreate++を開く](https://shizukune.github.io/jcreatepp/app/)
+1. [Jcreate++を開く](https://shizukune.github.io/Jcreatepp/app/)
 2. ブロックを置く
 3. `JS生成` を押す
 4. `JS名` にファイル名を入れる
@@ -35,15 +35,15 @@ Web版はこちらです。
 
 詳しい手順は、こちらにまとめています。
 
-[JSを保存してUnityに持っていく](https://shizukune.github.io/jcreatepp/export-to-unity)
+[JSを保存してUnityに持っていく](https://shizukune.github.io/Jcreatepp/export-to-unity)
 
 ## 初心者向けレシピ
 
 まずは小さいギミックから試すのがおすすめです。
 
-- [触ったら動く](https://shizukune.github.io/jcreatepp/recipes/interact-move)
-- [サイコロ判定](https://shizukune.github.io/jcreatepp/recipes/dice-judge)
-- [クールダウンつきボタン](https://shizukune.github.io/jcreatepp/recipes/cooldown)
+- [触ったら動く](https://shizukune.github.io/Jcreatepp/recipes/interact-move)
+- [サイコロ判定](https://shizukune.github.io/Jcreatepp/recipes/dice-judge)
+- [クールダウンつきボタン](https://shizukune.github.io/Jcreatepp/recipes/cooldown)
 
 ## ダウンロードして使いたい場合
 
@@ -55,9 +55,9 @@ Web版はこちらです。
 2. `Download ZIP` を押す
 3. ZIPファイルを展開する
 
-ZIPでダウンロードした場合、フォルダ名が `jcreatepp-main` のようになることがあります。
+ZIPでダウンロードした場合、フォルダ名が `Jcreatepp-main` のようになることがあります。
 
-これはGitHubの仕様です。そのまま使って大丈夫です。気になる場合は、フォルダ名を `jcreatepp` に変更しても問題ありません。
+これはGitHubの仕様です。そのまま使って大丈夫です。気になる場合は、フォルダ名を `Jcreatepp` に変更しても問題ありません。
 
 ## 開発したい人向け
 
