@@ -5,13 +5,6 @@
   base: '/jcreatepp/',
   cleanUrls: true,
   ignoreDeadLinks: [/^\/app\//],
-  srcExclude: [
-    'control-model-notes.md',
-    'design-review.md',
-    'implementation-fix-report.md',
-    'message-if-design.md',
-    'next-feature-design.md',
-  ],
   themeConfig: {
     nav: [
       { text: 'Jcreate++を開く', link: '/app/' },
