@@ -41,6 +41,8 @@ function extractSequences(stmts: Stmt[]): SequenceStmt[] {
       if (stmt.elseBody) {
         sequences = sequences.concat(extractSequences(stmt.elseBody));
       }
+    } else if (stmt.kind === 'if_edge') {
+      sequences = sequences.concat(extractSequences(stmt.body));
     }
   }
 
@@ -53,6 +55,7 @@ export function getAllSequences(program: Program): SequenceStmt[] {
   if (program.onStart) sequences = sequences.concat(extractSequences(program.onStart.body));
   if (program.onUpdate) sequences = sequences.concat(extractSequences(program.onUpdate.body));
   if (program.onInteract) sequences = sequences.concat(extractSequences(program.onInteract.body));
+  if (program.onCollide) sequences = sequences.concat(extractSequences(program.onCollide.body));
   if (program.onGrabStart) sequences = sequences.concat(extractSequences(program.onGrabStart.body));
   if (program.onGrabEnd) sequences = sequences.concat(extractSequences(program.onGrabEnd.body));
 

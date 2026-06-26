@@ -15,8 +15,8 @@
 
 import * as Blockly from 'blockly/core';
 import { Order } from 'blockly/javascript';
-import type { Program, Handler, Stmt, Expr, BoolExpr } from '../ir';
-import { raw, numberLiteral, deltaTime, playerRef, numberVar, binary, not, and, or } from '../ir';
+import type { Program, Handler, Stmt, Expr, BoolExpr, MessageSendValue, MessageTarget } from '../ir';
+import { raw, numberLiteral, stringLiteral, deltaTime, playerRef, collisionHandle, numberVar, stringVar, binary, randomNumber, cooldownRemaining, messageValue, not, and, or } from '../ir';
 import {
   BLOCK_CONTEXT_RULES,
   isEventBlock,
@@ -297,6 +297,38 @@ function blockToStmt(
       return { kind: 'change_number_var', name, delta };
     }
 
+    case 'jcreatepp_set_string_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!validateUserStateName(name, '文字変数名', errors)) return null;
+      const valueBlock = block.getInputTargetBlock('VALUE');
+      const value = valueBlock ? blockToStringExpr(valueBlock, eventType, generator, errors, inSequence) : stringLiteral('');
+      if (valueBlock) validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+      return { kind: 'set_string_var', name, value };
+    }
+
+    case 'jcreatepp_set_bool_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!validateUserStateName(name, '真偽値変数名', errors)) return null;
+      const valueBlock = block.getInputTargetBlock('VALUE');
+      const value = valueBlock ? blockToBoolExpr(valueBlock, eventType, generator, errors, inSequence) : { kind: 'raw_bool', code: 'false' } as BoolExpr;
+      if (valueBlock) validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+      return { kind: 'set_bool_var', name, value };
+    }
+
+    case 'jcreatepp_start_cooldown': {
+      const name = block.getFieldValue('COOLDOWN_NAME') || '';
+      if (!name.trim()) {
+        errors.push('クールダウン名を入力してください。');
+        return null;
+      }
+      if (isReservedSystemName(name)) {
+        errors.push('jpp / __jpp_ から始まるクールダウン名は使用できません。');
+        return null;
+      }
+      const seconds = resolveValueExpr(block, 'SECONDS', eventType, generator, errors, inSequence);
+      return { kind: 'start_cooldown', name, seconds };
+    }
+
     case 'jcreatepp_oscillate': {
       if (eventType !== 'jcreatepp_on_update') {
         errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
@@ -338,6 +370,18 @@ function blockToStmt(
       }
 
       return { kind: 'if', condition, thenBody, elseBody: block.type === 'jcreatepp_if_else' ? elseBody : undefined };
+    }
+
+    case 'jcreatepp_if_edge': {
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      const body: Stmt[] = [];
+      let stmtBlock = block.getInputTargetBlock('DO');
+      while (stmtBlock) {
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, inSequence, true);
+        if (stmt) body.push(stmt);
+        stmtBlock = stmtBlock.getNextBlock();
+      }
+      return { kind: 'if_edge', condition, body, blockId: block.id };
     }
 
     case 'jcreatepp_sequence': {
@@ -421,16 +465,21 @@ function blockToStmt(
         errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
-      const conditionBlock = block.getInputTargetBlock('CONDITION');
-      let condition: BoolExpr;
-      if (conditionBlock) {
-        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
-        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
-      } else {
-        condition = { kind: 'raw_bool', code: 'false' };
-      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
-      return { kind: 'send_message_near_once', message, range, condition, blockId: block.id };
+      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition);
+    }
+
+    case 'jcreatepp_send_message_value_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
+      const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition, value);
     }
 
     case 'jcreatepp_send_message_to_item_once': {
@@ -444,21 +493,24 @@ function blockToStmt(
         errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
-      const conditionBlock = block.getInputTargetBlock('CONDITION');
-      let condition: BoolExpr;
-      if (conditionBlock) {
-        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
-        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
-      } else {
-        condition = { kind: 'raw_bool', code: 'false' };
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition);
+    }
+
+    case 'jcreatepp_send_message_value_to_item_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      const itemName = block.getFieldValue('ITEM_NAME') || '';
+      if (!itemName.trim()) {
+        errors.push('送信先アイテムの参照名を入力してください。');
+        return null;
       }
-      return {
-        kind: 'send_message_to_item_once',
-        message,
-        itemName,
-        condition,
-        blockId: block.id,
-      };
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition, value);
     }
 
     case 'jcreatepp_reply_message_once': {
@@ -475,15 +527,48 @@ function blockToStmt(
         errors.push('返信するメッセージ名を入力してください。');
         return null;
       }
-      const conditionBlock = block.getInputTargetBlock('CONDITION');
-      let condition: BoolExpr;
-      if (conditionBlock) {
-        validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
-        condition = blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
-      } else {
-        condition = { kind: 'raw_bool', code: 'false' };
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'sender' }, message, block.id, condition, undefined, false);
+    }
+
+    case 'jcreatepp_reply_message_value_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (eventType !== 'jcreatepp_on_receive') {
+        errors.push('「送ってきた相手に返す」は「メッセージを受け取ったとき」の中でのみ使えます。');
+        return null;
       }
-      return { kind: 'reply_message_once', message, condition, blockId: block.id };
+      if (inSequence) {
+        errors.push('「送ってきた相手に返す」は一連の動作の中では使えません。受信した瞬間の処理として置いてください。');
+        return null;
+      }
+      if (!message.trim()) {
+        errors.push('返信するメッセージ名を入力してください。');
+        return null;
+      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'sender' }, message, block.id, condition, value, false);
+    }
+
+    case 'jcreatepp_send_message_to_collision_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!ensureCollideContext(eventType, errors) || !message.trim()) {
+        if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition);
+    }
+
+    case 'jcreatepp_send_message_value_to_collision_once': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!ensureCollideContext(eventType, errors) || !message.trim()) {
+        if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
+      const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
+      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, value);
     }
 
     default:
@@ -539,6 +624,9 @@ function blockToExpr(
       return numberLiteral(value);
     }
 
+    case 'jcreatepp_string_literal':
+      return stringLiteral(block.getFieldValue('TEXT') || '');
+
     case 'jcreatepp_delta_time':
       return deltaTime();
 
@@ -558,6 +646,17 @@ function blockToExpr(
       return numberVar(name);
     }
 
+    case 'jcreatepp_string_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!validateUserStateName(name, '文字変数名', errors)) return stringLiteral('');
+      return stringVar(name);
+    }
+
+    case 'jcreatepp_collision_target': {
+      if (!ensureCollideContext(eventType, errors)) return raw('null');
+      return collisionHandle();
+    }
+
     case 'jcreatepp_arithmetic': {
       const opRaw = block.getFieldValue('OP');
       const validOps = new Set(['ADD', 'SUB', 'MUL', 'DIV']);
@@ -566,6 +665,33 @@ function blockToExpr(
       const right = resolveValueExpr(block, 'B', eventType, generator, errors, inSequence);
       return binary(operator, left, right);
     }
+
+    case 'jcreatepp_random_number': {
+      const modeRaw = block.getFieldValue('MODE');
+      const mode = modeRaw === 'integer' ? 'integer' : 'float';
+      const min = resolveValueExpr(block, 'MIN', eventType, generator, errors, inSequence);
+      const max = resolveValueExpr(block, 'MAX', eventType, generator, errors, inSequence);
+      return randomNumber(min, max, mode);
+    }
+
+    case 'jcreatepp_cooldown_remaining': {
+      const name = block.getFieldValue('COOLDOWN_NAME') || '';
+      if (!name.trim()) {
+        errors.push('クールダウン名を入力してください。');
+        return numberLiteral(0);
+      }
+      if (isReservedSystemName(name)) {
+        errors.push('jpp / __jpp_ から始まるクールダウン名は使用できません。');
+        return numberLiteral(0);
+      }
+      return cooldownRemaining(name);
+    }
+
+    case 'jcreatepp_message_value_number':
+      return messageValue('number');
+
+    case 'jcreatepp_message_value_string':
+      return messageValue('string');
 
     default: {
       // フォールバック: valueToCode で JS 文字列を取得
@@ -634,10 +760,136 @@ function blockToBoolExpr(
       return { kind: 'flag', name };
     }
 
+    case 'jcreatepp_cooldown_active': {
+      const name = block.getFieldValue('COOLDOWN_NAME') || '';
+      if (!name.trim()) {
+        errors.push('クールダウン名を入力してください。');
+        return { kind: 'raw_bool', code: 'false' };
+      }
+      if (isReservedSystemName(name)) {
+        errors.push('jpp / __jpp_ から始まるクールダウン名は使用できません。');
+        return { kind: 'raw_bool', code: 'false' };
+      }
+      return { kind: 'cooldown_active', name };
+    }
+
+    case 'jcreatepp_bool_var': {
+      const name = block.getFieldValue('VAR_NAME') || '';
+      if (!validateUserStateName(name, '真偽値変数名', errors)) {
+        return { kind: 'raw_bool', code: 'false' };
+      }
+      return { kind: 'bool_var', name };
+    }
+
+    case 'jcreatepp_message_value_boolean':
+      return { kind: 'message_value_bool' };
+
     default:
       // 未知のブロックが繋がっている場合
       errors.push(`条件として使えないブロックが接続されています: ${block.type}`);
       return { kind: 'raw_bool', code: 'false' };
+  }
+}
+
+function conditionFromInput(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean,
+): BoolExpr {
+  const conditionBlock = block.getInputTargetBlock('CONDITION');
+  if (!conditionBlock) {
+    return { kind: 'raw_bool', code: 'false' };
+  }
+  validateValueBlockContext(conditionBlock, eventType, errors, inSequence);
+  return blockToBoolExpr(conditionBlock, eventType, generator, errors, inSequence);
+}
+
+function messageSendValueFromBlock(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean,
+): MessageSendValue {
+  const valueTypeRaw = block.getFieldValue('VALUE_TYPE');
+  const valueType = valueTypeRaw === 'string' || valueTypeRaw === 'boolean' || valueTypeRaw === 'handle' ? valueTypeRaw : 'number';
+
+  if (valueType === 'string') {
+    const valueBlock = block.getInputTargetBlock('VALUE');
+    if (!valueBlock) {
+      return { valueType: 'string', value: stringLiteral(block.getFieldValue('TEXT_VALUE') || '') };
+    }
+    validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+    return { valueType: 'string', value: blockToStringExpr(valueBlock, eventType, generator, errors, inSequence) };
+  }
+
+  const valueBlock = block.getInputTargetBlock('VALUE');
+  if (valueType === 'boolean') {
+    if (valueBlock) {
+      validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+      return { valueType: 'boolean', value: blockToBoolExpr(valueBlock, eventType, generator, errors, inSequence) };
+    }
+    return { valueType: 'boolean', value: { kind: 'raw_bool', code: 'false' } };
+  }
+
+  if (valueType === 'handle') {
+    if (valueBlock) {
+      validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+      return { valueType: 'handle', value: blockToHandleExpr(valueBlock, eventType, errors) };
+    }
+    return { valueType: 'handle', value: raw('null') };
+  }
+
+  if (valueBlock) {
+    validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+  }
+  return {
+    valueType: 'number',
+    value: valueBlock ? blockToExpr(valueBlock, eventType, generator, errors, inSequence) : numberLiteral(0),
+  };
+}
+
+function sendMessageStmt(
+  target: MessageTarget,
+  message: string,
+  blockId: string,
+  condition?: BoolExpr,
+  value?: MessageSendValue,
+  edgeOnce: boolean = true,
+): Stmt {
+  return { kind: 'send_message', target, message, condition, value, edgeOnce, blockId };
+}
+
+function blockToHandleExpr(
+  block: Blockly.Block,
+  eventType: EventContext,
+  errors: string[],
+): Expr {
+  if (block.type === 'jcreatepp_collision_target') {
+    if (!ensureCollideContext(eventType, errors)) return raw('null');
+    return collisionHandle();
+  }
+  errors.push(`ハンドル値として使えないブロックが接続されています: ${block.type}`);
+  return raw('null');
+}
+
+function blockToStringExpr(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean,
+): Expr {
+  switch (block.type) {
+    case 'jcreatepp_string_literal':
+    case 'jcreatepp_message_value_string':
+    case 'jcreatepp_string_var':
+      return blockToExpr(block, eventType, generator, errors, inSequence);
+    default:
+      errors.push(`文字値として使えないブロックが接続されています: ${block.type}`);
+      return stringLiteral('');
   }
 }
 
@@ -667,6 +919,17 @@ function validateValueBlockContext(
   }
 
   // 再帰: このブロックの value input に接続された子ブロックもチェック
+  if (
+    inSequence &&
+    (
+      block.type === 'jcreatepp_message_value_number' ||
+      block.type === 'jcreatepp_message_value_string' ||
+      block.type === 'jcreatepp_message_value_boolean'
+    )
+  ) {
+    errors.push('受け取った値は一連の動作の中では使えません。受信した瞬間の処理として使ってください。');
+  }
+
   for (const input of block.inputList) {
     if (input.connection && input.connection.targetBlock()) {
       const child = input.connection.targetBlock();
@@ -690,6 +953,9 @@ function assignHandler(program: Program, type: EventContext, handler: Handler): 
     case 'jcreatepp_on_interact':
       program.onInteract = handler;
       break;
+    case 'jcreatepp_on_collide':
+      program.onCollide = handler;
+      break;
     case 'jcreatepp_on_grab_start':
       program.onGrabStart = handler;
       break;
@@ -707,12 +973,37 @@ function isReservedNumberVarName(name: string): boolean {
   return name.startsWith('__jpp_') || name.startsWith('jpp.');
 }
 
+function isReservedSystemName(name: string): boolean {
+  return name.startsWith('__jpp_') || name.startsWith('jpp.');
+}
+
+function validateUserStateName(name: string, label: string, errors: string[]): boolean {
+  if (!name.trim()) {
+    errors.push(`${label}を入力してください。`);
+    return false;
+  }
+  if (isReservedSystemName(name)) {
+    errors.push(`${label}に jpp. / __jpp_ から始まる名前は使えません。`);
+    return false;
+  }
+  return true;
+}
+
+function ensureCollideContext(eventType: EventContext, errors: string[]): boolean {
+  if (eventType !== 'jcreatepp_on_collide') {
+    errors.push('衝突相手は「衝突したとき」の中でのみ使えます。');
+    return false;
+  }
+  return true;
+}
+
 /** ブロック type → 日本語ラベル */
 function blockLabel(type: string): string {
   switch (type) {
     case 'jcreatepp_on_start': return '「開始時」';
     case 'jcreatepp_on_update': return '「毎フレーム」';
     case 'jcreatepp_on_interact': return '「インタラクト時」';
+    case 'jcreatepp_on_collide': return '「衝突したとき」';
     case 'jcreatepp_on_grab_start': return '「持ったとき」';
     case 'jcreatepp_on_grab_end': return '「離したとき」';
     case 'jcreatepp_on_receive': return '「メッセージを受け取ったとき」';

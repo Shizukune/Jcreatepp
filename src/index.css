@@ -40,7 +40,32 @@ body {
 
 #toolbar {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.filenameField {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #a3d8f4;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.filenameField input {
+  width: 150px;
+  padding: 5px 8px;
+  border: 1px solid #2e6f9e;
+  border-radius: 4px;
+  background: #0d1b2a;
+  color: #e0e0e0;
+  font-size: 12px;
+}
+
+.filenameField input:focus {
+  outline: 2px solid #e94560;
+  outline-offset: 1px;
 }
 
 #toolbar button {
@@ -104,6 +129,20 @@ body {
   min-width: 400px;
 }
 
+.blocklyToolboxDiv {
+  min-width: 190px;
+}
+
+.blocklyTreeRow {
+  height: 34px;
+  line-height: 34px;
+}
+
+.blocklyTreeLabel {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* ── コード表示ペイン ── */
 #codePane {
   width: 360px;
@@ -130,6 +169,17 @@ body {
   color: #ff6b6b;
   background: #2a1a1a;
   border-bottom: 1px solid #4a2020;
+  white-space: pre-wrap;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+}
+
+#unityRequirements {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #ffd166;
+  background: #2a2616;
+  border-bottom: 1px solid #5c4a1a;
   white-space: pre-wrap;
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }

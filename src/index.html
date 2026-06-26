@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
@@ -11,9 +11,17 @@
         <h1>Jcreate++</h1>
         <div id="toolbar">
           <button id="btnGenerate" title="ブロックからJSコードを生成">JS生成</button>
-          <button id="btnDownloadJS" title="生成したJSコードをファイルとして保存">JS保存</button>
-          <button id="btnSave" title="ワークスペースをJSONでダウンロード">workspace保存</button>
-          <button id="btnLoad" title="JSONファイルからワークスペースを復元">workspace読込</button>
+          <label class="filenameField">
+            JS名
+            <input id="scriptFileName" type="text" value="jcreateplus_script.js" aria-label="保存するJSファイル名" />
+          </label>
+          <button id="btnDownloadJS" title="生成したJSコードを指定した名前で保存">JS保存</button>
+          <label class="filenameField">
+            workspace名
+            <input id="workspaceFileName" type="text" value="jcreateplus_workspace.json" aria-label="保存するワークスペースファイル名" />
+          </label>
+          <button id="btnSave" title="ブロック配置をJSONで指定した名前で保存">workspace保存</button>
+          <button id="btnLoad" title="JSONファイルからブロック配置を読み込む">workspace読込</button>
           <button id="btnClear" title="ワークスペースをすべて消去" style="background-color: #d9534f;">すべてクリア</button>
         </div>
       </header>
@@ -22,6 +30,7 @@
         <div id="codePane">
           <h2>生成コード</h2>
           <div id="errorMessages" style="display: none;"></div>
+          <div id="unityRequirements" style="display: none;"></div>
           <pre id="generatedCode"><code>// ブロックを配置して「JS生成」を押してください</code></pre>
         </div>
       </div>

@@ -1,5 +1,6 @@
 ﻿import type { Handler, Program } from '../ir';
 import { exprToJS } from './expr';
+import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
 import { getAllSequences, indent, jsString } from './shared';
 import { stmtToJS } from './stmt';
@@ -8,6 +9,7 @@ const EVENT_PARAMS: Record<string, string> = {
   onStart: '',
   onUpdate: 'deltaTime',
   onInteract: 'player',
+  onCollide: 'collision',
 };
 
 export function programToJS(program: Program): string {
@@ -27,6 +29,11 @@ export function programToJS(program: Program): string {
     updateBodyLines.push(indent(generateSequenceStateMachine(sequence), 2));
   }
 
+  const cooldownNames = getCooldownNames(program);
+  if (cooldownNames.length > 0) {
+    updateBodyLines.push(indent(cooldownTickToJS(cooldownNames), 2));
+  }
+
   if (program.rideTemplate) {
     parts.push(rideInputHandlersToJS(program));
     updateBodyLines.push(indent(rideUpdateToJS(program), 2));
@@ -42,6 +49,10 @@ export function programToJS(program: Program): string {
 
   if (program.onInteract) {
     parts.push(handlerToJS('onInteract', program.onInteract));
+  }
+
+  if (program.onCollide) {
+    parts.push(handlerToJS('onCollide', program.onCollide));
   }
 
   if (program.onGrabStart || program.onGrabEnd) {
@@ -64,6 +75,53 @@ function handlerToJS(event: string, handler: Handler): string {
   const body = handler.body.map((stmt) => indent(stmtToJS(stmt), 2)).join('\n');
 
   return `$.${event}((${params}) => {\n${body}\n});\n`;
+}
+
+function cooldownTickToJS(names: string[]): string {
+  const lines = names.map((name) => {
+    const key = jsString(`__jpp_cd_${name}`);
+    return `$.state[${key}] = Math.max(0, ($.state[${key}] || 0) - deltaTime);`;
+  });
+  return `// Jcreate++ cooldown timers\n${lines.join('\n')}`;
+}
+
+function getCooldownNames(program: Program): string[] {
+  const names = new Set<string>();
+
+  const visitStmt = (stmt: Stmt) => {
+    switch (stmt.kind) {
+      case 'start_cooldown':
+        if (stmt.name) names.add(stmt.name);
+        break;
+      case 'if':
+        stmt.thenBody.forEach(visitStmt);
+        stmt.elseBody?.forEach(visitStmt);
+        break;
+      case 'if_edge':
+        stmt.body.forEach(visitStmt);
+        break;
+      case 'sequence':
+        stmt.body.forEach(visitStmt);
+        break;
+      case 'run_for_seconds':
+        stmt.body.forEach(visitStmt);
+        break;
+    }
+  };
+
+  const visitHandler = (handler?: Handler) => {
+    handler?.body.forEach(visitStmt);
+  };
+
+  visitHandler(program.onStart);
+  visitHandler(program.onUpdate);
+  visitHandler(program.onInteract);
+  visitHandler(program.onCollide);
+  visitHandler(program.onGrabStart);
+  visitHandler(program.onGrabEnd);
+  program.onReceives?.forEach((receive) => visitHandler(receive.handler));
+
+  return Array.from(names).sort();
 }
 
 function rideInputHandlersToJS(program: Program): string {
