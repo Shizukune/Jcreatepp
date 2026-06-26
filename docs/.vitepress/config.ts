@@ -4,6 +4,7 @@
   lang: 'ja-JP',
   base: '/jcreatepp/',
   cleanUrls: true,
+  ignoreDeadLinks: [/^\/app\//],
   srcExclude: [
     'control-model-notes.md',
     'design-review.md',
@@ -13,6 +14,7 @@
   ],
   themeConfig: {
     nav: [
+      { text: 'Jcreate++を開く', link: '/app/' },
       { text: 'はじめに', link: '/' },
       { text: 'レシピ', link: '/recipes/' },
       { text: 'Unityへ持っていく', link: '/export-to-unity' },
@@ -22,7 +24,10 @@
     sidebar: [
       {
         text: 'はじめに',
-        items: [{ text: 'Jcreate++とは', link: '/' }],
+        items: [
+          { text: 'Jcreate++を開く', link: '/app/' },
+          { text: 'Jcreate++とは', link: '/' },
+        ],
       },
       {
         text: 'レシピ集',

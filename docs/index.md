@@ -7,6 +7,9 @@ hero:
   tagline: ブロックを組み合わせて、Clusterワールドの小さなギミックをまず作ってみるためのガイドです。
   actions:
     - theme: brand
+      text: Jcreate++を開く
+      link: /app/
+    - theme: alt
       text: レシピを見る
       link: /recipes/
     - theme: alt
@@ -27,6 +30,8 @@ features:
 Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成するためのプロトタイプツールです。
 
 JavaScriptやCluster Scriptに慣れていない人でも、ブロックを組み合わせて簡単なワールドギミックを試せることを目指しています。
+
+まず試すだけなら、[Jcreate++をブラウザで開く](/app/) だけで使えます。Node.jsやターミナル操作は、開発・改造したい人向けです。
 
 ## 誰向けか
 
