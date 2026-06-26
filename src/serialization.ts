@@ -36,7 +36,7 @@ export const load = function (workspace: Blockly.Workspace) {
 /**
  * ワークスペースを JSON ファイルとしてダウンロードする
  */
-export const saveToFile = function (workspace: Blockly.Workspace) {
+export const saveToFile = function (workspace: Blockly.Workspace, filename = 'jcreateplus_workspace.json') {
   const data = Blockly.serialization.workspaces.save(workspace);
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type: 'application/json'});
@@ -44,7 +44,7 @@ export const saveToFile = function (workspace: Blockly.Workspace) {
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'jcreateplus_workspace.json';
+  a.download = filename;
   document.body.appendChild(a); 
   a.click();
   document.body.removeChild(a);

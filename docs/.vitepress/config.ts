@@ -15,6 +15,7 @@
     nav: [
       { text: 'はじめに', link: '/' },
       { text: 'レシピ', link: '/recipes/' },
+      { text: 'Unityへ持っていく', link: '/export-to-unity' },
       { text: 'Clusterルール', link: '/cluster-rules' },
       { text: '困ったとき', link: '/troubleshooting' },
     ],
@@ -35,6 +36,7 @@
       {
         text: '資料',
         items: [
+          { text: 'JSを保存してUnityに持っていく', link: '/export-to-unity' },
           { text: 'Cluster Scriptの最低限のルール', link: '/cluster-rules' },
           { text: 'トラブルシュート', link: '/troubleshooting' },
         ],

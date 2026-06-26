@@ -53,6 +53,8 @@ const blocklyDiv = document.getElementById('blocklyDiv');
 const codeEl = document.getElementById('generatedCode')?.querySelector('code');
 const errorEl = document.getElementById('errorMessages');
 const unityRequirementsEl = document.getElementById('unityRequirements');
+const scriptFileNameInput = document.getElementById('scriptFileName') as HTMLInputElement | null;
+const workspaceFileNameInput = document.getElementById('workspaceFileName') as HTMLInputElement | null;
 const btnGenerate = document.getElementById('btnGenerate');
 const btnDownloadJS = document.getElementById('btnDownloadJS');
 const btnSave = document.getElementById('btnSave');
@@ -87,6 +89,35 @@ const ws = Blockly.inject(blocklyDiv, {
 
 let lastGeneratedCode = '';
 let isGenerating = false; // 再入ガード
+
+function normalizeDownloadFilename(input: string | null, fallbackBaseName: string, extension: string): string {
+  const raw = (input ?? '').trim();
+  if (!raw) return `${fallbackBaseName}${extension}`;
+
+  const withoutExtension = raw.replace(new RegExp(`${extension.replace('.', '\\.')}$`, 'i'), '');
+  const safeBaseName = withoutExtension
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/^\.+/, '')
+    .slice(0, 80);
+
+  return `${safeBaseName || fallbackBaseName}${extension}`;
+}
+
+function downloadTextFile(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  // 即座に削除すると Firefox などでダウンロードが不安定になる場合がある
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
 
 /** 出力ペインをクリアする */
 function clearOutputPane() {
@@ -187,20 +218,11 @@ btnDownloadJS?.addEventListener('click', () => {
       return;
     }
 
-    // JS コードを Blob にして保存
-    const blob = new Blob([lastGeneratedCode], { type: 'application/javascript; charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'jcreateplus_script.js';
-    document.body.appendChild(a);
-    a.click();
-    // 即座に削除すると Firefox で問題になる場合があるので setTimeout
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-    console.log('[btnDownloadJS] download triggered: jcreateplus_script.js');
+    const filename = normalizeDownloadFilename(scriptFileNameInput?.value ?? '', 'jcreateplus_script', '.js');
+    if (scriptFileNameInput) scriptFileNameInput.value = filename;
+
+    downloadTextFile(lastGeneratedCode, filename, 'application/javascript; charset=utf-8');
+    console.log(`[btnDownloadJS] download triggered: ${filename}`);
   } catch (e) {
     console.error('[btnDownloadJS] failed:', e);
     alert('JS保存に失敗しました: ' + (e as Error).message);
@@ -211,8 +233,11 @@ btnDownloadJS?.addEventListener('click', () => {
 btnSave?.addEventListener('click', () => {
   console.log('[btnSave] clicked');
   try {
-    saveToFile(ws);
-    console.log('[btnSave] download triggered: jcreateplus_workspace.json');
+    const filename = normalizeDownloadFilename(workspaceFileNameInput?.value ?? '', 'jcreateplus_workspace', '.json');
+    if (workspaceFileNameInput) workspaceFileNameInput.value = filename;
+
+    saveToFile(ws, filename);
+    console.log(`[btnSave] download triggered: ${filename}`);
   } catch (e) {
     console.error('[btnSave] failed:', e);
     alert('workspace保存に失敗しました: ' + (e as Error).message);
