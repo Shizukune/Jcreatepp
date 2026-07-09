@@ -19,6 +19,21 @@ export const toolbox = {
         { kind: 'block', type: 'jcreatepp_on_grab_end' },
         { kind: 'block', type: 'jcreatepp_on_receive' },
         { kind: 'block', type: 'jcreatepp_player' },
+        {
+          kind: 'block',
+          type: 'jcreatepp_players_near_count',
+          inputs: { RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } } },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_players_near',
+          inputs: { RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } } },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_raycast_forward',
+          inputs: { DISTANCE: { shadow: { type: 'math_number', fields: { NUM: 3 } } } },
+        },
       ],
     },
     {
@@ -195,6 +210,7 @@ export const toolbox = {
           inputs: { VALUE: { shadow: { type: 'jcreatepp_string_literal', fields: { TEXT: '' } } } },
         },
         { kind: 'label', text: '真偽値' },
+        { kind: 'block', type: 'jcreatepp_bool_literal' },
         { kind: 'block', type: 'jcreatepp_bool_var' },
         {
           kind: 'block',
@@ -310,6 +326,28 @@ export const toolbox = {
         { kind: 'block', type: 'jcreatepp_message_value_string' },
         { kind: 'block', type: 'jcreatepp_message_value_boolean' },
         { kind: 'block', type: 'jcreatepp_collision_target' },
+      ],
+    },
+    {
+      kind: 'category',
+      name: '演出｜音/文字/表示',
+      colour: '20',
+      contents: [
+        {
+          kind: 'block',
+          type: 'jcreatepp_play_audio',
+          inputs: { VOLUME: { shadow: { type: 'math_number', fields: { NUM: 1 } } } },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_set_subnode_text',
+          inputs: { TEXT: { shadow: { type: 'jcreatepp_string_literal', fields: { TEXT: 'Hello' } } } },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_set_component_enabled',
+          inputs: { ENABLED: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
+        },
       ],
     },
     {

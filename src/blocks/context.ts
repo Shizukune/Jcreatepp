@@ -52,8 +52,12 @@ export const BLOCK_CONTEXT_RULES: Record<string, EventContext[]> = {
   jcreatepp_number_var: [],
   jcreatepp_string_var: [],
   jcreatepp_bool_var: [],
+  jcreatepp_bool_literal: [],
   jcreatepp_arithmetic: [],
   jcreatepp_random_number: [],
+  jcreatepp_players_near_count: [],
+  jcreatepp_players_near: [],
+  jcreatepp_raycast_forward: [],
   jcreatepp_cooldown_remaining: [],
   jcreatepp_cooldown_active: [],
 

@@ -31,6 +31,8 @@ export function exprToJS(expr: Expr): string {
       }
       return `((${low}) + Math.random() * ((${high}) - (${low})))`;
     }
+    case 'players_near_count':
+      return `($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (${exprToJS(expr.range)}))).length)`;
     case 'cooldown_remaining':
       return `($.state[${stateKey('__jpp_cd_', expr.name)}] || 0)`;
     case 'message_value':
@@ -55,6 +57,8 @@ export function boolExprToJS(expr: BoolExpr): string {
       return `(${boolExprToJS(expr.left)} && ${boolExprToJS(expr.right)})`;
     case 'or':
       return `(${boolExprToJS(expr.left)} || ${boolExprToJS(expr.right)})`;
+    case 'bool_literal':
+      return expr.value ? 'true' : 'false';
     case 'flag':
       return `!!$.state[${stateKey('__jpp_flag_', expr.name)}]`;
     case 'bool_var':
@@ -63,9 +67,27 @@ export function boolExprToJS(expr: BoolExpr): string {
       return `(($.state[${stateKey('__jpp_cd_', expr.name)}] || 0) > 0)`;
     case 'message_value_bool':
       return `(typeof arg === "boolean" ? arg : false)`;
+    case 'players_near':
+      return `($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (${exprToJS(expr.range)}))).length > 0)`;
+    case 'raycast_forward':
+      return raycastForwardToJS(expr);
     default:
       return 'false';
   }
+}
+
+function raycastForwardToJS(expr: Extract<BoolExpr, { kind: 'raycast_forward' }>): string {
+  const hit = `$.raycast(($.getPosition() || new Vector3(0,0,0)), new Vector3(0,0,1).applyQuaternion(($.getRotation() || new Quaternion())).normalize(), Math.max(0, (${exprToJS(expr.distance)})))`;
+
+  if (expr.target === 'item') {
+    return `((() => { const __jpp_hit = ${hit}; return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "item"); })())`;
+  }
+
+  if (expr.target === 'player') {
+    return `((() => { const __jpp_hit = ${hit}; return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "player"); })())`;
+  }
+
+  return `(${hit} !== null)`;
 }
 
 function compareOperatorToJS(operator: CompareOperator): string {

@@ -176,6 +176,20 @@ function validateNames(block: Blockly.Block, warn: (block: Blockly.Block, messag
       warn(block, 'jpp. / __jpp_ から始まる名前はシステム用のため使用できません。');
     }
   }
+
+  if (block.type === 'jcreatepp_play_audio') {
+    const audioId = block.getFieldValue('AUDIO_ID') || '';
+    if (!audioId.trim()) {
+      warn(block, '音のIDを入力してください。');
+    }
+  }
+
+  if (block.type === 'jcreatepp_set_subnode_text' || block.type === 'jcreatepp_set_component_enabled') {
+    const subNodeName = block.getFieldValue('SUBNODE_NAME') || '';
+    if (!subNodeName.trim()) {
+      warn(block, 'サブノード名を入力してください。');
+    }
+  }
 }
 
 function validateContextSpecificStatement(

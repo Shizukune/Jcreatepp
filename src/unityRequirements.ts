@@ -7,7 +7,10 @@ export type UnityRequirement =
   | { kind: 'collision_shape'; reason: string; blockId: string }
   | { kind: 'send_rate_limit'; reason: string; blockId: string }
   | { kind: 'audio_set'; id: string; reason: string; blockId: string }
-  | { kind: 'material_set'; id: string; reason: string; blockId: string };
+  | { kind: 'material_set'; id: string; reason: string; blockId: string }
+  | { kind: 'subnode_component'; subNodeName: string; componentType: string; reason: string; blockId: string }
+  | { kind: 'player_detection'; reason: string; blockId: string }
+  | { kind: 'raycast'; reason: string; blockId: string };
 
 export function collectUnityRequirements(program: Program): UnityRequirement[] {
   const requirements: UnityRequirement[] = [];
@@ -63,6 +66,35 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
             blockId: stmt.blockId,
           });
         }
+        break;
+
+      case 'play_audio':
+        add({
+          kind: 'audio_set',
+          id: stmt.audioSetId,
+          reason: '音を鳴らすには、このアイテムのItem Audio Set Listに同じIDの音を登録してください。',
+          blockId: '',
+        });
+        break;
+
+      case 'set_subnode_text':
+        add({
+          kind: 'subnode_component',
+          subNodeName: stmt.subNodeName,
+          componentType: stmt.componentType,
+          reason: '文字を変えるには、指定したサブノードに対応するText/TextMeshPro系コンポーネントが必要です。',
+          blockId: '',
+        });
+        break;
+
+      case 'set_component_enabled':
+        add({
+          kind: 'subnode_component',
+          subNodeName: stmt.subNodeName,
+          componentType: stmt.componentType,
+          reason: '表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。',
+          blockId: '',
+        });
         break;
 
       case 'if':
@@ -137,6 +169,13 @@ export function formatUnityRequirements(requirements: UnityRequirement[]): strin
         break;
       case 'material_set':
         lines.push(`- Item Material Set List に "${requirement.id}" を登録してください。${requirement.reason}`);
+        break;
+      case 'subnode_component':
+        lines.push(`- サブノード "${requirement.subNodeName}" に ${requirement.componentType} コンポーネントを付けてください。${requirement.reason}`);
+        break;
+      case 'player_detection':
+      case 'raycast':
+        lines.push(`- ${requirement.reason}`);
         break;
     }
   }

@@ -48,6 +48,15 @@ export function stmtToJS(stmt: Stmt): string {
     case 'set_jump_speed':
       return `player.setJumpSpeedRate(${exprToJS(stmt.rate)});`;
 
+    case 'play_audio':
+      return playAudioToJS(stmt);
+
+    case 'set_subnode_text':
+      return setSubnodeTextToJS(stmt);
+
+    case 'set_component_enabled':
+      return setComponentEnabledToJS(stmt);
+
     case 'set_flag':
       return setFlagToJS(stmt);
 
@@ -159,6 +168,34 @@ function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message' }>['va
   }
 
   return exprToJS(value.value);
+}
+
+function playAudioToJS(stmt: Extract<Stmt, { kind: 'play_audio' }>): string {
+  return `{
+  const __jpp_audio = $.audio(${jsString(stmt.audioSetId)});
+  __jpp_audio.volume = Math.max(0, Math.min(2.5, (${exprToJS(stmt.volume)})));
+  __jpp_audio.play();
+}`;
+}
+
+function setSubnodeTextToJS(stmt: Extract<Stmt, { kind: 'set_subnode_text' }>): string {
+  return `{
+  const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
+  const __jpp_text = __jpp_node && __jpp_node.getUnityComponent(${jsString(stmt.componentType)});
+  if (__jpp_text) {
+    __jpp_text.unityProp.text = ${exprToJS(stmt.value)};
+  }
+}`;
+}
+
+function setComponentEnabledToJS(stmt: Extract<Stmt, { kind: 'set_component_enabled' }>): string {
+  return `{
+  const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
+  const __jpp_component = __jpp_node && __jpp_node.getUnityComponent(${jsString(stmt.componentType)});
+  if (__jpp_component) {
+    __jpp_component.unityProp.enabled = ${boolExprToJS(stmt.enabled)};
+  }
+}`;
 }
 
 function timedRandomWarpToJS(stmt: Extract<Stmt, { kind: 'timed_random_warp' }>): string {

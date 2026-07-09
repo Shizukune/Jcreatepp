@@ -15,8 +15,8 @@
 
 import * as Blockly from 'blockly/core';
 import { Order } from 'blockly/javascript';
-import type { Program, Handler, Stmt, Expr, BoolExpr, MessageSendValue, MessageTarget } from '../ir';
-import { raw, numberLiteral, stringLiteral, deltaTime, playerRef, collisionHandle, numberVar, stringVar, binary, randomNumber, cooldownRemaining, messageValue, not, and, or } from '../ir';
+import type { Program, Handler, Stmt, Expr, BoolExpr, MessageSendValue, MessageTarget, RaycastTarget, TextComponentType, UnityComponentType } from '../ir';
+import { raw, numberLiteral, stringLiteral, deltaTime, playerRef, collisionHandle, numberVar, stringVar, binary, randomNumber, playersNearCount, cooldownRemaining, messageValue, not, and, or } from '../ir';
 import {
   BLOCK_CONTEXT_RULES,
   isEventBlock,
@@ -261,6 +261,40 @@ function blockToStmt(
       }
       const rate = resolveValueExpr(block, 'RATE', eventType, generator, errors, inSequence);
       return { kind: 'set_jump_speed', rate };
+    }
+
+    case 'jcreatepp_play_audio': {
+      const audioSetId = block.getFieldValue('AUDIO_ID') || '';
+      if (!audioSetId.trim()) {
+        errors.push('音のIDを入力してください。');
+        return null;
+      }
+      const volume = resolveValueExpr(block, 'VOLUME', eventType, generator, errors, inSequence);
+      return { kind: 'play_audio', audioSetId, volume };
+    }
+
+    case 'jcreatepp_set_subnode_text': {
+      const subNodeName = block.getFieldValue('SUBNODE_NAME') || '';
+      if (!subNodeName.trim()) {
+        errors.push('文字を変えるサブノード名を入力してください。');
+        return null;
+      }
+      const componentType = block.getFieldValue('COMPONENT') as TextComponentType;
+      const valueBlock = block.getInputTargetBlock('TEXT');
+      const value = valueBlock ? blockToStringExpr(valueBlock, eventType, generator, errors, inSequence) : stringLiteral('');
+      if (valueBlock) validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+      return { kind: 'set_subnode_text', subNodeName, componentType, value };
+    }
+
+    case 'jcreatepp_set_component_enabled': {
+      const subNodeName = block.getFieldValue('SUBNODE_NAME') || '';
+      if (!subNodeName.trim()) {
+        errors.push('切り替えるサブノード名を入力してください。');
+        return null;
+      }
+      const componentType = block.getFieldValue('COMPONENT') as UnityComponentType;
+      const enabled = conditionFromNamedInput(block, 'ENABLED', eventType, generator, errors, inSequence);
+      return { kind: 'set_component_enabled', subNodeName, componentType, enabled };
     }
 
     case 'jcreatepp_set_flag': {
@@ -674,6 +708,11 @@ function blockToExpr(
       return randomNumber(min, max, mode);
     }
 
+    case 'jcreatepp_players_near_count': {
+      const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
+      return playersNearCount(range);
+    }
+
     case 'jcreatepp_cooldown_remaining': {
       const name = block.getFieldValue('COOLDOWN_NAME') || '';
       if (!name.trim()) {
@@ -781,8 +820,22 @@ function blockToBoolExpr(
       return { kind: 'bool_var', name };
     }
 
+    case 'jcreatepp_bool_literal':
+      return { kind: 'bool_literal', value: block.getFieldValue('VALUE') === 'true' };
+
     case 'jcreatepp_message_value_boolean':
       return { kind: 'message_value_bool' };
+
+    case 'jcreatepp_players_near': {
+      const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
+      return { kind: 'players_near', range };
+    }
+
+    case 'jcreatepp_raycast_forward': {
+      const distance = resolveValueExpr(block, 'DISTANCE', eventType, generator, errors, inSequence);
+      const target = block.getFieldValue('TARGET') as RaycastTarget;
+      return { kind: 'raycast_forward', distance, target };
+    }
 
     default:
       // 未知のブロックが繋がっている場合
@@ -798,7 +851,18 @@ function conditionFromInput(
   errors: string[],
   inSequence: boolean,
 ): BoolExpr {
-  const conditionBlock = block.getInputTargetBlock('CONDITION');
+  return conditionFromNamedInput(block, 'CONDITION', eventType, generator, errors, inSequence);
+}
+
+function conditionFromNamedInput(
+  block: Blockly.Block,
+  inputName: string,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean,
+): BoolExpr {
+  const conditionBlock = block.getInputTargetBlock(inputName);
   if (!conditionBlock) {
     return { kind: 'raw_bool', code: 'false' };
   }

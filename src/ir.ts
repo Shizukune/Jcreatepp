@@ -48,6 +48,9 @@ export type Stmt =
   | { kind: 'timed_move_return'; dirX: Expr; dirY: Expr; dirZ: Expr; speed: Expr; duration: Expr; blockId: string }
   | { kind: 'set_move_speed'; rate: Expr }
   | { kind: 'set_jump_speed'; rate: Expr }
+  | { kind: 'play_audio'; audioSetId: string; volume: Expr }
+  | { kind: 'set_subnode_text'; subNodeName: string; componentType: TextComponentType; value: Expr }
+  | { kind: 'set_component_enabled'; subNodeName: string; componentType: UnityComponentType; enabled: BoolExpr }
   | { kind: 'set_flag'; name: string; operation: 'true' | 'false' | 'toggle' }
   | { kind: 'set_number_var'; name: string; value: Expr }
   | { kind: 'change_number_var'; name: string; delta: Expr }
@@ -79,6 +82,7 @@ export type Expr =
   | NumberVarExpr
   | StringVarExpr
   | RandomNumberExpr
+  | PlayersNearCountExpr
   | CooldownRemainingExpr
   | MessageValueExpr
   | BinaryExpr;
@@ -89,10 +93,13 @@ export type BoolExpr =
   | { kind: 'not'; expr: BoolExpr }
   | { kind: 'and'; left: BoolExpr; right: BoolExpr }
   | { kind: 'or'; left: BoolExpr; right: BoolExpr }
+  | { kind: 'bool_literal'; value: boolean }
   | { kind: 'flag'; name: string }
   | { kind: 'bool_var'; name: string }
   | { kind: 'cooldown_active'; name: string }
-  | { kind: 'message_value_bool' };
+  | { kind: 'message_value_bool' }
+  | { kind: 'players_near'; range: Expr }
+  | { kind: 'raycast_forward'; distance: Expr; target: RaycastTarget };
 
 export type MessageSendValue =
   | { valueType: 'number' | 'string' | 'handle'; value: Expr }
@@ -141,6 +148,25 @@ export type RandomNumberExpr = {
   max: Expr;
   mode: 'float' | 'integer';
 };
+
+export type PlayersNearCountExpr = {
+  kind: 'players_near_count';
+  range: Expr;
+};
+
+export type TextComponentType = 'Text' | 'TextMesh' | 'TextMeshPro' | 'TextMeshProUGUI';
+
+export type UnityComponentType =
+  | 'MeshRenderer'
+  | 'SkinnedMeshRenderer'
+  | 'Light'
+  | 'BoxCollider'
+  | 'SphereCollider'
+  | 'CapsuleCollider'
+  | 'MeshCollider'
+  | Exclude<TextComponentType, 'TextMesh'>;
+
+export type RaycastTarget = 'any' | 'item' | 'player';
 
 export type CooldownRemainingExpr = {
   kind: 'cooldown_remaining';
@@ -193,6 +219,10 @@ export function stringVar(name: string): StringVarExpr {
 
 export function randomNumber(min: Expr, max: Expr, mode: RandomNumberExpr['mode']): RandomNumberExpr {
   return { kind: 'random_number', min, max, mode };
+}
+
+export function playersNearCount(range: Expr): PlayersNearCountExpr {
+  return { kind: 'players_near_count', range };
 }
 
 export function cooldownRemaining(name: string): CooldownRemainingExpr {

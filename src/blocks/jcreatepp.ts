@@ -595,6 +595,22 @@ const boolVarBlock = {
   helpUrl: '',
 };
 
+const boolLiteralBlock = {
+  type: 'jcreatepp_bool_literal',
+  message0: '%1',
+  args0: [
+    {
+      type: 'field_dropdown',
+      name: 'VALUE',
+      options: [['true', 'true'], ['false', 'false']],
+    },
+  ],
+  output: 'Boolean',
+  colour: 330,
+  tooltip: 'true または false の真偽値です。',
+  helpUrl: '',
+};
+
 const setBoolVarBlock = {
   type: 'jcreatepp_set_bool_var',
   message0: '真偽値変数 %1 を %2 にする',
@@ -880,6 +896,110 @@ const sendMessageValueToCollisionOnceBlock = {
   helpUrl: 'https://docs.cluster.mu/script/interfaces/Collision.html',
 };
 
+const playAudioBlock = {
+  type: 'jcreatepp_play_audio',
+  message0: '音 %1 を 音量 %2 で鳴らす',
+  args0: [
+    { type: 'field_input', name: 'AUDIO_ID', text: 'se' },
+    { type: 'input_value', name: 'VOLUME', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  tooltip: 'ItemAudioSetListに登録した音を再生します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#audio',
+};
+
+const setSubnodeTextBlock = {
+  type: 'jcreatepp_set_subnode_text',
+  message0: 'サブノード %1 の %2 の文字を %3 にする',
+  args0: [
+    { type: 'field_input', name: 'SUBNODE_NAME', text: 'Text' },
+    {
+      type: 'field_dropdown',
+      name: 'COMPONENT',
+      options: [['TextMeshPro', 'TextMeshPro'], ['Text', 'Text'], ['TextMesh', 'TextMesh'], ['TextMeshProUGUI', 'TextMeshProUGUI']],
+    },
+    { type: 'input_value', name: 'TEXT', check: 'String' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  tooltip: '指定したサブノードのText/TextMeshPro系コンポーネントのtextを変更します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/UnityComponent.html',
+};
+
+const setComponentEnabledBlock = {
+  type: 'jcreatepp_set_component_enabled',
+  message0: 'サブノード %1 の %2 を %3 にする',
+  args0: [
+    { type: 'field_input', name: 'SUBNODE_NAME', text: 'Body' },
+    {
+      type: 'field_dropdown',
+      name: 'COMPONENT',
+      options: [
+        ['MeshRenderer', 'MeshRenderer'],
+        ['SkinnedMeshRenderer', 'SkinnedMeshRenderer'],
+        ['Light', 'Light'],
+        ['BoxCollider', 'BoxCollider'],
+        ['SphereCollider', 'SphereCollider'],
+        ['CapsuleCollider', 'CapsuleCollider'],
+        ['MeshCollider', 'MeshCollider'],
+        ['TextMeshPro', 'TextMeshPro'],
+        ['TextMeshProUGUI', 'TextMeshProUGUI'],
+        ['Text', 'Text'],
+      ],
+    },
+    { type: 'input_value', name: 'ENABLED', check: 'Boolean' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 20,
+  tooltip: 'MeshRendererやLightやColliderなどのenabledを切り替えます。見た目を消す場合はMeshRendererをfalseにします。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/UnityComponent.html',
+};
+
+const playersNearCountBlock = {
+  type: 'jcreatepp_players_near_count',
+  message0: '範囲 %1 m のプレイヤー人数',
+  args0: [{ type: 'input_value', name: 'RANGE', check: 'Number' }],
+  output: 'Number',
+  colour: 45,
+  tooltip: 'このアイテムの近くにいるプレイヤー人数を返します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#getplayersnear',
+};
+
+const playersNearBlock = {
+  type: 'jcreatepp_players_near',
+  message0: '範囲 %1 m にプレイヤーがいる',
+  args0: [{ type: 'input_value', name: 'RANGE', check: 'Number' }],
+  output: 'Boolean',
+  colour: 45,
+  tooltip: 'このアイテムの近くにプレイヤーが1人以上いるかを返します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#getplayersnear',
+};
+
+const raycastForwardBlock = {
+  type: 'jcreatepp_raycast_forward',
+  message0: '前方 %1 m に %2 がある',
+  args0: [
+    { type: 'input_value', name: 'DISTANCE', check: 'Number' },
+    {
+      type: 'field_dropdown',
+      name: 'TARGET',
+      options: [['何か', 'any'], ['アイテム', 'item'], ['プレイヤー', 'player']],
+    },
+  ],
+  inputsInline: true,
+  output: 'Boolean',
+  colour: 45,
+  tooltip: 'このアイテムの向きに沿って前方へraycastし、何かに当たるかを判定します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#raycast',
+};
+
 const deltaTimeBlock = {
   type: 'jcreatepp_delta_time',
   message0: '経過時間',
@@ -937,6 +1057,7 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   stringVarBlock,
   setStringVarBlock,
   boolVarBlock,
+  boolLiteralBlock,
   setBoolVarBlock,
   randomNumberBlock,
   cooldownActiveBlock,
@@ -951,6 +1072,12 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   replyMessageValueBlock,
   sendMessageToCollisionOnceBlock,
   sendMessageValueToCollisionOnceBlock,
+  playAudioBlock,
+  setSubnodeTextBlock,
+  setComponentEnabledBlock,
+  playersNearCountBlock,
+  playersNearBlock,
+  raycastForwardBlock,
   messageValueNumberBlock,
   messageValueStringBlock,
   stringLiteralBlock,
