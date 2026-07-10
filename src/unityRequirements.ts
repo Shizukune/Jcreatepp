@@ -1,4 +1,4 @@
-import type { Program, Stmt } from './ir';
+import type { BoolExpr, Expr, MessageTarget, Program, Stmt } from './ir';
 
 export type UnityRequirement =
   | { kind: 'movable_item'; reason: string; blockId: string }
@@ -22,6 +22,77 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
     }
   };
 
+  const visitExpr = (expr: Expr) => {
+    switch (expr.kind) {
+      case 'random_number':
+        visitExpr(expr.min);
+        visitExpr(expr.max);
+        break;
+
+      case 'players_near_count':
+        add({
+          kind: 'player_detection',
+          reason: '近くのプレイヤー数を調べるには、Cluster Scriptのプレイヤー検知APIを使います。ワールド上で検知距離や対象の想定を確認してください。',
+          blockId: '',
+        });
+        visitExpr(expr.range);
+        break;
+
+      case 'binary':
+        visitExpr(expr.left);
+        visitExpr(expr.right);
+        break;
+    }
+  };
+
+  const visitBoolExpr = (expr: BoolExpr) => {
+    switch (expr.kind) {
+      case 'compare':
+        visitExpr(expr.left);
+        visitExpr(expr.right);
+        break;
+
+      case 'not':
+        visitBoolExpr(expr.expr);
+        break;
+
+      case 'and':
+      case 'or':
+        visitBoolExpr(expr.left);
+        visitBoolExpr(expr.right);
+        break;
+
+      case 'players_near':
+        add({
+          kind: 'player_detection',
+          reason: '近くのプレイヤーを調べるには、Cluster Scriptのプレイヤー検知APIを使います。ワールド上で検知距離や対象の想定を確認してください。',
+          blockId: '',
+        });
+        visitExpr(expr.range);
+        break;
+
+      case 'raycast_forward':
+        add({
+          kind: 'raycast',
+          reason: '前方レイキャストを使うには、当たり判定対象のColliderやLayer設定が想定どおりになっているか確認してください。',
+          blockId: '',
+        });
+        visitExpr(expr.distance);
+        break;
+    }
+  };
+
+  const visitMessageTarget = (target: MessageTarget) => {
+    switch (target.kind) {
+      case 'near':
+        visitExpr(target.range);
+        break;
+      case 'handle':
+        visitExpr(target.handle);
+        break;
+    }
+  };
+
   const visitStmt = (stmt: Stmt) => {
     switch (stmt.kind) {
       case 'set_position':
@@ -38,6 +109,18 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
           reason: '位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。',
           blockId: 'blockId' in stmt ? stmt.blockId : '',
         });
+        if ('x' in stmt) visitExpr(stmt.x);
+        if ('y' in stmt) visitExpr(stmt.y);
+        if ('z' in stmt) visitExpr(stmt.z);
+        if ('dirX' in stmt) visitExpr(stmt.dirX);
+        if ('dirY' in stmt) visitExpr(stmt.dirY);
+        if ('dirZ' in stmt) visitExpr(stmt.dirZ);
+        if ('power' in stmt) visitExpr(stmt.power);
+        if ('speed' in stmt) visitExpr(stmt.speed);
+        if ('interval' in stmt) visitExpr(stmt.interval);
+        if ('duration' in stmt) visitExpr(stmt.duration);
+        if ('range' in stmt) visitExpr(stmt.range);
+        if ('width' in stmt) visitExpr(stmt.width);
         break;
 
       case 'send_message':
@@ -66,6 +149,17 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
             blockId: stmt.blockId,
           });
         }
+        visitMessageTarget(stmt.target);
+        if (stmt.condition) {
+          visitBoolExpr(stmt.condition);
+        }
+        if (stmt.value) {
+          if (stmt.value.valueType === 'boolean') {
+            visitBoolExpr(stmt.value.value);
+          } else {
+            visitExpr(stmt.value.value);
+          }
+        }
         break;
 
       case 'play_audio':
@@ -75,6 +169,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
           reason: '音を鳴らすには、このアイテムのItem Audio Set Listに同じIDの音を登録してください。',
           blockId: '',
         });
+        visitExpr(stmt.volume);
         break;
 
       case 'set_subnode_text':
@@ -85,6 +180,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
           reason: '文字を変えるには、指定したサブノードに対応するText/TextMeshPro系コンポーネントが必要です。',
           blockId: '',
         });
+        visitExpr(stmt.value);
         break;
 
       case 'set_component_enabled':
@@ -95,14 +191,37 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
           reason: '表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。',
           blockId: '',
         });
+        visitBoolExpr(stmt.enabled);
+        break;
+
+      case 'set_number_var':
+        visitExpr(stmt.value);
+        break;
+
+      case 'change_number_var':
+        visitExpr(stmt.delta);
+        break;
+
+      case 'set_string_var':
+        visitExpr(stmt.value);
+        break;
+
+      case 'set_bool_var':
+        visitBoolExpr(stmt.value);
+        break;
+
+      case 'start_cooldown':
+        visitExpr(stmt.seconds);
         break;
 
       case 'if':
+        visitBoolExpr(stmt.condition);
         stmt.thenBody.forEach(visitStmt);
         stmt.elseBody?.forEach(visitStmt);
         break;
 
       case 'if_edge':
+        visitBoolExpr(stmt.condition);
         stmt.body.forEach(visitStmt);
         break;
 
@@ -111,7 +230,16 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
         break;
 
       case 'run_for_seconds':
+        visitExpr(stmt.seconds);
         stmt.body.forEach(visitStmt);
+        break;
+
+      case 'wait_seconds':
+        visitExpr(stmt.seconds);
+        break;
+
+      case 'wait_until':
+        visitBoolExpr(stmt.condition);
         break;
     }
   };

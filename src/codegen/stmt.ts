@@ -173,8 +173,10 @@ function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message' }>['va
 function playAudioToJS(stmt: Extract<Stmt, { kind: 'play_audio' }>): string {
   return `{
   const __jpp_audio = $.audio(${jsString(stmt.audioSetId)});
-  __jpp_audio.volume = Math.max(0, Math.min(2.5, (${exprToJS(stmt.volume)})));
-  __jpp_audio.play();
+  if (__jpp_audio) {
+    __jpp_audio.volume = Math.max(0, Math.min(2.5, (${exprToJS(stmt.volume)})));
+    __jpp_audio.play();
+  }
 }`;
 }
 
