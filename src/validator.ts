@@ -142,6 +142,8 @@ function validateNames(block: Blockly.Block, warn: (block: Blockly.Block, messag
     const name = block.getFieldValue('FLAG_NAME') || '';
     if (!name.trim()) {
       warn(block, 'フラグ名を入力してください。');
+    } else if (name.trim() === 'true' || name.trim() === 'false') {
+      warn(block, 'true / false は条件そのものです。フラグ名には使わず、真偽値の true / false ブロックを使ってください。');
     } else if (name.startsWith('__jpp_') || name.startsWith('jpp.')) {
       warn(block, 'jpp. / __jpp_ から始まる名前はシステム用のため使用できません。');
     }

@@ -597,7 +597,7 @@ const boolVarBlock = {
 
 const boolLiteralBlock = {
   type: 'jcreatepp_bool_literal',
-  message0: '%1',
+  message0: '条件 %1',
   args0: [
     {
       type: 'field_dropdown',

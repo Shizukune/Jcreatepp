@@ -796,6 +796,12 @@ function blockToBoolExpr(
 
     case 'jcreatepp_flag': {
       const name = block.getFieldValue('FLAG_NAME') || '';
+      if (name.trim() === 'true') {
+        return { kind: 'bool_literal', value: true };
+      }
+      if (name.trim() === 'false') {
+        return { kind: 'bool_literal', value: false };
+      }
       return { kind: 'flag', name };
     }
 
