@@ -34,7 +34,7 @@ export function exprToJS(expr: Expr): string {
     case 'players_near_count':
       return `($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (${exprToJS(expr.range)}))).length)`;
     case 'cooldown_remaining':
-      return `($.state[${stateKey('__jpp_cd_', expr.name)}] || 0)`;
+      return `(typeof $.state[${stateKey('__jpp_cd_', expr.name)}] === "number" ? $.state[${stateKey('__jpp_cd_', expr.name)}] : 0)`;
     case 'message_value':
       if (expr.valueType === 'string') {
         return `(typeof arg === "string" ? arg : "")`;
@@ -64,7 +64,7 @@ export function boolExprToJS(expr: BoolExpr): string {
     case 'bool_var':
       return `!!$.state[${stateKey('bool.', expr.name)}]`;
     case 'cooldown_active':
-      return `(($.state[${stateKey('__jpp_cd_', expr.name)}] || 0) > 0)`;
+      return `((typeof $.state[${stateKey('__jpp_cd_', expr.name)}] === "number" ? $.state[${stateKey('__jpp_cd_', expr.name)}] : 0) > 0)`;
     case 'message_value_bool':
       return `(typeof arg === "boolean" ? arg : false)`;
     case 'players_near':

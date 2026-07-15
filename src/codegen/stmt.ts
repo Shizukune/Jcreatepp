@@ -14,7 +14,10 @@ export function stmtToJS(stmt: Stmt): string {
       return `$.setRotation(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
     case 'rotate_by':
-      return `$.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}))));`;
+      return `{
+  const __jpp_rot = $.getRotation();
+  $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}))));
+}`;
 
     case 'random_warp':
       return `{
@@ -181,6 +184,15 @@ function playAudioToJS(stmt: Extract<Stmt, { kind: 'play_audio' }>): string {
 }
 
 function setSubnodeTextToJS(stmt: Extract<Stmt, { kind: 'set_subnode_text' }>): string {
+  if (stmt.componentType === 'TextView') {
+    return `{
+  const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
+  if (__jpp_node && typeof __jpp_node.setText === "function") {
+    __jpp_node.setText(String(${exprToJS(stmt.value)}));
+  }
+}`;
+  }
+
   return `{
   const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
   const __jpp_text = __jpp_node && __jpp_node.getUnityComponent(${jsString(stmt.componentType)});

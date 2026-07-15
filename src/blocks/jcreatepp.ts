@@ -919,7 +919,7 @@ const setSubnodeTextBlock = {
     {
       type: 'field_dropdown',
       name: 'COMPONENT',
-      options: [['TextMeshPro', 'TextMeshPro'], ['Text', 'Text'], ['TextMesh', 'TextMesh'], ['TextMeshProUGUI', 'TextMeshProUGUI']],
+      options: [['TextView', 'TextView'], ['TextMeshPro', 'TextMeshPro'], ['Text', 'Text'], ['TextMesh', 'TextMesh'], ['TextMeshProUGUI', 'TextMeshProUGUI']],
     },
     { type: 'input_value', name: 'TEXT', check: 'String' },
   ],
@@ -927,7 +927,7 @@ const setSubnodeTextBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 20,
-  tooltip: '指定したサブノードのText/TextMeshPro系コンポーネントのtextを変更します。',
+  tooltip: '指定したサブノードのTextView/Text/TextMeshPro系コンポーネントのtextを変更します。',
   helpUrl: 'https://docs.cluster.mu/script/interfaces/UnityComponent.html',
 };
 

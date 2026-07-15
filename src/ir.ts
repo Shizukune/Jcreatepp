@@ -154,7 +154,7 @@ export type PlayersNearCountExpr = {
   range: Expr;
 };
 
-export type TextComponentType = 'Text' | 'TextMesh' | 'TextMeshPro' | 'TextMeshProUGUI';
+export type TextComponentType = 'TextView' | 'Text' | 'TextMesh' | 'TextMeshPro' | 'TextMeshProUGUI';
 
 export type UnityComponentType =
   | 'MeshRenderer'
@@ -164,7 +164,7 @@ export type UnityComponentType =
   | 'SphereCollider'
   | 'CapsuleCollider'
   | 'MeshCollider'
-  | Exclude<TextComponentType, 'TextMesh'>;
+  | Exclude<TextComponentType, 'TextView' | 'TextMesh'>;
 
 export type RaycastTarget = 'any' | 'item' | 'player';
 

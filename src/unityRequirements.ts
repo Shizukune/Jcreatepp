@@ -177,7 +177,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
           kind: 'subnode_component',
           subNodeName: stmt.subNodeName,
           componentType: stmt.componentType,
-          reason: '文字を変えるには、指定したサブノードに対応するText/TextMeshPro系コンポーネントが必要です。',
+          reason: '文字を変えるには、指定したサブノードに対応するTextView/Text/TextMeshPro系コンポーネントが必要です。',
           blockId: '',
         });
         visitExpr(stmt.value);

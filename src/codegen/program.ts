@@ -80,7 +80,13 @@ function handlerToJS(event: string, handler: Handler): string {
 function cooldownTickToJS(names: string[]): string {
   const lines = names.map((name) => {
     const key = jsString(`__jpp_cd_${name}`);
-    return `$.state[${key}] = Math.max(0, ($.state[${key}] || 0) - deltaTime);`;
+    return `{
+  const __jpp_cd_value = $.state[${key}];
+  const __jpp_cd_delta = (typeof deltaTime === "number" && Number.isFinite(deltaTime)) ? deltaTime : 0;
+  if (typeof __jpp_cd_value === "number" && __jpp_cd_value > 0) {
+    $.state[${key}] = Math.max(0, __jpp_cd_value - __jpp_cd_delta);
+  }
+}`;
   });
   return `// Jcreate++ cooldown timers\n${lines.join('\n')}`;
 }
