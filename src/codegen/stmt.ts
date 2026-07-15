@@ -10,6 +10,9 @@ export function stmtToJS(stmt: Stmt): string {
     case 'move_by':
       return `$.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
+    case 'smooth_move_by':
+      return smoothMoveByStarterToJS(stmt);
+
     case 'set_rotation':
       return `$.setRotation(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
@@ -18,6 +21,9 @@ export function stmtToJS(stmt: Stmt): string {
   const __jpp_rot = $.getRotation();
   $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}))));
 }`;
+
+    case 'smooth_rotate_by':
+      return smoothRotateByStarterToJS(stmt);
 
     case 'random_warp':
       return `{
@@ -103,6 +109,46 @@ export function stmtToJS(stmt: Stmt): string {
       return `// unknown stmt: ${(exhaustive as any).kind}`;
     }
   }
+}
+
+function smoothMoveByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' }>): string {
+  const id = safeId(stmt.blockId);
+  const key = jsString(`__jpp_smooth_move_${id}`);
+  return `{
+  const __jpp_from_${id} = $.getPosition() || new Vector3(0, 0, 0);
+  const __jpp_to_${id} = __jpp_from_${id}.clone().add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));
+  $.state[${key}] = {
+    active: true,
+    elapsed: 0,
+    duration: Math.max(0.001, (${exprToJS(stmt.duration)})),
+    fromX: __jpp_from_${id}.x,
+    fromY: __jpp_from_${id}.y,
+    fromZ: __jpp_from_${id}.z,
+    toX: __jpp_to_${id}.x,
+    toY: __jpp_to_${id}.y,
+    toZ: __jpp_to_${id}.z
+  };
+}`;
+}
+
+function smoothRotateByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_rotate_by' }>): string {
+  const id = safeId(stmt.blockId);
+  const key = jsString(`__jpp_smooth_rotate_${id}`);
+  return `{
+  const __jpp_rot_${id} = $.getRotation();
+  const __jpp_from_${id} = __jpp_rot_${id} ? __jpp_rot_${id}.clone().createEulerAngles() : new Vector3(0, 0, 0);
+  $.state[${key}] = {
+    active: true,
+    elapsed: 0,
+    duration: Math.max(0.001, (${exprToJS(stmt.duration)})),
+    fromX: __jpp_from_${id}.x,
+    fromY: __jpp_from_${id}.y,
+    fromZ: __jpp_from_${id}.z,
+    toX: __jpp_from_${id}.x + (${exprToJS(stmt.x)}),
+    toY: __jpp_from_${id}.y + (${exprToJS(stmt.y)}),
+    toZ: __jpp_from_${id}.z + (${exprToJS(stmt.z)})
+  };
+}`;
 }
 
 function sendMessageToJS(stmt: Extract<Stmt, { kind: 'send_message' }>): string {

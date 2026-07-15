@@ -37,8 +37,10 @@ export type ReceiveHandler = {
 export type Stmt =
   | { kind: 'set_position'; x: Expr; y: Expr; z: Expr }
   | { kind: 'move_by'; x: Expr; y: Expr; z: Expr }
+  | { kind: 'smooth_move_by'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }
   | { kind: 'set_rotation'; x: Expr; y: Expr; z: Expr }
   | { kind: 'rotate_by'; x: Expr; y: Expr; z: Expr }
+  | { kind: 'smooth_rotate_by'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }
   | { kind: 'random_warp'; rangeX: Expr; rangeZ: Expr }
   | { kind: 'save_position' }
   | { kind: 'load_position' }

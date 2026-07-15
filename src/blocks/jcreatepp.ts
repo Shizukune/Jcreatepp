@@ -128,6 +128,23 @@ const addPositionBlock = {
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
 };
 
+const smoothMoveByBlock = {
+  type: 'jcreatepp_smooth_move_by',
+  message0: '位置を x:%1 y:%2 z:%3 へ %4 秒かけて動かす',
+  args0: [
+    { type: 'input_value', name: 'X', check: 'Number' },
+    { type: 'input_value', name: 'Y', check: 'Number' },
+    { type: 'input_value', name: 'Z', check: 'Number' },
+    { type: 'input_value', name: 'DURATION', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '現在位置から指定した差分だけ、指定秒数をかけて滑らかに移動します。インタラクト時や受信時の中で直接使えます。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
+};
+
 const setRotationBlock = {
   type: 'jcreatepp_set_rotation',
   message0: '角度を x:%1 y:%2 z:%3 にする',
@@ -157,6 +174,23 @@ const addRotationBlock = {
   nextStatement: null,
   colour: 210,
   tooltip: '現在の角度から指定量だけ相対回転します。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setrotation',
+};
+
+const smoothRotateByBlock = {
+  type: 'jcreatepp_smooth_rotate_by',
+  message0: '角度を x:%1 y:%2 z:%3 へ %4 秒かけて回す',
+  args0: [
+    { type: 'input_value', name: 'X', check: 'Number' },
+    { type: 'input_value', name: 'Y', check: 'Number' },
+    { type: 'input_value', name: 'Z', check: 'Number' },
+    { type: 'input_value', name: 'DURATION', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '現在の角度から指定した差分だけ、指定秒数をかけて滑らかに回転します。インタラクト時や受信時の中で直接使えます。',
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setrotation',
 };
 
@@ -1025,8 +1059,10 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   onCollide,
   setPositionBlock,
   addPositionBlock,
+  smoothMoveByBlock,
   setRotationBlock,
   addRotationBlock,
+  smoothRotateByBlock,
   ifBlock,
   ifElseBlock,
   ifEdgeBlock,

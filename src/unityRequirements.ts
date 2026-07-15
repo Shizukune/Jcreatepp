@@ -97,8 +97,10 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
     switch (stmt.kind) {
       case 'set_position':
       case 'move_by':
+      case 'smooth_move_by':
       case 'set_rotation':
       case 'rotate_by':
+      case 'smooth_rotate_by':
       case 'add_force':
       case 'continuous_rotation':
       case 'timed_random_warp':
@@ -112,6 +114,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
         if ('x' in stmt) visitExpr(stmt.x);
         if ('y' in stmt) visitExpr(stmt.y);
         if ('z' in stmt) visitExpr(stmt.z);
+        if ('duration' in stmt) visitExpr(stmt.duration);
         if ('dirX' in stmt) visitExpr(stmt.dirX);
         if ('dirY' in stmt) visitExpr(stmt.dirY);
         if ('dirZ' in stmt) visitExpr(stmt.dirZ);

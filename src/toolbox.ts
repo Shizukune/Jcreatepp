@@ -107,11 +107,31 @@ export const toolbox = {
         },
         {
           kind: 'block',
+          type: 'jcreatepp_smooth_move_by',
+          inputs: {
+            X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Y: { shadow: { type: 'math_number', fields: { NUM: 2 } } },
+            Z: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            DURATION: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'block',
           type: 'jcreatepp_add_rotation',
           inputs: {
             X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
             Y: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
             Z: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_smooth_rotate_by',
+          inputs: {
+            X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Y: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Z: { shadow: { type: 'math_number', fields: { NUM: 90 } } },
+            DURATION: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
         { kind: 'label', text: '継続動作' },

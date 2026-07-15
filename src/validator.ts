@@ -212,6 +212,22 @@ function validateContextSpecificStatement(
     warn(block, 'このブロックは毎フレームの中でのみ使えます。');
   }
 
+  if (block.type === 'jcreatepp_smooth_move_by') {
+    if (ctx === 'jcreatepp_on_update') {
+      warn(block, '滑らか移動は毎フレームの中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングで使ってください。');
+    } else if (isInsideSequence(block)) {
+      warn(block, '滑らか移動は一連の動作の中ではなく、インタラクト時やメッセージ受信時などの中に直接置いてください。');
+    }
+  }
+
+  if (block.type === 'jcreatepp_smooth_rotate_by') {
+    if (ctx === 'jcreatepp_on_update') {
+      warn(block, '滑らか回転は毎フレームの中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングで使ってください。');
+    } else if (isInsideSequence(block)) {
+      warn(block, '滑らか回転は一連の動作の中ではなく、インタラクト時やメッセージ受信時などの中に直接置いてください。');
+    }
+  }
+
   if (block.type === 'jcreatepp_set_move_speed' || block.type === 'jcreatepp_set_jump_speed') {
     if (!isPlayerEventContext(ctx)) {
       warn(block, 'このブロックはインタラクト時、持ったとき、離したときの中でのみ使えます。');
