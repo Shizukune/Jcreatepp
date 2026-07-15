@@ -197,7 +197,7 @@ function setSubnodeTextToJS(stmt: Extract<Stmt, { kind: 'set_subnode_text' }>): 
   const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
   const __jpp_text = __jpp_node && __jpp_node.getUnityComponent(${jsString(stmt.componentType)});
   if (__jpp_text) {
-    __jpp_text.unityProp.text = ${exprToJS(stmt.value)};
+    __jpp_text.unityProp.text = String(${exprToJS(stmt.value)});
   }
 }`;
 }

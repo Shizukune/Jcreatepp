@@ -950,6 +950,13 @@ function blockToStringExpr(
     case 'jcreatepp_string_literal':
     case 'jcreatepp_message_value_string':
     case 'jcreatepp_string_var':
+    case 'jcreatepp_number_literal':
+    case 'jcreatepp_message_value_number':
+    case 'jcreatepp_number_var':
+    case 'jcreatepp_random_number':
+    case 'jcreatepp_cooldown_remaining':
+    case 'jcreatepp_binary':
+    case 'jcreatepp_players_near_count':
       return blockToExpr(block, eventType, generator, errors, inSequence);
     default:
       errors.push(`文字値として使えないブロックが接続されています: ${block.type}`);

@@ -921,7 +921,7 @@ const setSubnodeTextBlock = {
       name: 'COMPONENT',
       options: [['TextView', 'TextView'], ['TextMeshPro', 'TextMeshPro'], ['Text', 'Text'], ['TextMesh', 'TextMesh'], ['TextMeshProUGUI', 'TextMeshProUGUI']],
     },
-    { type: 'input_value', name: 'TEXT', check: 'String' },
+    { type: 'input_value', name: 'TEXT', check: ['String', 'Number'] },
   ],
   inputsInline: true,
   previousStatement: null,

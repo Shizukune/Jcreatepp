@@ -268,7 +268,7 @@ export const toolbox = {
           kind: 'block',
           type: 'jcreatepp_send_message_once',
           inputs: {
-            CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'open' } } },
+            CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
           },
         },
@@ -276,7 +276,7 @@ export const toolbox = {
           kind: 'block',
           type: 'jcreatepp_send_message_value_once',
           inputs: {
-            CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'open' } } },
+            CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
             VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
@@ -284,39 +284,39 @@ export const toolbox = {
         {
           kind: 'block',
           type: 'jcreatepp_send_message_to_item_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'open' } } } },
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
         },
         {
           kind: 'block',
           type: 'jcreatepp_send_message_value_to_item_once',
           inputs: {
-            CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'open' } } },
+            CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
         {
           kind: 'block',
           type: 'jcreatepp_reply_message_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'ok' } } } },
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
         },
         {
           kind: 'block',
           type: 'jcreatepp_reply_message_value_once',
           inputs: {
-            CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'ok' } } },
+            CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },
         {
           kind: 'block',
           type: 'jcreatepp_send_message_to_collision_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'hit' } } } },
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
         },
         {
           kind: 'block',
           type: 'jcreatepp_send_message_value_to_collision_once',
           inputs: {
-            CONDITION: { shadow: { type: 'jcreatepp_flag', fields: { FLAG_NAME: 'hit' } } },
+            CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
         },

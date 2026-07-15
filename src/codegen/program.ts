@@ -82,7 +82,7 @@ function cooldownTickToJS(names: string[]): string {
     const key = jsString(`__jpp_cd_${name}`);
     return `{
   const __jpp_cd_value = $.state[${key}];
-  const __jpp_cd_delta = (typeof deltaTime === "number" && Number.isFinite(deltaTime)) ? deltaTime : 0;
+  const __jpp_cd_delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
   if (typeof __jpp_cd_value === "number" && __jpp_cd_value > 0) {
     $.state[${key}] = Math.max(0, __jpp_cd_value - __jpp_cd_delta);
   }
