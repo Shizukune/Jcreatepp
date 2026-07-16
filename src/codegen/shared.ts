@@ -14,6 +14,24 @@ export function safeId(value: string): string {
   return value.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+export function smoothTransitionKeys(kind: 'move' | 'rotate', id: string): Record<
+  'active' | 'elapsed' | 'duration' | 'fromX' | 'fromY' | 'fromZ' | 'toX' | 'toY' | 'toZ',
+  string
+> {
+  const prefix = `__jpp_smooth_${kind}_${id}`;
+  return {
+    active: jsString(`${prefix}_active`),
+    elapsed: jsString(`${prefix}_elapsed`),
+    duration: jsString(`${prefix}_duration`),
+    fromX: jsString(`${prefix}_from_x`),
+    fromY: jsString(`${prefix}_from_y`),
+    fromZ: jsString(`${prefix}_from_z`),
+    toX: jsString(`${prefix}_to_x`),
+    toY: jsString(`${prefix}_to_y`),
+    toZ: jsString(`${prefix}_to_z`),
+  };
+}
+
 export function indent(code: string, spaces: number): string {
   const pad = ' '.repeat(spaces);
   return code.replace(/^/gm, pad);

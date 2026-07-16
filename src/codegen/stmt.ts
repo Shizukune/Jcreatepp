@@ -1,6 +1,6 @@
 import type { MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
-import { axisVector, jsString, safeId, stateKey } from './shared';
+import { axisVector, jsString, safeId, smoothTransitionKeys, stateKey } from './shared';
 
 export function stmtToJS(stmt: Stmt): string {
   switch (stmt.kind) {
@@ -113,59 +113,56 @@ export function stmtToJS(stmt: Stmt): string {
 
 function smoothMoveByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' }>): string {
   const id = safeId(stmt.blockId);
-  const key = jsString(`__jpp_smooth_move_${id}`);
+  const keys = smoothTransitionKeys('move', id);
   return `{
-  const __jpp_from_${id} = $.getPosition() || new Vector3(0, 0, 0);
-  const __jpp_to_${id} = __jpp_from_${id}.clone().add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));
-  $.state[${key}] = {
-    active: true,
-    elapsed: 0,
-    duration: Math.max(0.001, (${exprToJS(stmt.duration)})),
-    fromX: __jpp_from_${id}.x,
-    fromY: __jpp_from_${id}.y,
-    fromZ: __jpp_from_${id}.z,
-    toX: __jpp_to_${id}.x,
-    toY: __jpp_to_${id}.y,
-    toZ: __jpp_to_${id}.z
-  };
+  const from = $.getPosition() || new Vector3(0, 0, 0);
+  const to = from.clone().add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));
+  $.state[${keys.active}] = true;
+  $.state[${keys.elapsed}] = 0;
+  $.state[${keys.duration}] = Math.max(0.001, (${exprToJS(stmt.duration)}));
+  $.state[${keys.fromX}] = from.x;
+  $.state[${keys.fromY}] = from.y;
+  $.state[${keys.fromZ}] = from.z;
+  $.state[${keys.toX}] = to.x;
+  $.state[${keys.toY}] = to.y;
+  $.state[${keys.toZ}] = to.z;
 }`;
 }
 
 function smoothRotateByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_rotate_by' }>): string {
   const id = safeId(stmt.blockId);
-  const key = jsString(`__jpp_smooth_rotate_${id}`);
+  const keys = smoothTransitionKeys('rotate', id);
   return `{
-  const __jpp_rot_${id} = $.getRotation();
-  const __jpp_from_${id} = __jpp_rot_${id} ? __jpp_rot_${id}.clone().createEulerAngles() : new Vector3(0, 0, 0);
-  $.state[${key}] = {
-    active: true,
-    elapsed: 0,
-    duration: Math.max(0.001, (${exprToJS(stmt.duration)})),
-    fromX: __jpp_from_${id}.x,
-    fromY: __jpp_from_${id}.y,
-    fromZ: __jpp_from_${id}.z,
-    toX: __jpp_from_${id}.x + (${exprToJS(stmt.x)}),
-    toY: __jpp_from_${id}.y + (${exprToJS(stmt.y)}),
-    toZ: __jpp_from_${id}.z + (${exprToJS(stmt.z)})
-  };
+  const rotation = $.getRotation();
+  const from = rotation ? rotation.clone().createEulerAngles() : new Vector3(0, 0, 0);
+  $.state[${keys.active}] = true;
+  $.state[${keys.elapsed}] = 0;
+  $.state[${keys.duration}] = Math.max(0.001, (${exprToJS(stmt.duration)}));
+  $.state[${keys.fromX}] = from.x;
+  $.state[${keys.fromY}] = from.y;
+  $.state[${keys.fromZ}] = from.z;
+  $.state[${keys.toX}] = from.x + (${exprToJS(stmt.x)});
+  $.state[${keys.toY}] = from.y + (${exprToJS(stmt.y)});
+  $.state[${keys.toZ}] = from.z + (${exprToJS(stmt.z)});
 }`;
 }
 
 function sendMessageToJS(stmt: Extract<Stmt, { kind: 'send_message' }>): string {
   const id = safeId(stmt.blockId);
   const condition = stmt.condition ? boolExprToJS(stmt.condition) : 'true';
-  const sentKey = `__jpp_send_once_${id}`;
-  const body = indentMessageBody(messageTargetToJS(stmt.target, id, stmt.message, messageSendValueToJS(stmt.value)), 4);
+  const sentKey = jsString(`__jpp_send_once_${id}`);
+  const body = indentMessageBody(messageTargetToJS(stmt.target, stmt.message, messageSendValueToJS(stmt.value)), 4);
 
   if (stmt.edgeOnce) {
     return `{
-  const __jpp_send_cond_${id} = ${condition};
-  if (__jpp_send_cond_${id} && !$.state["${sentKey}"]) {
+  const sentKey = ${sentKey};
+  const canSend = ${condition};
+  if (canSend && !$.state[sentKey]) {
 ${body}
-    $.state["${sentKey}"] = true;
+    $.state[sentKey] = true;
   }
-  if (!__jpp_send_cond_${id}) {
-    $.state["${sentKey}"] = false;
+  if (!canSend) {
+    $.state[sentKey] = false;
   }
 }`;
   }
@@ -177,27 +174,27 @@ ${body}
 }`;
 }
 
-function messageTargetToJS(target: MessageTarget, id: string, message: string, value: string): string {
+function messageTargetToJS(target: MessageTarget, message: string, value: string): string {
   switch (target.kind) {
     case 'near':
-      return `const __jpp_send_pos_${id} = $.getPosition() || new Vector3(0,0,0);
-const __jpp_send_items_${id} = $.getItemsNear(__jpp_send_pos_${id}, (${exprToJS(target.range)}));
-for (const __jpp_send_item_${id} of __jpp_send_items_${id}) {
-  __jpp_send_item_${id}.send(${jsString(message)}, ${value});
+      return `const pos = $.getPosition() || new Vector3(0,0,0);
+const items = $.getItemsNear(pos, (${exprToJS(target.range)}));
+for (const item of items) {
+  item.send(${jsString(message)}, ${value});
 }`;
     case 'world_item':
-      return `const __jpp_send_item_${id} = $.worldItemReference(${jsString(target.itemName)});
-if (__jpp_send_item_${id} && __jpp_send_item_${id}.exists()) {
-  __jpp_send_item_${id}.send(${jsString(message)}, ${value});
+      return `const target = $.worldItemReference(${jsString(target.itemName)});
+if (target && target.exists()) {
+  target.send(${jsString(message)}, ${value});
 }`;
     case 'sender':
       return `if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
   sender.send(${jsString(message)}, ${value});
 }`;
     case 'handle':
-      return `const __jpp_send_handle_${id} = ${exprToJS(target.handle)};
-if (__jpp_send_handle_${id} && typeof __jpp_send_handle_${id}.send === "function" && (typeof __jpp_send_handle_${id}.exists !== "function" || __jpp_send_handle_${id}.exists())) {
-  __jpp_send_handle_${id}.send(${jsString(message)}, ${value});
+      return `const target = ${exprToJS(target.handle)};
+if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+  target.send(${jsString(message)}, ${value});
 }`;
   }
 }

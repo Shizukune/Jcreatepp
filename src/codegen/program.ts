@@ -2,7 +2,7 @@
 import { exprToJS } from './expr';
 import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
-import { getAllSequences, indent, jsString, safeId } from './shared';
+import { getAllSequences, indent, jsString, safeId, smoothTransitionKeys } from './shared';
 import { stmtToJS } from './stmt';
 
 const EVENT_PARAMS: Record<string, string> = {
@@ -86,32 +86,30 @@ type SmoothRotateStmt = Extract<Stmt, { kind: 'smooth_rotate_by' }>;
 function smoothMoveUpdateToJS(stmts: SmoothMoveStmt[]): string {
   const lines = stmts.map((stmt) => {
     const id = safeId(stmt.blockId);
-    const key = jsString(`__jpp_smooth_move_${id}`);
+    const keys = smoothTransitionKeys('move', id);
     return `{
-  const __jpp_move_${id} = $.state[${key}];
-  if (__jpp_move_${id} && __jpp_move_${id}.active) {
-    const __jpp_delta_${id} = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-    const __jpp_duration_${id} = Math.max(0.001, (typeof __jpp_move_${id}.duration === "number" ? __jpp_move_${id}.duration : 0.001));
-    const __jpp_current_${id} = $.getPosition() || new Vector3(0, 0, 0);
-    const __jpp_from_x_${id} = (typeof __jpp_move_${id}.fromX === "number") ? __jpp_move_${id}.fromX : __jpp_current_${id}.x;
-    const __jpp_from_y_${id} = (typeof __jpp_move_${id}.fromY === "number") ? __jpp_move_${id}.fromY : __jpp_current_${id}.y;
-    const __jpp_from_z_${id} = (typeof __jpp_move_${id}.fromZ === "number") ? __jpp_move_${id}.fromZ : __jpp_current_${id}.z;
-    const __jpp_to_x_${id} = (typeof __jpp_move_${id}.toX === "number") ? __jpp_move_${id}.toX : __jpp_from_x_${id};
-    const __jpp_to_y_${id} = (typeof __jpp_move_${id}.toY === "number") ? __jpp_move_${id}.toY : __jpp_from_y_${id};
-    const __jpp_to_z_${id} = (typeof __jpp_move_${id}.toZ === "number") ? __jpp_move_${id}.toZ : __jpp_from_z_${id};
-    const __jpp_elapsed_${id} = Math.min(__jpp_duration_${id}, (typeof __jpp_move_${id}.elapsed === "number" ? __jpp_move_${id}.elapsed : 0) + __jpp_delta_${id});
-    const __jpp_t_${id} = __jpp_elapsed_${id} / __jpp_duration_${id};
+  if ($.state[${keys.active}]) {
+    const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
+    const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
+    const current = $.getPosition() || new Vector3(0, 0, 0);
+    const fromX = (typeof $.state[${keys.fromX}] === "number") ? $.state[${keys.fromX}] : current.x;
+    const fromY = (typeof $.state[${keys.fromY}] === "number") ? $.state[${keys.fromY}] : current.y;
+    const fromZ = (typeof $.state[${keys.fromZ}] === "number") ? $.state[${keys.fromZ}] : current.z;
+    const toX = (typeof $.state[${keys.toX}] === "number") ? $.state[${keys.toX}] : fromX;
+    const toY = (typeof $.state[${keys.toY}] === "number") ? $.state[${keys.toY}] : fromY;
+    const toZ = (typeof $.state[${keys.toZ}] === "number") ? $.state[${keys.toZ}] : fromZ;
+    const elapsed = Math.min(duration, (typeof $.state[${keys.elapsed}] === "number" ? $.state[${keys.elapsed}] : 0) + delta);
+    const t = elapsed / duration;
     $.setPosition(new Vector3(
-      __jpp_from_x_${id} + ((__jpp_to_x_${id} - __jpp_from_x_${id}) * __jpp_t_${id}),
-      __jpp_from_y_${id} + ((__jpp_to_y_${id} - __jpp_from_y_${id}) * __jpp_t_${id}),
-      __jpp_from_z_${id} + ((__jpp_to_z_${id} - __jpp_from_z_${id}) * __jpp_t_${id})
+      fromX + ((toX - fromX) * t),
+      fromY + ((toY - fromY) * t),
+      fromZ + ((toZ - fromZ) * t)
     ));
-    __jpp_move_${id}.elapsed = __jpp_elapsed_${id};
-    if (__jpp_elapsed_${id} >= __jpp_duration_${id}) {
-      __jpp_move_${id}.active = false;
-      $.setPosition(new Vector3(__jpp_to_x_${id}, __jpp_to_y_${id}, __jpp_to_z_${id}));
+    $.state[${keys.elapsed}] = elapsed;
+    if (elapsed >= duration) {
+      $.state[${keys.active}] = false;
+      $.setPosition(new Vector3(toX, toY, toZ));
     }
-    $.state[${key}] = __jpp_move_${id};
   }
 }`;
   });
@@ -160,34 +158,32 @@ function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
 function smoothRotateUpdateToJS(stmts: SmoothRotateStmt[]): string {
   const lines = stmts.map((stmt) => {
     const id = safeId(stmt.blockId);
-    const key = jsString(`__jpp_smooth_rotate_${id}`);
+    const keys = smoothTransitionKeys('rotate', id);
     return `{
-  const __jpp_rot_${id} = $.state[${key}];
-  if (__jpp_rot_${id} && __jpp_rot_${id}.active) {
-    const __jpp_delta_${id} = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-    const __jpp_duration_${id} = Math.max(0.001, (typeof __jpp_rot_${id}.duration === "number" ? __jpp_rot_${id}.duration : 0.001));
-    const __jpp_current_${id} = $.getRotation();
-    const __jpp_current_euler_${id} = __jpp_current_${id} ? __jpp_current_${id}.clone().createEulerAngles() : new Vector3(0, 0, 0);
-    const __jpp_from_x_${id} = (typeof __jpp_rot_${id}.fromX === "number") ? __jpp_rot_${id}.fromX : __jpp_current_euler_${id}.x;
-    const __jpp_from_y_${id} = (typeof __jpp_rot_${id}.fromY === "number") ? __jpp_rot_${id}.fromY : __jpp_current_euler_${id}.y;
-    const __jpp_from_z_${id} = (typeof __jpp_rot_${id}.fromZ === "number") ? __jpp_rot_${id}.fromZ : __jpp_current_euler_${id}.z;
-    const __jpp_to_x_${id} = (typeof __jpp_rot_${id}.toX === "number") ? __jpp_rot_${id}.toX : __jpp_from_x_${id};
-    const __jpp_to_y_${id} = (typeof __jpp_rot_${id}.toY === "number") ? __jpp_rot_${id}.toY : __jpp_from_y_${id};
-    const __jpp_to_z_${id} = (typeof __jpp_rot_${id}.toZ === "number") ? __jpp_rot_${id}.toZ : __jpp_from_z_${id};
-    const __jpp_elapsed_${id} = Math.min(__jpp_duration_${id}, (typeof __jpp_rot_${id}.elapsed === "number" ? __jpp_rot_${id}.elapsed : 0) + __jpp_delta_${id});
-    const __jpp_t_${id} = __jpp_elapsed_${id} / __jpp_duration_${id};
-    const __jpp_next_${id} = new Vector3(
-      __jpp_from_x_${id} + ((__jpp_to_x_${id} - __jpp_from_x_${id}) * __jpp_t_${id}),
-      __jpp_from_y_${id} + ((__jpp_to_y_${id} - __jpp_from_y_${id}) * __jpp_t_${id}),
-      __jpp_from_z_${id} + ((__jpp_to_z_${id} - __jpp_from_z_${id}) * __jpp_t_${id})
+  if ($.state[${keys.active}]) {
+    const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
+    const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
+    const rotation = $.getRotation();
+    const current = rotation ? rotation.clone().createEulerAngles() : new Vector3(0, 0, 0);
+    const fromX = (typeof $.state[${keys.fromX}] === "number") ? $.state[${keys.fromX}] : current.x;
+    const fromY = (typeof $.state[${keys.fromY}] === "number") ? $.state[${keys.fromY}] : current.y;
+    const fromZ = (typeof $.state[${keys.fromZ}] === "number") ? $.state[${keys.fromZ}] : current.z;
+    const toX = (typeof $.state[${keys.toX}] === "number") ? $.state[${keys.toX}] : fromX;
+    const toY = (typeof $.state[${keys.toY}] === "number") ? $.state[${keys.toY}] : fromY;
+    const toZ = (typeof $.state[${keys.toZ}] === "number") ? $.state[${keys.toZ}] : fromZ;
+    const elapsed = Math.min(duration, (typeof $.state[${keys.elapsed}] === "number" ? $.state[${keys.elapsed}] : 0) + delta);
+    const t = elapsed / duration;
+    const next = new Vector3(
+      fromX + ((toX - fromX) * t),
+      fromY + ((toY - fromY) * t),
+      fromZ + ((toZ - fromZ) * t)
     );
-    $.setRotation(new Quaternion().setFromEulerAngles(__jpp_next_${id}));
-    __jpp_rot_${id}.elapsed = __jpp_elapsed_${id};
-    if (__jpp_elapsed_${id} >= __jpp_duration_${id}) {
-      __jpp_rot_${id}.active = false;
-      $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(__jpp_to_x_${id}, __jpp_to_y_${id}, __jpp_to_z_${id})));
+    $.setRotation(new Quaternion().setFromEulerAngles(next));
+    $.state[${keys.elapsed}] = elapsed;
+    if (elapsed >= duration) {
+      $.state[${keys.active}] = false;
+      $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(toX, toY, toZ)));
     }
-    $.state[${key}] = __jpp_rot_${id};
   }
 }`;
   });

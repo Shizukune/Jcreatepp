@@ -283,7 +283,12 @@ export const toolbox = {
         { kind: 'block', type: 'jcreatepp_not' },
         { kind: 'block', type: 'jcreatepp_and' },
         { kind: 'block', type: 'jcreatepp_or' },
-        { kind: 'label', text: '送信' },
+        { kind: 'label', text: 'よく使う送信' },
+        {
+          kind: 'block',
+          type: 'jcreatepp_send_message_to_item_once',
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
+        },
         {
           kind: 'block',
           type: 'jcreatepp_send_message_once',
@@ -292,6 +297,18 @@ export const toolbox = {
             RANGE: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
           },
         },
+        { kind: 'label', text: '返信・衝突' },
+        {
+          kind: 'block',
+          type: 'jcreatepp_reply_message_once',
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_send_message_to_collision_once',
+          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
+        },
+        { kind: 'label', text: '値つき送信' },
         {
           kind: 'block',
           type: 'jcreatepp_send_message_value_once',
@@ -303,11 +320,6 @@ export const toolbox = {
         },
         {
           kind: 'block',
-          type: 'jcreatepp_send_message_to_item_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
-        },
-        {
-          kind: 'block',
           type: 'jcreatepp_send_message_value_to_item_once',
           inputs: {
             CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
@@ -316,21 +328,11 @@ export const toolbox = {
         },
         {
           kind: 'block',
-          type: 'jcreatepp_reply_message_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
-        },
-        {
-          kind: 'block',
           type: 'jcreatepp_reply_message_value_once',
           inputs: {
             CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } },
             VALUE: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
           },
-        },
-        {
-          kind: 'block',
-          type: 'jcreatepp_send_message_to_collision_once',
-          inputs: { CONDITION: { shadow: { type: 'jcreatepp_bool_literal', fields: { VALUE: 'true' } } } },
         },
         {
           kind: 'block',
