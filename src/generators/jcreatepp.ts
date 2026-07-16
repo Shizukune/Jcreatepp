@@ -152,6 +152,7 @@ function blockToStmt(
   errors: string[],
   inSequence: boolean = false,
   inIf: boolean = false,
+  inContinuousBody: boolean = false,
 ): Stmt | null {
   switch (block.type) {
     case 'jcreatepp_set_position': {
@@ -170,11 +171,11 @@ function blockToStmt(
 
     case 'jcreatepp_smooth_move_by': {
       if (eventType === 'jcreatepp_on_update') {
-        errors.push('「位置を～秒かけて動かす」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
+        errors.push('「位置を～だけ～秒かけて動かす」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
         return null;
       }
       if (inSequence) {
-        errors.push('「位置を～秒かけて動かす」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
+        errors.push('「位置を～だけ～秒かけて動かす」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
         return null;
       }
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
@@ -200,11 +201,11 @@ function blockToStmt(
 
     case 'jcreatepp_smooth_rotate_by': {
       if (eventType === 'jcreatepp_on_update') {
-        errors.push('「角度を～秒かけて回す」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
+        errors.push('「角度を～だけ～秒かけて回す」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
         return null;
       }
       if (inSequence) {
-        errors.push('「角度を～秒かけて回す」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
+        errors.push('「角度を～だけ～秒かけて回す」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
         return null;
       }
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
@@ -420,7 +421,7 @@ function blockToStmt(
       const thenBody: Stmt[] = [];
       let thenBlock = block.getInputTargetBlock('DO');
       while (thenBlock) {
-        const stmt = blockToStmt(thenBlock, eventType, generator, errors, inSequence, true);
+        const stmt = blockToStmt(thenBlock, eventType, generator, errors, inSequence, true, inContinuousBody);
         if (stmt) thenBody.push(stmt);
         thenBlock = thenBlock.getNextBlock();
       }
@@ -429,7 +430,7 @@ function blockToStmt(
       if (block.type === 'jcreatepp_if_else') {
         let elseBlock = block.getInputTargetBlock('ELSE');
         while (elseBlock) {
-          const stmt = blockToStmt(elseBlock, eventType, generator, errors, inSequence, true);
+          const stmt = blockToStmt(elseBlock, eventType, generator, errors, inSequence, true, inContinuousBody);
           if (stmt) elseBody.push(stmt);
           elseBlock = elseBlock.getNextBlock();
         }
@@ -443,7 +444,7 @@ function blockToStmt(
       const body: Stmt[] = [];
       let stmtBlock = block.getInputTargetBlock('DO');
       while (stmtBlock) {
-        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, inSequence, true);
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, inSequence, true, inContinuousBody);
         if (stmt) body.push(stmt);
         stmtBlock = stmtBlock.getNextBlock();
       }
@@ -465,7 +466,7 @@ function blockToStmt(
         // Sequence body is advanced later by the onUpdate runner. If the sequence
         // itself is started from inside an if, waits inside the sequence body are
         // still valid sequence steps, not immediate waits inside that if branch.
-        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, false); // inSequence = true
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, false, false); // inSequence = true
         if (stmt) body.push(stmt);
         stmtBlock = stmtBlock.getNextBlock();
       }
@@ -518,7 +519,7 @@ function blockToStmt(
       const body: Stmt[] = [];
       let stmtBlock = block.getInputTargetBlock('DO');
       while (stmtBlock) {
-        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, true);
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, true, true);
         if (stmt) body.push(stmt);
         stmtBlock = stmtBlock.getNextBlock();
       }
@@ -533,7 +534,7 @@ function blockToStmt(
       }
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition);
+      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition, undefined, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_send_message_value_once': {
@@ -545,7 +546,7 @@ function blockToStmt(
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
       const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition, value);
+      return sendMessageStmt({ kind: 'near', range }, message, block.id, condition, value, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_send_message_to_item_once': {
@@ -560,7 +561,7 @@ function blockToStmt(
         return null;
       }
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition);
+      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition, undefined, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_send_message_value_to_item_once': {
@@ -576,7 +577,7 @@ function blockToStmt(
       }
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition, value);
+      return sendMessageStmt({ kind: 'world_item', itemName }, message, block.id, condition, value, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_reply_message_once': {
@@ -623,7 +624,7 @@ function blockToStmt(
         return null;
       }
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition);
+      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, undefined, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_send_message_value_to_collision_once': {
@@ -634,7 +635,7 @@ function blockToStmt(
       }
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
-      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, value);
+      return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, value, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     default:
@@ -964,6 +965,10 @@ function sendMessageStmt(
   return { kind: 'send_message', target, message, condition, value, edgeOnce, blockId };
 }
 
+function shouldLatchMessage(eventType: EventContext, inContinuousBody: boolean): boolean {
+  return eventType === 'jcreatepp_on_update' || inContinuousBody;
+}
+
 function blockToHandleExpr(
   block: Blockly.Block,
   eventType: EventContext,
@@ -1118,10 +1123,10 @@ function blockLabel(type: string): string {
     case 'jcreatepp_on_receive': return '「メッセージを受け取ったとき」';
     case 'jcreatepp_set_position': return '「位置を〜にする」';
     case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
-    case 'jcreatepp_smooth_move_by': return '「位置を〜秒かけて動かす」';
+    case 'jcreatepp_smooth_move_by': return '「位置を〜だけ〜秒かけて動かす」';
     case 'jcreatepp_set_rotation': return '「角度を〜にする」';
     case 'jcreatepp_add_rotation': return '「角度を〜ずつ変える」';
-    case 'jcreatepp_smooth_rotate_by': return '「角度を〜秒かけて回す」';
+    case 'jcreatepp_smooth_rotate_by': return '「角度を〜だけ〜秒かけて回す」';
     case 'jcreatepp_continuous_rotation': return '「回転し続ける」';
     case 'jcreatepp_timed_random_warp': return '「一定間隔でランダムワープ」';
     case 'jcreatepp_timed_move_return': return '「一定時間移動して戻る」';

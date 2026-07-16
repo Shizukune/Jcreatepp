@@ -130,7 +130,7 @@ const addPositionBlock = {
 
 const smoothMoveByBlock = {
   type: 'jcreatepp_smooth_move_by',
-  message0: '位置を x:%1 y:%2 z:%3 へ %4 秒かけて動かす',
+  message0: '位置を x:%1 y:%2 z:%3 だけ %4 秒かけて動かす',
   args0: [
     { type: 'input_value', name: 'X', check: 'Number' },
     { type: 'input_value', name: 'Y', check: 'Number' },
@@ -179,7 +179,7 @@ const addRotationBlock = {
 
 const smoothRotateByBlock = {
   type: 'jcreatepp_smooth_rotate_by',
-  message0: '角度を x:%1 y:%2 z:%3 へ %4 秒かけて回す',
+  message0: '角度を x:%1 y:%2 z:%3 だけ %4 秒かけて回す',
   args0: [
     { type: 'input_value', name: 'X', check: 'Number' },
     { type: 'input_value', name: 'Y', check: 'Number' },
