@@ -3,21 +3,23 @@
 // ==== unity requirements ====
 Unity側で必要な設定
 - Item Audio Set List に "se" を登録してください。音を鳴らすには、このアイテムのItem Audio Set Listに同じIDの音を登録してください。
-- サブノード "Label" に TextMeshPro コンポーネントを付けてください。文字を変えるには、指定したサブノードに対応するText/TextMeshPro系コンポーネントが必要です。
+- サブノード "Label" に TextMeshPro コンポーネントを付けてください。文字を変えるには、指定したサブノードに対応するTextView/Text/TextMeshPro系コンポーネントが必要です。
 - サブノード "Body" に MeshRenderer コンポーネントを付けてください。表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。
 - サブノード "Lamp" に Light コンポーネントを付けてください。表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。
 // ==== code ====
 $.onInteract((player) => {
   {
     const __jpp_audio = $.audio("se");
-    __jpp_audio.volume = Math.max(0, Math.min(2.5, (0.8)));
-    __jpp_audio.play();
+    if (__jpp_audio) {
+      __jpp_audio.volume = Math.max(0, Math.min(2.5, (0.8)));
+      __jpp_audio.play();
+    }
   }
   {
     const __jpp_node = $.subNode("Label");
     const __jpp_text = __jpp_node && __jpp_node.getUnityComponent("TextMeshPro");
     if (__jpp_text) {
-      __jpp_text.unityProp.text = "pressed";
+      __jpp_text.unityProp.text = String("pressed");
     }
   }
   {

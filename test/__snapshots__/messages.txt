@@ -4,10 +4,13 @@
 Unity側で必要な設定
 - メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
 - 近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。
+- 近くのプレイヤーを調べるには、Cluster Scriptのプレイヤー検知APIを使います。ワールド上で検知距離や対象の想定を確認してください。
 - メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
 - 近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。
+- 近くのプレイヤー数を調べるには、Cluster Scriptのプレイヤー検知APIを使います。ワールド上で検知距離や対象の想定を確認してください。
 - メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
 - World Item Reference List に "door" を登録してください。指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。
+- 前方レイキャストを使うには、当たり判定対象のColliderやLayer設定が想定どおりになっているか確認してください。
 - メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
 - World Item Reference List に "board" を登録してください。指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。
 - メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
@@ -21,86 +24,80 @@ Unity側で必要な設定
 // ==== code ====
 $.onUpdate((deltaTime) => {
   {
-    const __jpp_send_cond_b4 = ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (3))).length > 0);
-    if (__jpp_send_cond_b4 && !$.state["__jpp_send_once_b4"]) {
-      const __jpp_send_pos_b4 = $.getPosition() || new Vector3(0,0,0);
-      const __jpp_send_items_b4 = $.getItemsNear(__jpp_send_pos_b4, (10));
-      for (const __jpp_send_item_b4 of __jpp_send_items_b4) {
-        __jpp_send_item_b4.send("open", null);
+    const sentKey = "__jpp_send_once_b4";
+    const canSend = ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (3))).length > 0);
+    if (canSend && !$.state[sentKey]) {
+      const pos = $.getPosition() || new Vector3(0,0,0);
+      const items = $.getItemsNear(pos, (10));
+      for (const item of items) {
+        item.send("open", null);
       }
-      $.state["__jpp_send_once_b4"] = true;
+      $.state[sentKey] = true;
     }
-    if (!__jpp_send_cond_b4) {
-      $.state["__jpp_send_once_b4"] = false;
+    if (!canSend) {
+      $.state[sentKey] = false;
     }
   }
   {
-    const __jpp_send_cond_b12 = (($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length) > 1);
-    if (__jpp_send_cond_b12 && !$.state["__jpp_send_once_b12"]) {
-      const __jpp_send_pos_b12 = $.getPosition() || new Vector3(0,0,0);
-      const __jpp_send_items_b12 = $.getItemsNear(__jpp_send_pos_b12, (10));
-      for (const __jpp_send_item_b12 of __jpp_send_items_b12) {
-        __jpp_send_item_b12.send("count", ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length));
+    const sentKey = "__jpp_send_once_b12";
+    const canSend = (($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length) > 1);
+    if (canSend && !$.state[sentKey]) {
+      const pos = $.getPosition() || new Vector3(0,0,0);
+      const items = $.getItemsNear(pos, (10));
+      for (const item of items) {
+        item.send("count", ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length));
       }
-      $.state["__jpp_send_once_b12"] = true;
+      $.state[sentKey] = true;
     }
-    if (!__jpp_send_cond_b12) {
-      $.state["__jpp_send_once_b12"] = false;
+    if (!canSend) {
+      $.state[sentKey] = false;
     }
   }
   {
-    const __jpp_send_cond_b15 = ((() => { const __jpp_hit = $.raycast(($.getPosition() || new Vector3(0,0,0)), new Vector3(0,0,1).applyQuaternion(($.getRotation() || new Quaternion())).normalize(), Math.max(0, (4))); return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "player"); })());
-    if (__jpp_send_cond_b15 && !$.state["__jpp_send_once_b15"]) {
-      const __jpp_send_item_b15 = $.worldItemReference("door");
-      if (__jpp_send_item_b15 && __jpp_send_item_b15.exists()) {
-        __jpp_send_item_b15.send("close", null);
+    const sentKey = "__jpp_send_once_b15";
+    const canSend = ((() => { const __jpp_hit = $.raycast(($.getPosition() || new Vector3(0,0,0)), new Vector3(0,0,1).applyQuaternion(($.getRotation() || new Quaternion())).normalize(), Math.max(0, (4))); return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "player"); })());
+    if (canSend && !$.state[sentKey]) {
+      const target = $.worldItemReference("door");
+      if (target && target.exists()) {
+        target.send("close", null);
       }
-      $.state["__jpp_send_once_b15"] = true;
+      $.state[sentKey] = true;
     }
-    if (!__jpp_send_cond_b15) {
-      $.state["__jpp_send_once_b15"] = false;
+    if (!canSend) {
+      $.state[sentKey] = false;
     }
   }
   {
-    const __jpp_send_cond_b18 = true;
-    if (__jpp_send_cond_b18 && !$.state["__jpp_send_once_b18"]) {
-      const __jpp_send_item_b18 = $.worldItemReference("board");
-      if (__jpp_send_item_b18 && __jpp_send_item_b18.exists()) {
-        __jpp_send_item_b18.send("text", "hi");
+    const sentKey = "__jpp_send_once_b18";
+    const canSend = true;
+    if (canSend && !$.state[sentKey]) {
+      const target = $.worldItemReference("board");
+      if (target && target.exists()) {
+        target.send("text", "hi");
       }
-      $.state["__jpp_send_once_b18"] = true;
+      $.state[sentKey] = true;
     }
-    if (!__jpp_send_cond_b18) {
-      $.state["__jpp_send_once_b18"] = false;
+    if (!canSend) {
+      $.state[sentKey] = false;
     }
   }
 });
 
 $.onCollide((collision) => {
   {
-    const __jpp_send_cond_b36 = true;
-    if (__jpp_send_cond_b36 && !$.state["__jpp_send_once_b36"]) {
-      const __jpp_send_handle_b36 = (collision && collision.handle ? collision.handle : null);
-      if (__jpp_send_handle_b36 && typeof __jpp_send_handle_b36.send === "function" && (typeof __jpp_send_handle_b36.exists !== "function" || __jpp_send_handle_b36.exists())) {
-        __jpp_send_handle_b36.send("hit", null);
+    if (true) {
+      const target = (collision && collision.handle ? collision.handle : null);
+      if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+        target.send("hit", null);
       }
-      $.state["__jpp_send_once_b36"] = true;
-    }
-    if (!__jpp_send_cond_b36) {
-      $.state["__jpp_send_once_b36"] = false;
     }
   }
   {
-    const __jpp_send_cond_b39 = true;
-    if (__jpp_send_cond_b39 && !$.state["__jpp_send_once_b39"]) {
-      const __jpp_send_handle_b39 = (collision && collision.handle ? collision.handle : null);
-      if (__jpp_send_handle_b39 && typeof __jpp_send_handle_b39.send === "function" && (typeof __jpp_send_handle_b39.exists !== "function" || __jpp_send_handle_b39.exists())) {
-        __jpp_send_handle_b39.send("who", (collision && collision.handle ? collision.handle : null));
+    if (true) {
+      const target = (collision && collision.handle ? collision.handle : null);
+      if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+        target.send("who", (collision && collision.handle ? collision.handle : null));
       }
-      $.state["__jpp_send_once_b39"] = true;
-    }
-    if (!__jpp_send_cond_b39) {
-      $.state["__jpp_send_once_b39"] = false;
     }
   }
 });

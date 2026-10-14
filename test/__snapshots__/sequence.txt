@@ -84,7 +84,10 @@ $.onUpdate((deltaTime) => {
           let time = ($.state["__jpp_seq_time_b19"] || 0) + deltaTime;
           $.state["__jpp_seq_time_b19"] = time;
           if (time <= 2) {
-            $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
+            {
+              const __jpp_rot = $.getRotation();
+              $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
+            }
             yielded = true;
           } else {
             $.state["__jpp_seq_time_b19"] = 0;

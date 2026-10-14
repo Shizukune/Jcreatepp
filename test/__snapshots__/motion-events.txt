@@ -15,7 +15,10 @@ $.onStart(() => {
 
 $.onUpdate((deltaTime) => {
   $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3((2 * deltaTime), 0, 0)));
-  $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
+  {
+    const __jpp_rot = $.getRotation();
+    $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
+  }
   $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (45) * deltaTime)));
   if (!$.state["__jpp_osc_init_pos_b25"]) {
     $.state["__jpp_osc_init_pos_b25"] = $.getPosition() || new Vector3(0,0,0);
