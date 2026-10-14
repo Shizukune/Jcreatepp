@@ -16,6 +16,7 @@ import { fromThreePosition, fromThreeQuaternion, toThreePosition, toThreeQuatern
 import { nearestEuler, type EditTarget, type Xyz } from './blockEdit';
 import { safeId } from '../codegen/shared';
 import { buildStateRows } from './stateRows';
+import { SteerInput, type SteerChange } from './steerInput';
 import type { VariableInfo } from '../variables';
 
 export type Preview = {
@@ -66,7 +67,8 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       <label class="pvCheck"><input type="checkbox" data-opt="player" /> 2m前にプレイヤー</label>
     </div>
     <div class="pvEdit" hidden></div>
-    <div class="pvView"></div>
+    <div class="pvRide" hidden>乗車中: W/S・↑↓ 前後　A/D・←→ 旋回　E/Q 上下（3D画面をクリックしてから操作）</div>
+    <div class="pvView" tabindex="0"></div>
     <div class="pvNotice" hidden></div>
     <div class="pvState"></div>
     <div class="pvLog"></div>
@@ -74,6 +76,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
 
   const $ = <T extends HTMLElement>(sel: string) => root.querySelector(sel) as T;
   const view = $<HTMLDivElement>('.pvView');
+  const rideHint = $<HTMLDivElement>('.pvRide');
   const notice = $<HTMLDivElement>('.pvNotice');
   const editEl = $<HTMLDivElement>('.pvEdit');
   const timeEl = $<HTMLSpanElement>('.pvTime');
@@ -340,6 +343,9 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     item.quaternion.identity();
     riding = false;
     rideBtn.textContent = '乗る';
+    rideHint.hidden = true;
+    steerInput.clear();
+    steerInput.resetSent();
     runner = null;
     timeEl.textContent = '0.00 秒';
     lastActive = '';
@@ -392,8 +398,11 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       case 'ride':
         riding = !riding;
         runner.ride(riding);
-        if (riding) runner.steer({ x: 0, y: 1 });
+        steerInput.resetSent();
+        sendSteer(steerInput.clear());
         rideBtn.textContent = riding ? '降りる' : '乗る';
+        rideHint.hidden = !riding;
+        if (riding) view.focus();
         break;
       case 'receive': {
         const name = (root.querySelector('[data-recv="name"]') as HTMLInputElement).value;
@@ -423,6 +432,31 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     }
   });
   playerChk.addEventListener('change', syncVirtualPlayer);
+
+  // ── ride controls: keyboard → onSteer / onSteerAdditionalAxis (only while the 3D view has focus) ──
+  const steerInput = new SteerInput();
+
+  function sendSteer(change: SteerChange) {
+    if (!runner) return;
+    if (change.steer) runner.steer(change.steer);
+    if (change.axis !== undefined) runner.steerAdditionalAxis(change.axis);
+  }
+
+  view.addEventListener('keydown', (e) => {
+    if (!riding || !SteerInput.handles(e.code)) return;
+    e.preventDefault(); // arrows would scroll the page
+    sendSteer(steerInput.press(e.code));
+  });
+  view.addEventListener('keyup', (e) => sendSteer(steerInput.release(e.code)));
+  // Losing focus (clicking elsewhere, switching windows or tabs) releases all keys,
+  // so the vehicle never keeps driving with a key that was released elsewhere.
+  const releaseAll = () => sendSteer(steerInput.clear());
+  view.addEventListener('blur', releaseAll);
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseAll();
+  });
+  view.addEventListener('pointerdown', () => view.focus());
 
   // ── panels (P2) ──
   function renderPanels() {

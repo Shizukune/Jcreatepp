@@ -19,6 +19,8 @@ export type Program = {
     forwardSpeed: Expr;
     upDownSpeed: Expr;
     turnSpeed: Expr;
+    /** Direction of "forward": the item's +Z, or the original behavior (the item's -X). */
+    forward: 'z' | 'legacy';
   };
   chaseTemplate?: {
     moveSpeed: Expr;

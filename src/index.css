@@ -332,3 +332,20 @@ body {
   color: #ffd166;
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }
+
+.pvRide {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #a3d8f4;
+  background: #102a44;
+  border-bottom: 1px solid #1a4a7a;
+}
+
+.pvRide[hidden] {
+  display: none;
+}
+
+.pvView:focus {
+  outline: 2px solid #e94560;
+  outline-offset: -2px;
+}

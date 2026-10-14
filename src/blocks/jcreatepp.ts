@@ -379,15 +379,25 @@ const setJumpSpeedBlock = {
 
 const rideTemplateBlock = {
   type: 'jcreatepp_ride_template',
-  message0: '乗り物ギミック %1 前進速度:%2 上下速度:%3 旋回速度:%4',
+  message0: '乗り物ギミック 進む向き:%1 %2 前進速度:%3 上下速度:%4 旋回速度:%5',
   args0: [
+    {
+      type: 'field_dropdown',
+      name: 'FORWARD_AXIS',
+      // The first option is the default for saved workspaces that predate this field, so it must
+      // keep their old movement. New blocks from the toolbox select 'Z'.
+      options: [
+        ['従来（アイテムの左 -X）', 'LEGACY'],
+        ['アイテムの前（+Z）', 'Z'],
+      ],
+    },
     { type: 'input_dummy' },
     { type: 'input_value', name: 'FORWARD_SPEED', check: 'Number' },
     { type: 'input_value', name: 'UP_DOWN_SPEED', check: 'Number' },
     { type: 'input_value', name: 'TURN_SPEED', check: 'Number' },
   ],
   colour: 0,
-  tooltip: '置くだけで乗り物操作を生成するテンプレートです。',
+  tooltip: '置くだけで乗り物操作を生成するテンプレートです。「アイテムの前（+Z）」は前方レイキャストや「向いている方向に進む」と同じ向きに進みます。「従来」は以前のバージョンの動き（アイテムの左へ進む）です。',
   helpUrl: '',
   hat: 'cap',
 };

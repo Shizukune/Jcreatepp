@@ -330,6 +330,9 @@ function rideUpdateToJS(program: Program): string {
     return '';
   }
 
+  // Yaw angle of "forward": +Z itself, or the original template's -X (yaw + 270).
+  const forwardAngle = program.rideTemplate.forward === 'z' ? 'direction.y' : '((direction.y + 270) % 360)';
+
   return `if ($.state["__jpp_ride_active"]) {
   const pos = $.getPosition() || new Vector3(0,0,0);
   const rot = $.getRotation() || new Quaternion();
@@ -337,7 +340,7 @@ function rideUpdateToJS(program: Program): string {
   const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, trnAmount, 0)));
 
   const direction = nextRot.clone().createEulerAngles();
-  const forwardRadian = ((direction.y + 270) % 360) * Math.PI / 180;
+  const forwardRadian = ${forwardAngle} * Math.PI / 180;
   const fwdAmount = $.state["__jpp_ride_fwd"] || 0;
   const forwardVec = new Vector3(
     Math.sin(forwardRadian) * fwdAmount * deltaTime,

@@ -12,6 +12,7 @@ import { Quaternion, Vector3 } from '../src/sim/math';
 import { createRunner } from '../src/sim/runner';
 import { b, bool, num, onEvent, workspace, xyz } from './build';
 import { generateCode } from './harness';
+import { toolbox } from '../src/toolbox';
 
 const fixtureDir = path.resolve(__dirname, '../../test/fixtures');
 
@@ -280,6 +281,46 @@ test('V-4: a flag and a boolean variable with the same name are the same value',
   r.start();
   assert.equal(r.$.state['bool.fromFlag'], true, 'bool var sees the flag');
   assert.equal(r.$.state['bool.lamp'], false, 'flag toggles the bool var');
+});
+
+// ── P8: ride template direction and steering ──
+
+const rideState = (forwardAxis?: string) => workspace(b('jcreatepp_ride_template', {
+  fields: forwardAxis ? { FORWARD_AXIS: forwardAxis } : undefined,
+  inputs: { FORWARD_SPEED: num(5), UP_DOWN_SPEED: num(2), TURN_SPEED: num(90) },
+}));
+
+function rideFor(code: string, yaw: number, input: { x: number; y: number }, axis = 0, seconds = 1) {
+  const r = createRunner(code, { rotation: new Quaternion().setFromEulerAngles(0, yaw, 0) });
+  r.ride(true);
+  r.steer(input);
+  r.steerAdditionalAxis(axis);
+  r.advance(seconds);
+  return r;
+}
+
+test('ride template "アイテムの前（+Z）" moves toward the item front, like move_local', () => {
+  const code = generateCode(rideState('Z'));
+  assert.ok(rideFor(code, 0, { x: 0, y: 1 }).item.position.equals(new Vector3(0, 0, 5), 1e-3));
+  assert.ok(rideFor(code, 90, { x: 0, y: 1 }).item.position.equals(new Vector3(5, 0, 0), 1e-3));
+  assert.ok(rideFor(code, 0, { x: 0, y: -1 }).item.position.equals(new Vector3(0, 0, -5), 1e-3), 'backwards');
+  assert.ok(rideFor(code, 0, { x: 0, y: 0 }, 1).item.position.equals(new Vector3(0, 2, 0), 1e-3), 'up');
+});
+
+test('ride template without the field (older saves) keeps the original movement (-X at yaw 0)', () => {
+  const code = generateCode(rideState());
+  assert.ok(rideFor(code, 0, { x: 0, y: 1 }).item.position.equals(new Vector3(-5, 0, 0), 1e-3));
+  assert.equal(code, generateCode(rideState('LEGACY')));
+});
+
+test('ride steering: right input turns right (yaw +90 per second at turn speed 90)', () => {
+  const r = rideFor(generateCode(rideState('Z')), 0, { x: 1, y: 0 });
+  assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(0, 90, 0), 1e-4));
+});
+
+test('the toolbox places new ride templates with "アイテムの前（+Z）"', () => {
+  const toolboxJson = JSON.stringify(toolbox);
+  assert.match(toolboxJson, /"type":"jcreatepp_ride_template","fields":\{"FORWARD_AXIS":"Z"\}/);
 });
 
 // ── state values are not aliased by later movement ──

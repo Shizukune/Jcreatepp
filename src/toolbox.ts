@@ -399,6 +399,7 @@ export const toolbox = {
         {
           kind: 'block',
           type: 'jcreatepp_ride_template',
+          fields: { FORWARD_AXIS: 'Z' },
           inputs: {
             FORWARD_SPEED: { shadow: { type: 'math_number', fields: { NUM: 5 } } },
             UP_DOWN_SPEED: { shadow: { type: 'math_number', fields: { NUM: 2 } } },

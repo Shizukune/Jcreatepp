@@ -99,7 +99,8 @@ export function workspaceToProgram(
       const forwardSpeed = resolveValueExpr(block, 'FORWARD_SPEED', null as any, generator, errors, false);
       const upDownSpeed = resolveValueExpr(block, 'UP_DOWN_SPEED', null as any, generator, errors, false);
       const turnSpeed = resolveValueExpr(block, 'TURN_SPEED', null as any, generator, errors, false);
-      program.rideTemplate = { forwardSpeed, upDownSpeed, turnSpeed };
+      const forward = block.getFieldValue('FORWARD_AXIS') === 'Z' ? 'z' : 'legacy';
+      program.rideTemplate = { forwardSpeed, upDownSpeed, turnSpeed, forward };
     } else if (type === 'jcreatepp_chase_template') {
       chaseTemplateCount++;
       if (chaseTemplateCount > 1) {
