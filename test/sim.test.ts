@@ -219,6 +219,69 @@ test('block ids that differ only in symbols keep separate state (smooth moves ru
   assert.equal(keys.length, 2, `separate state keys: ${keys.join(', ')}`);
 });
 
+test('V-3: arithmetic has no binary float noise, while "=" stays exact', () => {
+  const v = (name: string) => b('jcreatepp_number_var', { fields: { VAR_NAME: name } });
+  const arith = (op: string, a: object, c: object) => b('jcreatepp_arithmetic', { fields: { OP: op }, inputs: { A: a as any, B: c as any } });
+  const eq = (a: object, c: object) => b('jcreatepp_compare', { fields: { OP: 'EQ' }, inputs: { A: a as any, B: c as any } });
+  const setNum = (name: string, value: object) => b('jcreatepp_set_number_var', { fields: { VAR_NAME: name }, inputs: { VALUE: value as any } });
+  const setBool = (name: string, value: object) => b('jcreatepp_set_bool_var', { fields: { VAR_NAME: name }, inputs: { VALUE: value as any } });
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_start', [
+    setBool('sum', eq(arith('ADD', num(0.1), num(0.2)), num(0.3))),
+    b('jcreatepp_change_number_var', { fields: { VAR_NAME: 'acc' }, inputs: { DELTA: num(0.1) } }),
+    b('jcreatepp_change_number_var', { fields: { VAR_NAME: 'acc' }, inputs: { DELTA: num(0.1) } }),
+    b('jcreatepp_change_number_var', { fields: { VAR_NAME: 'acc' }, inputs: { DELTA: num(0.1) } }),
+    setBool('acc03', eq(v('acc'), num(0.3))),
+    setBool('third', eq(arith('MUL', arith('DIV', num(1), num(3)), num(3)), num(1))),
+    setBool('close', eq(num(0.3), num(0.3000001))),
+    setNum('big', arith('ADD', num(999999999999999), num(0))),
+  ]))));
+  r.start();
+  const s = r.$.state;
+  assert.equal(s['bool.sum'], true, '0.1 + 0.2 = 0.3');
+  assert.equal(s['var.acc'], 0.3, '0.1 added three times');
+  assert.equal(s['bool.acc03'], true);
+  assert.equal(s['bool.third'], true, '1 / 3 * 3 = 1');
+  assert.equal(s['bool.close'], false, 'no tolerance: different numbers are not equal');
+  assert.equal(s['var.big'], 999999999999999, 'large integers stay exact');
+});
+
+test('V-3: normalization keeps huge finite values finite, applies to cooldown starts, and is emitted only when needed', () => {
+  const arith = (op: string, a: object, c: object) => b('jcreatepp_arithmetic', { fields: { OP: op }, inputs: { A: a as any, B: c as any } });
+  const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'max' }, inputs: { VALUE: arith('ADD', num(Number.MAX_VALUE), num(0)) } }),
+    b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'neg' }, inputs: { VALUE: arith('SUB', num(-Number.MAX_VALUE), num(0)) } }),
+    b('jcreatepp_start_cooldown', { fields: { COOLDOWN_NAME: 'cd' }, inputs: { SECONDS: arith('ADD', num(0.1), num(0.2)) } }),
+  ])));
+  assert.equal(code.split('const __jpp_num').length - 1, 1, 'helper defined once');
+  const r = createRunner(code);
+  r.start();
+  assert.equal(r.$.state['var.max'], Number.MAX_VALUE);
+  assert.equal(r.$.state['var.neg'], -Number.MAX_VALUE);
+  assert.equal(r.$.state['__jpp_cd_cd'], 0.3);
+  assert.ok(!generateCode(workspace(onEvent('jcreatepp_on_start', [b('jcreatepp_save_position')]))).includes('__jpp_num'), 'no helper without arithmetic');
+});
+
+test('V-4: flag names "true" / "false" stay literals when read (documented exception)', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_bool_var', { fields: { VAR_NAME: 'true' }, inputs: { VALUE: bool(false) } }),
+    b('jcreatepp_set_bool_var', { fields: { VAR_NAME: 'seen' }, inputs: { VALUE: b('jcreatepp_flag', { fields: { FLAG_NAME: 'true' } }) } }),
+  ]))));
+  r.start();
+  assert.equal(r.$.state['bool.seen'], true);
+});
+
+test('V-4: a flag and a boolean variable with the same name are the same value', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_flag', { fields: { FLAG_NAME: 'open', OPERATION: 'true' } }),
+    b('jcreatepp_set_bool_var', { fields: { VAR_NAME: 'fromFlag' }, inputs: { VALUE: b('jcreatepp_bool_var', { fields: { VAR_NAME: 'open' } }) } }),
+    b('jcreatepp_set_bool_var', { fields: { VAR_NAME: 'lamp' }, inputs: { VALUE: bool(true) } }),
+    b('jcreatepp_set_flag', { fields: { FLAG_NAME: 'lamp', OPERATION: 'toggle' } }),
+  ]))));
+  r.start();
+  assert.equal(r.$.state['bool.fromFlag'], true, 'bool var sees the flag');
+  assert.equal(r.$.state['bool.lamp'], false, 'flag toggles the bool var');
+});
+
 // ── state values are not aliased by later movement ──
 
 test('save position -> move -> load position restores the saved point', () => {
@@ -340,7 +403,7 @@ test('S-4 (fixed): three 1s waits finish at 3s regardless of frame time', () => 
   for (const dt of [1 / 60, 0.25]) {
     const r = createRunner(code);
     r.start();
-    while (!r.$.state['__jpp_flag_done'] && r.time < 10) r.update(dt);
+    while (!r.$.state['bool.done'] && r.time < 10) r.update(dt);
     assert.ok(Math.abs(r.time - 3) <= dt + 1e-9, `dt=${dt}: finished at ${r.time}`);
   }
 });
@@ -357,7 +420,7 @@ test('run for N seconds: body runs on each frame overlapping the window, next st
   for (const [dt, frames] of [[0.25, 4], [0.3, 4], [0.6, 2]] as const) {
     const r = createRunner(code);
     r.start();
-    while (!r.$.state['__jpp_flag_done'] && r.time < 5) r.update(dt);
+    while (!r.$.state['bool.done'] && r.time < 5) r.update(dt);
     assert.equal(r.$.state['var.frames'], frames, `dt=${dt}`);
     assert.ok(r.time >= 1 - 1e-9 && r.time < 1 + dt, `dt=${dt}: done at ${r.time}`);
   }
@@ -384,7 +447,7 @@ test('sequence timing edge cases: no body run without time, negative seconds giv
   r = createRunner(seq(wait(-10), wait(5)));
   r.start();
   r.update(0.1);
-  assert.ok(!r.$.state['__jpp_flag_done']);
+  assert.ok(!r.$.state['bool.done']);
 
   // A tiny positive run_for still runs its body once.
   r = createRunner(seq(count(0.0000005)));

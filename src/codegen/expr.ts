@@ -1,5 +1,6 @@
 import type { BoolExpr, Expr } from '../ir';
 import { jsString, stateKey } from './shared';
+import { useHelper } from './helpers';
 
 type CompareOperator = Extract<BoolExpr, { kind: 'compare' }>['operator'];
 
@@ -45,12 +46,29 @@ export function exprToJS(expr: Expr): string {
   }
 }
 
+/**
+ * Rounds a computed number to 15 significant digits, removing binary floating-point noise
+ * (0.1 + 0.2 -> 0.3) so "=" can stay an exact comparison. Integers up to 1e15 stay exact;
+ * Infinity / NaN pass through unchanged.
+ */
+export function decimalNormalized(numberExpressionJS: string): string {
+  return `${useHelper('num')}(${numberExpressionJS})`;
+}
+
+/**
+ * A number expression as it should be stored, compared or shown. Calculations run at full
+ * precision; only the final result of arithmetic is normalized (so 1 / 3 * 3 is still 1).
+ */
+export function settledNumberToJS(expr: Expr): string {
+  return expr.kind === 'binary' ? decimalNormalized(exprToJS(expr)) : exprToJS(expr);
+}
+
 export function boolExprToJS(expr: BoolExpr): string {
   switch (expr.kind) {
     case 'raw_bool':
       return expr.code;
     case 'compare':
-      return `(${exprToJS(expr.left)} ${compareOperatorToJS(expr.operator)} ${exprToJS(expr.right)})`;
+      return `(${settledNumberToJS(expr.left)} ${compareOperatorToJS(expr.operator)} ${settledNumberToJS(expr.right)})`;
     case 'not':
       return `!(${boolExprToJS(expr.expr)})`;
     case 'and':
@@ -60,7 +78,7 @@ export function boolExprToJS(expr: BoolExpr): string {
     case 'bool_literal':
       return expr.value ? 'true' : 'false';
     case 'flag':
-      return `!!$.state[${stateKey('__jpp_flag_', expr.name)}]`;
+      return `!!$.state[${stateKey('bool.', expr.name)}]`;
     case 'bool_var':
       return `!!$.state[${stateKey('bool.', expr.name)}]`;
     case 'cooldown_active':

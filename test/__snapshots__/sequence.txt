@@ -24,7 +24,7 @@ $.onUpdate((deltaTime) => {
       guard++;
       switch (step) {
         case 0: {
-          $.state["__jpp_flag_ready"] = !$.state["__jpp_flag_ready"];
+          $.state["bool.ready"] = !$.state["bool.ready"];
           step++;
           break;
         }
@@ -110,7 +110,7 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 3: {
-          if (!!$.state["__jpp_flag_ready"]) {
+          if (!!$.state["bool.ready"]) {
             step++;
           } else {
             yielded = true;

@@ -5,6 +5,7 @@ import { generateSequenceStateMachine } from './sequence';
 import { getAllSequences, indent, jsString, safeId, smoothRotateKeys, smoothTransitionKeys } from './shared';
 import { stmtToJS } from './stmt';
 import { traceLine, withTrace } from './trace';
+import { withHelpers } from './helpers';
 
 const EVENT_PARAMS: Record<string, string> = {
   onStart: '',
@@ -19,7 +20,7 @@ export type CodegenOptions = {
 };
 
 export function programToJS(program: Program, options: CodegenOptions = {}): string {
-  return withTrace(options.trace === true, () => programToJSCore(program));
+  return withTrace(options.trace === true, () => withHelpers(() => programToJSCore(program)));
 }
 
 function programToJSCore(program: Program): string {

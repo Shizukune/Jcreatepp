@@ -520,7 +520,7 @@ function blockToStmtCore(
 
     case 'jcreatepp_wait_seconds': {
       if (!inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。`);
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作を始める」ブロックの中でしか使えません。`);
         return null;
       }
       if (inIf) {
@@ -533,7 +533,7 @@ function blockToStmtCore(
 
     case 'jcreatepp_wait_until': {
       if (!inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作（完了まで待つ）」ブロックの中でしか使えません。`);
+        errors.push(`「${blockLabel(block.type)}」は「一連の動作を始める」ブロックの中でしか使えません。`);
         return null;
       }
       if (inIf) {
@@ -1205,7 +1205,7 @@ function blockLabel(type: string): string {
     case 'jcreatepp_set_jump_speed': return 'プレイヤーのジャンプ速度倍率を変える';
     case 'jcreatepp_if': return 'もし〜なら';
     case 'jcreatepp_if_else': return 'もし〜なら、でなければ';
-    case 'jcreatepp_sequence': return '一連の動作（完了まで待つ）';
+    case 'jcreatepp_sequence': return '一連の動作を始める';
     case 'jcreatepp_wait_seconds': return '〜秒待つ';
     case 'jcreatepp_wait_until': return '〜まで待つ';
     case 'jcreatepp_run_for_seconds': return 'N秒間、毎フレーム実行する';

@@ -1,5 +1,5 @@
 import type { Expr, MessageTarget, Stmt } from '../ir';
-import { boolExprToJS, exprToJS } from './expr';
+import { boolExprToJS, decimalNormalized, exprToJS, settledNumberToJS } from './expr';
 import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, stateKey } from './shared';
 import { traceLine } from './trace';
 
@@ -85,10 +85,10 @@ function stmtToJSCore(stmt: Stmt): string {
       return setFlagToJS(stmt);
 
     case 'set_number_var':
-      return `$.state[${stateKey('var.', stmt.name)}] = ${exprToJS(stmt.value)};`;
+      return `$.state[${stateKey('var.', stmt.name)}] = ${settledNumberToJS(stmt.value)};`;
 
     case 'change_number_var':
-      return `$.state[${stateKey('var.', stmt.name)}] = ($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)});`;
+      return `$.state[${stateKey('var.', stmt.name)}] = ${decimalNormalized(`($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)})`)};`;
 
     case 'set_string_var':
       return `$.state[${stateKey('str.', stmt.name)}] = ${exprToJS(stmt.value)};`;
@@ -97,7 +97,7 @@ function stmtToJSCore(stmt: Stmt): string {
       return `$.state[${stateKey('bool.', stmt.name)}] = ${boolExprToJS(stmt.value)};`;
 
     case 'start_cooldown':
-      return `$.state[${stateKey('__jpp_cd_', stmt.name)}] = Math.max(0, (${exprToJS(stmt.seconds)}));`;
+      return `$.state[${stateKey('__jpp_cd_', stmt.name)}] = Math.max(0, (${settledNumberToJS(stmt.seconds)}));`;
 
     case 'send_message':
       return sendMessageToJS(stmt);
@@ -232,10 +232,10 @@ function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message' }>['va
 
   // "string" mode may receive number blocks; send them as text. Text expressions stay as-is.
   if (value.valueType === 'string' && !isTextExpr(value.value)) {
-    return `String(${exprToJS(value.value)})`;
+    return `String(${settledNumberToJS(value.value)})`;
   }
 
-  return exprToJS(value.value);
+  return settledNumberToJS(value.value);
 }
 
 function isTextExpr(expr: Expr): boolean {
@@ -257,7 +257,7 @@ function setSubnodeTextToJS(stmt: Extract<Stmt, { kind: 'set_subnode_text' }>): 
     return `{
   const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
   if (__jpp_node && typeof __jpp_node.setText === "function") {
-    __jpp_node.setText(String(${exprToJS(stmt.value)}));
+    __jpp_node.setText(String(${settledNumberToJS(stmt.value)}));
   }
 }`;
   }
@@ -266,7 +266,7 @@ function setSubnodeTextToJS(stmt: Extract<Stmt, { kind: 'set_subnode_text' }>): 
   const __jpp_node = $.subNode(${jsString(stmt.subNodeName)});
   const __jpp_text = __jpp_node && __jpp_node.getUnityComponent(${jsString(stmt.componentType)});
   if (__jpp_text) {
-    __jpp_text.unityProp.text = String(${exprToJS(stmt.value)});
+    __jpp_text.unityProp.text = String(${settledNumberToJS(stmt.value)});
   }
 }`;
 }
@@ -329,14 +329,14 @@ function timedMoveReturnToJS(stmt: Extract<Stmt, { kind: 'timed_move_return' }>)
 
 function setFlagToJS(stmt: Extract<Stmt, { kind: 'set_flag' }>): string {
   if (stmt.operation === 'true') {
-    return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = true;`;
+    return `$.state[${stateKey('bool.', stmt.name)}] = true;`;
   }
 
   if (stmt.operation === 'false') {
-    return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = false;`;
+    return `$.state[${stateKey('bool.', stmt.name)}] = false;`;
   }
 
-  return `$.state[${stateKey('__jpp_flag_', stmt.name)}] = !$.state[${stateKey('__jpp_flag_', stmt.name)}];`;
+  return `$.state[${stateKey('bool.', stmt.name)}] = !$.state[${stateKey('bool.', stmt.name)}];`;
 }
 
 function oscillateToJS(stmt: Extract<Stmt, { kind: 'oscillate' }>): string {

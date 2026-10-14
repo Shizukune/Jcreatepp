@@ -427,15 +427,14 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       return;
     }
     timeEl.textContent = `${runner.time.toFixed(2)} 秒`;
-    const groups: Record<string, string[]> = { 数値変数: [], 文字変数: [], 真偽値変数: [], フラグ: [], クールダウン: [], 一連の動作: [] };
+    const groups: Record<string, string[]> = { 数値変数: [], 文字変数: [], 真偽値変数・フラグ: [], クールダウン: [], 一連の動作: [] };
     const state = runner.$.state as Record<string, unknown>;
     for (const key of Object.keys(state).sort()) {
       const v = state[key];
       const show = (label: string, name: string, value: string) => groups[label].push(`<tr><td>${esc(name)}</td><td>${esc(value)}</td></tr>`);
       if (key.startsWith('var.')) show('数値変数', key.slice(4), String(v));
       else if (key.startsWith('str.')) show('文字変数', key.slice(4), JSON.stringify(v));
-      else if (key.startsWith('bool.')) show('真偽値変数', key.slice(5), String(!!v));
-      else if (key.startsWith('__jpp_flag_')) show('フラグ', key.slice(11), String(!!v));
+      else if (key.startsWith('bool.')) show('真偽値変数・フラグ', key.slice(5), String(!!v));
       else if (key.startsWith('__jpp_cd_')) show('クールダウン', key.slice(9), `残り ${Number(v).toFixed(2)} 秒`);
       else if (key.startsWith('__jpp_seq_active_')) {
         const id = key.slice(17);

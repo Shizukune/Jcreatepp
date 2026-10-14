@@ -456,7 +456,7 @@ const ifEdgeBlock = {
 
 const sequenceBlock = {
   type: 'jcreatepp_sequence',
-  message0: '一連の動作（完了まで待つ） %1 %2',
+  message0: '一連の動作を始める（中を順番に実行） %1 %2',
   args0: [
     { type: 'input_dummy' },
     { type: 'input_statement', name: 'DO' },
@@ -464,7 +464,7 @@ const sequenceBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 280,
-  tooltip: '中に入れた待機ブロックを順番に実行します。',
+  tooltip: '中のブロックを上から順番に実行します。「〜秒待つ」などで途中で待てます。このブロックの後ろに置いたブロックは、中が終わるのを待たずにすぐ実行されます。終わってから続けたい処理は、このブロックの中の最後に入れてください。',
   helpUrl: '',
 };
 
