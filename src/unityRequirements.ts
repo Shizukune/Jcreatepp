@@ -13,7 +13,8 @@ export type UnityRequirement =
   | { kind: 'raycast'; reason: string; blockId: string }
   | { kind: 'ridable_item'; reason: string; blockId: string }
   | { kind: 'grabbable_item'; reason: string; blockId: string }
-  | { kind: 'interact_collider'; reason: string; blockId: string };
+  | { kind: 'interact_collider'; reason: string; blockId: string }
+  | { kind: 'event_combination'; reason: string; blockId: string };
 
 export function collectUnityRequirements(program: Program): UnityRequirement[] {
   const requirements: UnityRequirement[] = [];
@@ -269,7 +270,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
   if (program.onCollide) {
     add({
       kind: 'collision_shape',
-      reason: '衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。',
+      reason: '衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。また、衝突イベントはアイテムが物理挙動する（Movable Itemを付け、物理で動く）ときだけ発生します。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。',
       blockId: '',
     });
   }
@@ -294,6 +295,22 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
     add({
       kind: 'ridable_item',
       reason: '乗り物ギミックを使うには、アイテムにRidable Itemを付け、Seat（座る位置）に子オブジェクトを設定してください。Colliderも必要です。',
+      blockId: '',
+    });
+  }
+
+  if (program.onInteract && (program.onGrabStart || program.onGrabEnd)) {
+    add({
+      kind: 'event_combination',
+      reason: 'インタラクト時は、つかめないアイテムでだけ発生します。つかむイベントと同じアイテムで使うと、インタラクト時は動きません。',
+      blockId: '',
+    });
+  }
+
+  if (program.rideTemplate && (program.onGrabStart || program.onGrabEnd)) {
+    add({
+      kind: 'event_combination',
+      reason: '乗り物ギミック（Ridable Item）とつかむイベント（Grabbable Item）は、同じアイテムでは使えません。',
       blockId: '',
     });
   }
@@ -343,6 +360,9 @@ export function formatUnityRequirements(requirements: UnityRequirement[]): strin
       case 'grabbable_item':
       case 'interact_collider':
         lines.push(`- ${requirement.reason}`);
+        break;
+      case 'event_combination':
+        lines.push(`- ⚠ ${requirement.reason}`);
         break;
     }
   }

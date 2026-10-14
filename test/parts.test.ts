@@ -144,3 +144,49 @@ test('a part that repeats an existing conversion error is still refused', () => 
   assert.equal(result.ok, false);
   assert.equal(JSON.stringify(saveWorkspace(ws)), before, 'nothing added');
 });
+
+test('every part converts and runs at the minimum and maximum of each number parameter, on every axis', () => {
+  for (const p of PARTS) {
+    const variants: Record<string, number | string>[] = [];
+    for (const param of p.params) {
+      if (param.kind === 'number') {
+        variants.push({ ...defaultValues(p), [param.key]: param.min }, { ...defaultValues(p), [param.key]: param.max });
+      } else {
+        for (const a of ['X', 'Y', 'Z']) variants.push({ ...defaultValues(p), [param.key]: a });
+      }
+    }
+    for (const values of variants) {
+      const ws = loadWorkspace(workspace());
+      const result = insertPart(ws, p, values);
+      assert.ok(result.ok, `${p.id} ${JSON.stringify(values)}`);
+      const runner = createRunner(generateCode(saveWorkspace(ws)));
+      runner.start();
+      runner.interact();
+      runner.advance(2);
+      assert.deepEqual(runner.errors(), [], `${p.id} ${JSON.stringify(values)}`);
+    }
+  }
+});
+
+test('parts follow their axis parameter', () => {
+  const run = (id: string, values: Record<string, number | string>) => {
+    const ws = loadWorkspace(workspace());
+    assert.ok(insertPart(ws, part(id), { ...defaultValues(part(id)), ...values }).ok);
+    const runner = createRunner(generateCode(saveWorkspace(ws)));
+    runner.start();
+    runner.advance(0.5);
+    return runner;
+  };
+  const bobX = run('bob', { axis: 'X' }).item.position;
+  assert.ok(Math.abs(bobX.x) > 0.1 && Math.abs(bobX.y) < 1e-9 && Math.abs(bobX.z) < 1e-9, 'bob X moves only along x');
+  const spinX = run('spin', { axis: 'X', speed: 90 }).item.rotation.createEulerAngles();
+  assert.ok(angleDiff(spinX.x, 45) < 1 && angleDiff(spinX.y, 0) < 1 && angleDiff(spinX.z, 0) < 1, `spin X: ${JSON.stringify(spinX)}`);
+});
+
+test('part touch_turn: a click while turning restarts from the current angle (as the description says)', () => {
+  const ws = loadWorkspace(workspace());
+  assert.ok(insertPart(ws, part('touch_turn'), defaultValues(part('touch_turn'))).ok);
+  const code = generateCode(saveWorkspace(ws));
+  // 90 deg in 1 s: after 0.5 s it is at 45 deg, the second click adds 90 deg from there.
+  assert.ok(angleDiff(yaw(code, (r) => { r.interact(); r.advance(0.5); r.interact(); r.advance(1.5); }), 135) < 1);
+});

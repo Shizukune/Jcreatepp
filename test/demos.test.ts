@@ -46,6 +46,12 @@ for (const demo of BLOCK_DEMOS) {
     assert.deepEqual(track.errors, []);
     assert.deepEqual(track.unsupported, []);
     assert.equal(track.frames.length, Math.round(demo.seconds * track.fps));
+    if (demo.actions?.length) {
+      // Nothing moves before the first click: the motion really comes from the event.
+      const firstAt = Math.min(...demo.actions.map((a) => a.at));
+      const before = track.frames.slice(0, Math.floor(firstAt * track.fps));
+      assert.ok(before.length > 0 && !moved({ ...track, frames: before }) && !turned({ ...track, frames: before }), 'still before the click');
+    }
     if (demo.reproduces.includes('position')) assert.ok(moved(track), 'position changes');
     if (demo.reproduces.includes('rotation')) assert.ok(turned(track), 'rotation changes');
   });

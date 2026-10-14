@@ -79,7 +79,7 @@ export const PARTS: Part[] = [
   {
     id: 'touch_turn',
     label: '触ると回る',
-    description: 'クリック（インタラクト）されるたびに、決めた角度だけ滑らかに回ります。',
+    description: 'クリック（インタラクト）すると、その時の向きから決めた角度だけ滑らかに回ります。回っている途中でクリックすると、その向きから回し直します。',
     size: 'single',
     params: [
       { key: 'angle', label: '角度（度）', kind: 'number', default: 90, min: -360, max: 360, step: 15 },

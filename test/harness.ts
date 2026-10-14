@@ -40,13 +40,7 @@ export function saveWorkspace(ws: Blockly.Workspace): object {
 }
 
 function convert(ws: Blockly.Workspace) {
-  const log = console.log;
-  console.log = () => {}; // workspaceToProgram logs top blocks
-  try {
-    return workspaceToProgram(ws, javascriptGenerator as any);
-  } finally {
-    console.log = log;
-  }
+  return workspaceToProgram(ws, javascriptGenerator as any);
 }
 
 /** Full conversion result (program, errors, warnings) for a workspace state. */

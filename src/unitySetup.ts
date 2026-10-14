@@ -43,6 +43,8 @@ export type UnitySetup = {
   subNodes: { name: string; componentType: string }[];
   /** Things a person has to set up or check by hand (colliders, layers, seat transform, ...). */
   checks: string[];
+  /** Combinations that do not work on any item (world or craft). */
+  problems: string[];
   /** Reasons this script cannot run as a craft item (empty = no known blocker). */
   craftItemBlockers: string[];
 };
@@ -58,8 +60,6 @@ const COMPONENT_ORDER: ItemComponentName[] = [
   'WorldItemReferenceList',
 ];
 
-/** Text components a craft item (PITM) can carry; uGUI / TextMeshPro exist only in worlds. */
-const CRAFT_ITEM_TEXT_COMPONENTS = new Set(['TextView']);
 
 export function scriptByteLength(code: string): number {
   return new TextEncoder().encode(code).length;
@@ -72,6 +72,7 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
   const worldItemReferenceIds = new Set<string>();
   const subNodes = new Map<string, { name: string; componentType: string }>();
   const checks = new Set<string>();
+  const problems = new Set<string>();
   const craftItemBlockers = new Set<string>();
 
   for (const requirement of collectUnityRequirements(program)) {
@@ -97,8 +98,9 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
           name: requirement.subNodeName,
           componentType: requirement.componentType,
         });
-        if (!CRAFT_ITEM_TEXT_COMPONENTS.has(requirement.componentType) && isTextComponent(requirement.componentType)) {
-          craftItemBlockers.add(`サブノード "${requirement.subNodeName}" の ${requirement.componentType} はクラフトアイテムでは使えません（TextView を使ってください）。`);
+        // Everything except TextView goes through SubNode.getUnityComponent, which craft items cannot use.
+        if (requirement.componentType !== 'TextView') {
+          craftItemBlockers.add(`サブノード "${requirement.subNodeName}" の ${requirement.componentType} はクラフトアイテムでは操作できません（文字なら TextView を使ってください）。`);
         }
         break;
       case 'ridable_item':
@@ -110,19 +112,22 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
         components.add('MovableItem');
         checks.add(requirement.reason);
         break;
+      case 'collision_shape':
+        // onCollide fires only for items that move physically.
+        components.add('MovableItem');
+        checks.add(requirement.reason);
+        break;
+      case 'event_combination':
+        problems.add(requirement.reason);
+        break;
       case 'interact_collider':
       case 'overlap_detector':
-      case 'collision_shape':
       case 'send_rate_limit':
       case 'player_detection':
       case 'raycast':
         checks.add(requirement.reason);
         break;
     }
-  }
-
-  if (components.has('RidableItem') && components.has('GrabbableItem')) {
-    craftItemBlockers.add('乗り物とつかむイベントは同じアイテムで同時に使えません（RidableItem と GrabbableItem は併用不可）。');
   }
 
   const bytes = scriptByteLength(code);
@@ -140,12 +145,9 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
     worldItemReferenceIds: [...worldItemReferenceIds],
     subNodes: [...subNodes.values()],
     checks: [...checks],
+    problems: [...problems],
     craftItemBlockers: [...craftItemBlockers],
   };
-}
-
-function isTextComponent(componentType: string): boolean {
-  return ['TextView', 'Text', 'TextMesh', 'TextMeshPro', 'TextMeshProUGUI'].includes(componentType);
 }
 
 /** One-line size note shown under the generated code (UI text; kept here so it can be tested). */

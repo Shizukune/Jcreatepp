@@ -11,6 +11,7 @@
 import * as Blockly from 'blockly/core';
 import { blockVariableAccess } from '../blocks/variableBlocks';
 import { blockLabel } from '../blocks/placement';
+import { UNIQUE_EVENT_BLOCK_TYPES } from '../blocks/context';
 import { chain, type BlockJson } from '../demos/blockJson';
 import { convertState } from '../demos/playback';
 import type { VariableKind } from '../variables';
@@ -44,15 +45,8 @@ export function channelsWrittenBy(type: string): Channel[] {
 
 const CHANNEL_LABEL: Record<Channel, string> = { position: '位置', rotation: '角度' };
 
-/** Event blocks that may appear only once; parts add into the existing one. */
-const UNIQUE_EVENTS = new Set([
-  'jcreatepp_on_start',
-  'jcreatepp_on_update',
-  'jcreatepp_on_interact',
-  'jcreatepp_on_collide',
-  'jcreatepp_on_grab_start',
-  'jcreatepp_on_grab_end',
-]);
+/** Event blocks that may appear only once (same list as the converter); parts add into the existing one. */
+const UNIQUE_EVENTS = new Set<string>(UNIQUE_EVENT_BLOCK_TYPES);
 
 export type InsertResult = { ok: true; blockIds: string[] } | { ok: false; reason: string };
 

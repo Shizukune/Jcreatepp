@@ -56,7 +56,7 @@ test('ride and grab add the components their events need', () => {
   assert.deepEqual(grab.components, ['Item', 'ScriptableItem', 'MovableItem', 'GrabbableItem']);
 
   const both = buildUnitySetup({ rideTemplate: { forwardSpeed: numberLiteral(1), upDownSpeed: numberLiteral(1), turnSpeed: numberLiteral(1), forward: 'z' }, onGrabEnd: { body: [] } }, '');
-  assert.ok(both.craftItemBlockers.some((b) => b.includes('併用不可')));
+  assert.ok(both.problems.some((p) => p.includes('同じアイテムでは使えません')), 'ride + grab fails on any item');
 });
 
 test('uGUI / TextMeshPro text is flagged for craft items, TextView is not', () => {
@@ -96,7 +96,8 @@ test('every fixture: code that moves the item requires MovableItem, audio / refe
     const code = programToJS(program);
     const setup = buildUnitySetup(program, code);
     const movesItem = /\$\.(setPosition|setRotation|addImpulsiveForce|addForce)\(/.test(code);
-    assert.equal(setup.components.includes('MovableItem'), movesItem, `${file}: MovableItem`);
+    // Moving the item needs MovableItem (other events such as grab / collide may need it too).
+    if (movesItem) assert.ok(setup.components.includes('MovableItem'), `${file}: MovableItem`);
     for (const [, id] of code.matchAll(/\$\.audio\("([^"]*)"\)/g)) {
       assert.ok(setup.audioSetIds.includes(id), `${file}: audio ${id}`);
     }
@@ -117,4 +118,24 @@ test('size note: under and over the craft item limit', () => {
   assert.equal(over.overCraftItemLimit, true);
   assert.ok(over.text.includes('20,001'));
   assert.equal(describeScriptSize(20000).overCraftItemLimit, false);
+});
+
+test('collide needs a physically moving item (MovableItem)', () => {
+  const setup = buildUnitySetup({ onCollide: { body: [] } }, '');
+  assert.ok(setup.components.includes('MovableItem'));
+});
+
+test('switching a Unity component on a sub node is world-only (getUnityComponent)', () => {
+  const setup = buildUnitySetup({
+    onStart: { body: [{ kind: 'set_component_enabled', subNodeName: 'Lamp', componentType: 'MeshRenderer', enabled: { kind: 'bool_literal', value: true } as never }] },
+  }, '');
+  assert.equal(setup.craftItemBlockers.length, 1);
+  const text = buildUnitySetup({ onStart: { body: [{ kind: 'set_subnode_text', subNodeName: 'Label', componentType: 'TextView', value: stringLiteral('a') }] } }, '');
+  assert.deepEqual(text.craftItemBlockers, [], 'TextView text works on craft items');
+});
+
+test('interact together with grab events is reported as a problem for any item', () => {
+  const setup = buildUnitySetup({ onInteract: { body: [] }, onGrabStart: { body: [] } }, '');
+  assert.ok(setup.problems.some((p) => p.includes('インタラクト時')));
+  assert.deepEqual(buildUnitySetup({ onInteract: { body: [] } }, '').problems, []);
 });
