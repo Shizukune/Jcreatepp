@@ -427,7 +427,8 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       return;
     }
     timeEl.textContent = `${runner.time.toFixed(2)} 秒`;
-    const groups: Record<string, string[]> = { 数値変数: [], 文字変数: [], 真偽値変数・フラグ: [], クールダウン: [], 一連の動作: [] };
+    // Quoted keys: "・" is not a valid identifier character for the production minifier.
+    const groups: Record<string, string[]> = { '数値変数': [], '文字変数': [], '真偽値変数・フラグ': [], 'クールダウン': [], '一連の動作': [] };
     const state = runner.$.state as Record<string, unknown>;
     for (const key of Object.keys(state).sort()) {
       const v = state[key];
