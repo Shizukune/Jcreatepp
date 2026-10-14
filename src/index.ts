@@ -22,6 +22,8 @@ import { collectUnityRequirements, formatUnityRequirements } from './unityRequir
 import { validateWorkspace } from './validator';
 import { save, load, saveToFile, loadFromFile } from './serialization';
 import { toolbox } from './toolbox';
+import type { Program } from './ir';
+import type { Preview } from './preview/previewApp';
 import './index.css';
 
 // 言語設定
@@ -90,6 +92,69 @@ const ws = Blockly.inject(blocklyDiv, {
 let lastGeneratedCode = '';
 let isGenerating = false; // 再入ガード
 
+// ── 3D プレビュー（タブを初めて開いたときに読み込む） ──
+
+let lastProgram: Program | null = null;
+let previewReason = '';
+let preview: Preview | null = null;
+let previewLoading = false;
+const codePane = document.getElementById('codePane');
+const codeView = document.getElementById('codeView');
+const previewView = document.getElementById('previewView');
+const tabCode = document.getElementById('tabCode');
+const tabPreview = document.getElementById('tabPreview');
+
+function updatePreview() {
+  if (!preview) return;
+  // The preview runs a trace build; the code shown / downloaded above is never traced.
+  preview.setCode(lastProgram ? programToJS(lastProgram, { trace: true }) : null, previewReason);
+}
+
+function highlightBlocks(ids: string[]) {
+  try {
+    ws.highlightBlock(null);
+    for (const id of ids) {
+      if (ws.getBlockById(id)) ws.highlightBlock(id, true);
+    }
+  } catch (err) {
+    console.error('highlightBlocks error:', err);
+  }
+}
+
+let currentTab: 'code' | 'preview' = 'code';
+
+async function showTab(tab: 'code' | 'preview') {
+  currentTab = tab;
+  const isPreview = tab === 'preview';
+  if (codeView) codeView.hidden = isPreview;
+  if (previewView) previewView.hidden = !isPreview;
+  tabCode?.setAttribute('aria-selected', String(!isPreview));
+  tabPreview?.setAttribute('aria-selected', String(isPreview));
+  codePane?.classList.toggle('previewMode', isPreview);
+  Blockly.svgResize(ws);
+
+  if (isPreview && !preview && !previewLoading && previewView) {
+    previewLoading = true;
+    try {
+      const { createPreview } = await import('./preview/previewApp');
+      preview = createPreview(previewView, { onActiveBlocks: highlightBlocks });
+      // After a page load nothing has been generated yet; generate so the preview has a program.
+      generateCode();
+      updatePreview();
+    } catch (err) {
+      console.error('preview load error:', err);
+      previewView.textContent = '3Dプレビューを読み込めませんでした: ' + (err as Error).message;
+    } finally {
+      previewLoading = false;
+    }
+  }
+  // The tab may have changed while the preview module was loading.
+  preview?.setVisible(currentTab === 'preview');
+}
+
+tabCode?.addEventListener('click', () => void showTab('code'));
+tabPreview?.addEventListener('click', () => void showTab('preview'));
+
 function normalizeDownloadFilename(input: string | null, fallbackBaseName: string, extension: string): string {
   const raw = (input ?? '').trim();
   if (!raw) return `${fallbackBaseName}${extension}`;
@@ -133,6 +198,9 @@ function clearOutputPane() {
     unityRequirementsEl.style.display = 'none';
   }
   lastGeneratedCode = '';
+  lastProgram = null;
+  previewReason = 'ブロックを配置するとプレビューできます';
+  updatePreview();
 }
 
 const generateCode = () => {
@@ -150,6 +218,9 @@ const generateCode = () => {
 
     // 1. ブロック → IR 変換（エラー検出含む）
     const result = workspaceToProgram(ws as Blockly.Workspace, javascriptGenerator as any);
+    lastProgram = result.errors.length > 0 ? null : result.program;
+    previewReason = result.errors.length > 0 ? 'エラーがあるためプレビューできません（「生成コード」タブを確認してください）' : '';
+    updatePreview();
 
     // 2. エラーがあれば表示して中断
     if (result.errors.length > 0) {

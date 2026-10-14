@@ -8,6 +8,9 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
 - `src/codegen/` IR → Cluster Script 生成（Cluster Script の構文はここだけが持つ）
 - `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内
 - `src/index.ts` UI（DOM）。テストからは読み込まない
+- `src/sim/` Cluster Script 互換の `$` モックと実行器（DOM 非依存。テストと 3D プレビューで共用）
+- `src/preview/` 3D プレビュー（three.js、タブを開いたときに動的 import）。座標系の変換は `coords.ts` だけに置く
+- `programToJS(program, { trace: true })` はプレビュー専用。Cluster に出すコード・表示・保存には絶対に使わない（`test/sim.test.ts` で trace 有無の一致を確認）
 - 処理の流れは Blockly → IR → コード生成。新機能もこの流れに沿わせる（将来の 3D エディタ / Unity Editor 統合は IR を共有する前提）
 
 ## 守ること

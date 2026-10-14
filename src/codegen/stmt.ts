@@ -1,8 +1,13 @@
 import type { MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
 import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, stateKey } from './shared';
+import { traceLine } from './trace';
 
 export function stmtToJS(stmt: Stmt): string {
+  return traceLine(stmt, 'run') + stmtToJSCore(stmt);
+}
+
+function stmtToJSCore(stmt: Stmt): string {
   switch (stmt.kind) {
     case 'set_position':
       return `$.setPosition(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));`;

@@ -1,6 +1,7 @@
 import { boolExprToJS, exprToJS } from './expr';
 import { stmtToJS } from './stmt';
 import { safeId, type SequenceStmt } from './shared';
+import { traceLine } from './trace';
 
 export function generateSequenceStateMachine(seq: SequenceStmt): string {
   const id = safeId(seq.id);
@@ -41,6 +42,11 @@ ${body.split('\n').map((line) => `  ${line}`).join('\n')}
 }`;
     } else {
       caseBody = `${stmtToJS(stmt)}\nstep++;`;
+    }
+
+    // Waiting steps are not emitted through stmtToJS, so trace them here.
+    if (stmt.kind === 'wait_seconds' || stmt.kind === 'wait_until' || stmt.kind === 'run_for_seconds') {
+      caseBody = traceLine(stmt, 'wait') + caseBody;
     }
 
     cases.push(`      case ${i}: {\n${caseBody.split('\n').map((line) => `        ${line}`).join('\n')}\n        break;\n      }`);

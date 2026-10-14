@@ -28,10 +28,16 @@
       <div id="mainContainer">
         <div id="blocklyDiv"></div>
         <div id="codePane">
-          <h2>生成コード</h2>
-          <div id="errorMessages" style="display: none;"></div>
-          <div id="unityRequirements" style="display: none;"></div>
-          <pre id="generatedCode"><code>// ブロックを配置して「JS生成」を押してください</code></pre>
+          <div id="paneTabs" role="tablist">
+            <button id="tabCode" role="tab" aria-selected="true">生成コード</button>
+            <button id="tabPreview" role="tab" aria-selected="false">3Dプレビュー</button>
+          </div>
+          <div id="codeView">
+            <div id="errorMessages" style="display: none;"></div>
+            <div id="unityRequirements" style="display: none;"></div>
+            <pre id="generatedCode"><code>// ブロックを配置して「JS生成」を押してください</code></pre>
+          </div>
+          <div id="previewView" hidden></div>
         </div>
       </div>
     </div>

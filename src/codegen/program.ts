@@ -4,6 +4,7 @@ import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
 import { getAllSequences, indent, jsString, safeId, smoothRotateKeys, smoothTransitionKeys } from './shared';
 import { stmtToJS } from './stmt';
+import { traceLine, withTrace } from './trace';
 
 const EVENT_PARAMS: Record<string, string> = {
   onStart: '',
@@ -12,7 +13,16 @@ const EVENT_PARAMS: Record<string, string> = {
   onCollide: 'collision',
 };
 
-export function programToJS(program: Program): string {
+export type CodegenOptions = {
+  /** Emit __jpp_trace() calls for the 3D preview. Never use for code sent to Cluster. */
+  trace?: boolean;
+};
+
+export function programToJS(program: Program, options: CodegenOptions = {}): string {
+  return withTrace(options.trace === true, () => programToJSCore(program));
+}
+
+function programToJSCore(program: Program): string {
   const parts: string[] = [];
   const allSequences = getAllSequences(program);
 
@@ -89,7 +99,7 @@ function smoothMoveUpdateToJS(stmts: SmoothMoveStmt[]): string {
     const keys = smoothTransitionKeys('move', id);
     return `{
   if ($.state[${keys.active}]) {
-    const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
+    ${traceLine(stmt, 'tick')}const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
     const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
     const current = $.getPosition() || new Vector3(0, 0, 0);
     const fromX = (typeof $.state[${keys.fromX}] === "number") ? $.state[${keys.fromX}] : current.x;
@@ -161,7 +171,7 @@ function smoothRotateUpdateToJS(stmts: SmoothRotateStmt[]): string {
     const keys = smoothRotateKeys(id);
     return `{
   if ($.state[${keys.active}]) {
-    const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
+    ${traceLine(stmt, 'tick')}const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
     const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
     const num = (key) => (typeof $.state[key] === "number") ? $.state[key] : 0;
     const from = new Quaternion(num(${keys.fromQx}), num(${keys.fromQy}), num(${keys.fromQz}), (typeof $.state[${keys.fromQw}] === "number") ? $.state[${keys.fromQw}] : 1);

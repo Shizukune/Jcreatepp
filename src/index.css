@@ -153,13 +153,134 @@ body {
   border-left: 2px solid #0f3460;
 }
 
-#codePane h2 {
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 14px;
-  color: #a3d8f4;
+#codePane.previewMode {
+  width: 520px;
+}
+
+#paneTabs {
+  display: flex;
   background: #0f3460;
   border-bottom: 1px solid #1a4a7a;
+}
+
+#paneTabs button {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7fa7c4;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+#paneTabs button[aria-selected="true"] {
+  color: #a3d8f4;
+  border-bottom-color: #e94560;
+}
+
+#codeView,
+#previewView {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#codeView[hidden],
+#previewView[hidden] {
+  display: none;
+}
+
+/* ── 3D プレビュー ── */
+.pvControls,
+.pvEvents {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid #1a4a7a;
+}
+
+.pvControls button,
+.pvEvents button,
+.pvControls select,
+.pvEvents input:not([type="checkbox"]) {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #e0e0e0;
+  background: #0d1b2a;
+  border: 1px solid #2e6f9e;
+  border-radius: 4px;
+}
+
+.pvControls button,
+.pvEvents button {
+  cursor: pointer;
+}
+
+.pvEvents input[data-recv] {
+  width: 90px;
+}
+
+.pvTime {
+  margin-left: auto;
+  color: #a3d8f4;
+  font-variant-numeric: tabular-nums;
+}
+
+.pvView {
+  flex: 1;
+  min-height: 200px;
+  position: relative;
+}
+
+.pvView canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pvNotice {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #ffd166;
+  background: #2a2616;
+  white-space: pre-wrap;
+}
+
+.pvState,
+.pvLog {
+  max-height: 160px;
+  overflow: auto;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-top: 1px solid #1a4a7a;
+}
+
+.pvState h3,
+.pvLog h3 {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #a3d8f4;
+}
+
+.pvState table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pvState td {
+  padding: 1px 4px;
+  border-bottom: 1px solid #1f3348;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.pvEmpty {
+  color: #7fa7c4;
 }
 
 #errorMessages {

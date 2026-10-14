@@ -50,10 +50,10 @@ function convert(ws: Blockly.Workspace) {
 }
 
 /** Blockly workspace state -> generated code. Throws if conversion reports errors. */
-export function generateCode(state: object): string {
+export function generateCode(state: object, options: { trace?: boolean } = {}): string {
   const result = convert(loadWorkspace(state));
   if (result.errors.length > 0) throw new Error(`conversion errors:\n${result.errors.join('\n')}`);
-  return programToJS(result.program);
+  return programToJS(result.program, options);
 }
 
 /** Runs the same pipeline as generateCode() in src/index.ts and renders a stable text report. */

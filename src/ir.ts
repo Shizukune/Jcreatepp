@@ -34,7 +34,14 @@ export type ReceiveHandler = {
   handler: Handler;
 };
 
-export type Stmt =
+/** Where a statement came from (editor block). Optional; codegen ignores it unless tracing. */
+export type SourceRef = {
+  blockId: string;
+};
+
+export type Stmt = StmtBody & { src?: SourceRef };
+
+type StmtBody =
   | { kind: 'set_position'; x: Expr; y: Expr; z: Expr }
   | { kind: 'move_by'; x: Expr; y: Expr; z: Expr }
   | { kind: 'smooth_move_by'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }

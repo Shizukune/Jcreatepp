@@ -80,6 +80,43 @@ test('ride template moves the item while ridden and steered forward', () => {
   assert.deepEqual(r.errors(), []);
 });
 
+// ── trace mode (3D preview): reports blocks, never changes behavior ──
+
+function exercise(code: string, onTrace?: (id: string, phase: string) => void) {
+  const r = createRunner(code, { onTrace });
+  r.start();
+  r.advance(0.5);
+  r.interact();
+  r.collide();
+  r.receive('open', 3);
+  r.ride(true);
+  r.steer({ x: 0.5, y: 1 });
+  r.advance(3);
+  return { state: JSON.stringify(Object.entries(r.$.state).sort()), pos: r.item.position, rot: r.item.rotation, log: JSON.stringify(r.log) };
+}
+
+for (const file of fs.readdirSync(fixtureDir).filter((f) => f.endsWith('.json') && f !== 'errors.json')) {
+  test(`trace on/off behaves the same: ${file}`, () => {
+    const state = JSON.parse(fs.readFileSync(path.join(fixtureDir, file), 'utf8'));
+    assert.equal(generateCode(state, { trace: false }), generateCode(state), 'trace:false must equal the default output');
+    const plain = exercise(generateCode(state));
+    const traced = exercise(generateCode(state, { trace: true }), () => undefined);
+    assert.equal(traced.state, plain.state);
+    assert.equal(traced.log, plain.log);
+    assert.ok(traced.pos.equals(plain.pos) && traced.rot.equals(plain.rot));
+  });
+}
+
+test('trace reports run / wait / tick with block ids', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_smooth_move_by', { id: 'move', inputs: { ...xyz(0, 1, 0), DURATION: num(1) } }),
+    b('jcreatepp_sequence', { id: 'seq', stmts: { DO: [b('jcreatepp_wait_seconds', { id: 'wait', inputs: { SECONDS: num(1) } })] } }),
+  ])), { trace: true });
+  const seen = new Set<string>();
+  exercise(code, (id, phase) => seen.add(`${id}:${phase}`));
+  for (const expected of ['move:run', 'move:tick', 'seq:run', 'wait:wait']) assert.ok(seen.has(expected), `missing ${expected}`);
+});
+
 // ── state values are not aliased by later movement ──
 
 test('save position -> move -> load position restores the saved point', () => {

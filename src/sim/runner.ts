@@ -16,6 +16,8 @@ export type RunnerOptions = {
   seed?: number;
   position?: Vector3;
   rotation?: Quaternion;
+  /** Receives __jpp_trace(blockId, phase) calls from code generated with { trace: true }. */
+  onTrace?: (blockId: string, phase: string) => void;
 };
 
 export type Runner = ClusterMock & {
@@ -53,8 +55,9 @@ export function createRunner(code: string, options: RunnerOptions = {}): Runner 
   math.random = seededRandom(options.seed ?? 1);
 
   // Generated code is a plain script; pass the Cluster globals it may reference.
-  const program = new Function('$', 'Vector3', 'Quaternion', 'Math', code);
-  program(mock.$, Vector3, Quaternion, math);
+  const program = new Function('$', 'Vector3', 'Quaternion', 'Math', '__jpp_trace', code);
+  const trace = options.onTrace ?? (() => undefined);
+  program(mock.$, Vector3, Quaternion, math, trace);
 
   const defaultPlayer = mock.createHandle('player', 'player1');
   let pending = 0;

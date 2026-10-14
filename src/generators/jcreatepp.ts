@@ -154,6 +154,21 @@ function blockToStmt(
   inIf: boolean = false,
   inContinuousBody: boolean = false,
 ): Stmt | null {
+  const stmt = blockToStmtCore(block, eventType, generator, errors, inSequence, inIf, inContinuousBody);
+  // Record the source block so the 3D preview can trace / edit it (not used by normal codegen).
+  if (stmt) stmt.src = { blockId: block.id };
+  return stmt;
+}
+
+function blockToStmtCore(
+  block: Blockly.Block,
+  eventType: EventContext,
+  generator: Blockly.CodeGenerator,
+  errors: string[],
+  inSequence: boolean,
+  inIf: boolean,
+  inContinuousBody: boolean,
+): Stmt | null {
   switch (block.type) {
     case 'jcreatepp_set_position': {
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
