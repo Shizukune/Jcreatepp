@@ -242,7 +242,7 @@ test('V-2 (fixed): flags named true / false and empty flag names are conversion 
   assert.doesNotThrow(() => generateCode(setFlag('door')));
 });
 
-test('S-4: three 1s waits finish at 3s regardless of frame time', { todo: 'known issue S-4' }, () => {
+test('S-4 (fixed): three 1s waits finish at 3s regardless of frame time', () => {
   const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
     b('jcreatepp_sequence', { stmts: { DO: [
       b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(1) } }),
@@ -259,7 +259,25 @@ test('S-4: three 1s waits finish at 3s regardless of frame time', { todo: 'known
   }
 });
 
-test('S-5: if_edge inside a sequence fires on every run of the sequence', { todo: 'known issue S-5 (spec undecided)' }, () => {
+test('run for N seconds: body runs on each frame overlapping the window, next step at N seconds', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_sequence', { stmts: { DO: [
+      b('jcreatepp_run_for_seconds', { inputs: { SECONDS: num(1) }, stmts: { DO: [
+        b('jcreatepp_change_number_var', { fields: { VAR_NAME: 'frames' }, inputs: { DELTA: num(1) } }),
+      ] } }),
+      b('jcreatepp_set_flag', { fields: { FLAG_NAME: 'done', OPERATION: 'true' } }),
+    ] } }),
+  ])));
+  for (const [dt, frames] of [[0.25, 4], [0.3, 4], [0.6, 2]] as const) {
+    const r = createRunner(code);
+    r.start();
+    while (!r.$.state['__jpp_flag_done'] && r.time < 5) r.update(dt);
+    assert.equal(r.$.state['var.frames'], frames, `dt=${dt}`);
+    assert.ok(r.time >= 1 - 1e-9 && r.time < 1 + dt, `dt=${dt}: done at ${r.time}`);
+  }
+});
+
+test('S-5 (fixed): if_edge inside a sequence fires on every run of the sequence', () => {
   const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
     b('jcreatepp_sequence', { stmts: { DO: [
       b('jcreatepp_if_edge', { inputs: { CONDITION: bool(true) }, stmts: { DO: [

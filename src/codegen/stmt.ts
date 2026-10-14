@@ -377,9 +377,29 @@ ${body}
 
 function sequenceStarterToJS(stmt: Extract<Stmt, { kind: 'sequence' }>): string {
   const id = safeId(stmt.id);
+  // Each run of the sequence starts fresh: "only once" latches inside it are cleared,
+  // otherwise a condition that stayed true would never fire again on the next run.
+  const latchResets = sequenceLatchKeys(stmt.body).map((key) => `\n  $.state[${jsString(key)}] = false;`).join('');
   return `if (!$.state["__jpp_seq_active_${id}"]) {
   $.state["__jpp_seq_active_${id}"] = true;
   $.state["__jpp_seq_step_${id}"] = 0;
-  $.state["__jpp_seq_time_${id}"] = 0;
+  $.state["__jpp_seq_time_${id}"] = 0;${latchResets}
 }`;
+}
+
+function sequenceLatchKeys(stmts: Stmt[]): string[] {
+  const keys: string[] = [];
+  for (const s of stmts) {
+    if (s.kind === 'if_edge') {
+      keys.push(`__jpp_edge_${safeId(s.blockId)}`);
+      keys.push(...sequenceLatchKeys(s.body));
+    } else if (s.kind === 'send_message' && s.edgeOnce) {
+      keys.push(`__jpp_send_once_${safeId(s.blockId)}`);
+    } else if (s.kind === 'if') {
+      keys.push(...sequenceLatchKeys(s.thenBody), ...sequenceLatchKeys(s.elseBody ?? []));
+    } else if (s.kind === 'run_for_seconds') {
+      keys.push(...sequenceLatchKeys(s.body));
+    }
+  }
+  return keys;
 }

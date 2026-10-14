@@ -15,6 +15,7 @@ $.onStart(() => {
 $.onUpdate((deltaTime) => {
   if ($.state["__jpp_seq_active_b24"]) {
     let step = $.state["__jpp_seq_step_b24"] || 0;
+    let budget = deltaTime; // this frame's time, consumed by waiting steps
     let yielded = false;
     let guard = 0;
     const MAX_SYNC_STEPS_PER_TICK = 100;
@@ -28,12 +29,15 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 1: {
-          let time = ($.state["__jpp_seq_time_b24"] || 0) + deltaTime;
-          $.state["__jpp_seq_time_b24"] = time;
-          if (time >= 5) {
+          let time = ($.state["__jpp_seq_time_b24"] || 0) + budget;
+          const seconds = 5;
+          if (time >= seconds - 1e-6) {
+            budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b24"] = 0;
             step++;
           } else {
+            $.state["__jpp_seq_time_b24"] = time;
+            budget = 0;
             yielded = true;
           }
           break;
@@ -57,6 +61,7 @@ $.onUpdate((deltaTime) => {
   }
   if ($.state["__jpp_seq_active_b19"]) {
     let step = $.state["__jpp_seq_step_b19"] || 0;
+    let budget = deltaTime; // this frame's time, consumed by waiting steps
     let yielded = false;
     let guard = 0;
     const MAX_SYNC_STEPS_PER_TICK = 100;
@@ -70,26 +75,35 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 1: {
-          let time = ($.state["__jpp_seq_time_b19"] || 0) + deltaTime;
-          $.state["__jpp_seq_time_b19"] = time;
-          if (time >= 1) {
+          let time = ($.state["__jpp_seq_time_b19"] || 0) + budget;
+          const seconds = 1;
+          if (time >= seconds - 1e-6) {
+            budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b19"] = 0;
             step++;
           } else {
+            $.state["__jpp_seq_time_b19"] = time;
+            budget = 0;
             yielded = true;
           }
           break;
         }
         case 2: {
-          let time = ($.state["__jpp_seq_time_b19"] || 0) + deltaTime;
-          $.state["__jpp_seq_time_b19"] = time;
-          if (time <= 2) {
+          const start = $.state["__jpp_seq_time_b19"] || 0;
+          const time = start + budget;
+          const seconds = 2;
+          if (start < seconds - 1e-6) {
             {
               const __jpp_rot = $.getRotation();
               $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
             }
+          }
+          if (time < seconds - 1e-6) {
+            $.state["__jpp_seq_time_b19"] = time;
+            budget = 0;
             yielded = true;
           } else {
+            budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b19"] = 0;
             step++;
           }

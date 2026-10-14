@@ -15,12 +15,16 @@ export function generateSequenceStateMachine(seq: SequenceStmt): string {
     let caseBody = '';
 
     if (stmt.kind === 'wait_seconds') {
-      caseBody = `let time = ($.state["${timeVar}"] || 0) + deltaTime;
-$.state["${timeVar}"] = time;
-if (time >= ${exprToJS(stmt.seconds)}) {
+      // Spend this frame's remaining time once; carry any excess over to the next step.
+      caseBody = `let time = ($.state["${timeVar}"] || 0) + budget;
+const seconds = ${exprToJS(stmt.seconds)};
+if (time >= seconds - 1e-6) {
+  budget = Math.max(0, time - seconds);
   $.state["${timeVar}"] = 0;
   step++;
 } else {
+  $.state["${timeVar}"] = time;
+  budget = 0;
   yielded = true;
 }`;
     } else if (stmt.kind === 'wait_until') {
@@ -31,12 +35,19 @@ if (time >= ${exprToJS(stmt.seconds)}) {
 }`;
     } else if (stmt.kind === 'run_for_seconds') {
       const body = stmt.body.map((bodyStmt) => stmtToJS(bodyStmt)).join('\n');
-      caseBody = `let time = ($.state["${timeVar}"] || 0) + deltaTime;
-$.state["${timeVar}"] = time;
-if (time <= ${exprToJS(stmt.seconds)}) {
+      // Runs the body on every frame that overlaps [0, seconds), then carries the excess time over.
+      caseBody = `const start = $.state["${timeVar}"] || 0;
+const time = start + budget;
+const seconds = ${exprToJS(stmt.seconds)};
+if (start < seconds - 1e-6) {
 ${body.split('\n').map((line) => `  ${line}`).join('\n')}
+}
+if (time < seconds - 1e-6) {
+  $.state["${timeVar}"] = time;
+  budget = 0;
   yielded = true;
 } else {
+  budget = Math.max(0, time - seconds);
   $.state["${timeVar}"] = 0;
   step++;
 }`;
@@ -63,6 +74,7 @@ ${body.split('\n').map((line) => `  ${line}`).join('\n')}
 
   return `if ($.state["${activeVar}"]) {
   let step = $.state["${stepVar}"] || 0;
+  let budget = deltaTime; // this frame's time, consumed by waiting steps
   let yielded = false;
   let guard = 0;
   const MAX_SYNC_STEPS_PER_TICK = 100;
