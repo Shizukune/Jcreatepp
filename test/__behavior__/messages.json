@@ -1,0 +1,2290 @@
+{
+ "errors": [],
+ "unsupported": [],
+ "frames": [
+  {
+   "at": "start",
+   "t": 0,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.1",
+   "t": 0.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": [
+    {
+     "type": "send",
+     "target": "item:door",
+     "message": "open",
+     "arg": null
+    },
+    {
+     "type": "send",
+     "target": "item:door",
+     "message": "close",
+     "arg": null
+    },
+    {
+     "type": "send",
+     "target": "item:board",
+     "message": "text",
+     "arg": "hi"
+    }
+   ]
+  },
+  {
+   "at": "idle+0.2",
+   "t": 0.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.3",
+   "t": 0.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.4",
+   "t": 0.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.5",
+   "t": 0.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.6",
+   "t": 0.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.7",
+   "t": 0.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.8",
+   "t": 0.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.9",
+   "t": 0.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+1",
+   "t": 1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.1",
+   "t": 1.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.2",
+   "t": 1.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.3",
+   "t": 1.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.4",
+   "t": 1.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.5",
+   "t": 1.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.6",
+   "t": 1.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.7",
+   "t": 1.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.8",
+   "t": 1.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+0.9",
+   "t": 1.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1",
+   "t": 2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.1",
+   "t": 2.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.2",
+   "t": 2.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.3",
+   "t": 2.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.4",
+   "t": 2.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.5",
+   "t": 2.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.6",
+   "t": 2.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.7",
+   "t": 2.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.8",
+   "t": 2.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+1.9",
+   "t": 2.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact+2",
+   "t": 3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.1",
+   "t": 3.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.2",
+   "t": 3.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.3",
+   "t": 3.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.4",
+   "t": 3.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.5",
+   "t": 3.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.6",
+   "t": 3.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.7",
+   "t": 3.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.8",
+   "t": 3.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+0.9",
+   "t": 3.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1",
+   "t": 4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1.1",
+   "t": 4.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1.2",
+   "t": 4.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1.3",
+   "t": 4.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1.4",
+   "t": 4.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "interact2+1.5",
+   "t": 4.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "grab+0.1",
+   "t": 4.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "grab+0.2",
+   "t": 4.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "grab+0.3",
+   "t": 4.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "grab+0.4",
+   "t": 4.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "grab+0.5",
+   "t": 5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.1",
+   "t": 5.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": [
+    {
+     "type": "send",
+     "target": "item:other",
+     "message": "hit",
+     "arg": null
+    },
+    {
+     "type": "send",
+     "target": "item:other",
+     "message": "who",
+     "arg": {
+      "type": "item",
+      "name": "other",
+      "position": {
+       "x": 0,
+       "y": 0,
+       "z": 0
+      }
+     }
+    }
+   ]
+  },
+  {
+   "at": "collide+0.2",
+   "t": 5.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.3",
+   "t": 5.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.4",
+   "t": 5.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.5",
+   "t": 5.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.6",
+   "t": 5.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.7",
+   "t": 5.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.8",
+   "t": 5.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+0.9",
+   "t": 5.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "collide+1",
+   "t": 6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "receive+0.1",
+   "t": 6.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": [
+    {
+     "type": "send",
+     "target": "item:sender",
+     "message": "ack",
+     "arg": null
+    }
+   ]
+  },
+  {
+   "at": "receive+0.2",
+   "t": 6.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.3",
+   "t": 6.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.4",
+   "t": 6.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.5",
+   "t": 6.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.6",
+   "t": 6.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.7",
+   "t": 6.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.8",
+   "t": 6.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.9",
+   "t": 6.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "receive+1",
+   "t": 7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.1",
+   "t": 7.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.2",
+   "t": 7.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.3",
+   "t": 7.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.4",
+   "t": 7.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.5",
+   "t": 7.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.6",
+   "t": 7.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.7",
+   "t": 7.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.8",
+   "t": 7.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.9",
+   "t": 7.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+1",
+   "t": 8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.1",
+   "t": 8.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.2",
+   "t": 8.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.3",
+   "t": 8.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.4",
+   "t": 8.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.5",
+   "t": 8.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.6",
+   "t": 8.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.7",
+   "t": 8.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.8",
+   "t": 8.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.9",
+   "t": 8.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1",
+   "t": 9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.1",
+   "t": 9.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.2",
+   "t": 9.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.3",
+   "t": 9.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.4",
+   "t": 9.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.5",
+   "t": 9.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.6",
+   "t": 9.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.7",
+   "t": 9.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.8",
+   "t": 9.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.9",
+   "t": 9.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2",
+   "t": 10,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.1",
+   "t": 10.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.2",
+   "t": 10.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.3",
+   "t": 10.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.4",
+   "t": 10.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.5",
+   "t": 10.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.6",
+   "t": 10.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.7",
+   "t": 10.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.8",
+   "t": 10.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.9",
+   "t": 10.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3",
+   "t": 11,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.1",
+   "t": 11.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.2",
+   "t": 11.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.3",
+   "t": 11.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.4",
+   "t": 11.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.5",
+   "t": 11.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.6",
+   "t": 11.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.7",
+   "t": 11.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.8",
+   "t": 11.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.9",
+   "t": 11.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+4",
+   "t": 12,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 1
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "str.msg": "",
+    "var.got": 3
+   },
+   "log": []
+  }
+ ]
+}

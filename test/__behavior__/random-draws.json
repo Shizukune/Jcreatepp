@@ -1,0 +1,2663 @@
+{
+ "errors": [],
+ "unsupported": [],
+ "frames": [
+  {
+   "at": "start",
+   "t": 0,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {},
+   "log": []
+  },
+  {
+   "at": "idle+0.1",
+   "t": 0.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 0.624047,
+    "var.fromVar": 6,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.2",
+   "t": 0.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 4.90405,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.3",
+   "t": 0.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 1.493272,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.4",
+   "t": 0.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 3.849954,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.5",
+   "t": 0.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 9.278682,
+    "var.fromVar": 0,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.6",
+   "t": 0.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 6.332317,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.7",
+   "t": 0.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 1.536972,
+    "var.fromVar": 2,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.8",
+   "t": 0.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 6.209019,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "idle+0.9",
+   "t": 0.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 0.289777,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "idle+1",
+   "t": 1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 8.296277,
+    "var.fromVar": 1,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.1",
+   "t": 1.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 6.319397,
+    "var.fromVar": 2,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.2",
+   "t": 1.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 4.512052,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.3",
+   "t": 1.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 4.329526,
+    "var.fromVar": 2,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.4",
+   "t": 1.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 1.422435,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.5",
+   "t": 1.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 4.07094,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.6",
+   "t": 1.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 8.243527,
+    "var.fromVar": 5,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.7",
+   "t": 1.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 7.962201,
+    "var.fromVar": 5,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.8",
+   "t": 1.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": -0.605067,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact+0.9",
+   "t": 1.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": -0.760767,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1",
+   "t": 2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 3.362849,
+    "var.fromVar": 2,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.1",
+   "t": 2.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": -0.814683,
+    "var.fromVar": 0,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.2",
+   "t": 2.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 0.371371,
+    "var.fromVar": 1,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.3",
+   "t": 2.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": -1.523923,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.4",
+   "t": 2.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 7.913768,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.5",
+   "t": 2.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 1.399699,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.6",
+   "t": 2.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 5.849,
+    "var.fromVar": 2,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.7",
+   "t": 2.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 6.143991,
+    "var.fromVar": 0,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.8",
+   "t": 2.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 8.781984,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact+1.9",
+   "t": 2.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": -1.958525,
+    "var.fromVar": 1,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact+2",
+   "t": 3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 0.870906,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.1",
+   "t": 3.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 6.505678,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.2",
+   "t": 3.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 0.501922,
+    "var.fromVar": 0,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.3",
+   "t": 3.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 7.318554,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.4",
+   "t": 3.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 4.401482,
+    "var.fromVar": 2,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.5",
+   "t": 3.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 6.813933,
+    "var.fromVar": 0,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.6",
+   "t": 3.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": -0.216911,
+    "var.fromVar": 4,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.7",
+   "t": 3.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 3.556685,
+    "var.fromVar": 3,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.8",
+   "t": 3.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 3.741752,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+0.9",
+   "t": 3.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 5.723994,
+    "var.fromVar": 5,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1",
+   "t": 4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": -2.45368,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1.1",
+   "t": 4.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 3.686505,
+    "var.fromVar": 0,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1.2",
+   "t": 4.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": -1.722033,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1.3",
+   "t": 4.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 9.467845,
+    "var.fromVar": 5,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1.4",
+   "t": 4.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 3.171972,
+    "var.fromVar": 2,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "interact2+1.5",
+   "t": 4.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 5.442835,
+    "var.fromVar": 4,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "grab+0.1",
+   "t": 4.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 2.266699,
+    "var.fromVar": 5,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "grab+0.2",
+   "t": 4.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 2.922182,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "grab+0.3",
+   "t": 4.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 5.377981,
+    "var.fromVar": 4,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "grab+0.4",
+   "t": 4.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 5.425406,
+    "var.fromVar": 0,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "grab+0.5",
+   "t": 5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 4.750475,
+    "var.fromVar": 2,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.1",
+   "t": 5.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 2.887797,
+    "var.fromVar": 4,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.2",
+   "t": 5.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": -0.615611,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.3",
+   "t": 5.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 9.321541,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.4",
+   "t": 5.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": -0.297007,
+    "var.fromVar": 2,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.5",
+   "t": 5.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 5.753708,
+    "var.fromVar": 2,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.6",
+   "t": 5.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": -1.962486,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.7",
+   "t": 5.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 7.699002,
+    "var.fromVar": 0,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.8",
+   "t": 5.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 9.254103,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "collide+0.9",
+   "t": 5.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 4.976232,
+    "var.fromVar": 4,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "collide+1",
+   "t": 6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 4.202364,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.1",
+   "t": 6.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 6.610541,
+    "var.fromVar": 2,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.2",
+   "t": 6.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 4.087494,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.3",
+   "t": 6.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 8.055318,
+    "var.fromVar": 1,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.4",
+   "t": 6.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 0.244454,
+    "var.fromVar": 2,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.5",
+   "t": 6.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 7.07049,
+    "var.fromVar": 0,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.6",
+   "t": 6.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 7.784723,
+    "var.fromVar": 1,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.7",
+   "t": 6.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": -1.365116,
+    "var.fromVar": 3,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.8",
+   "t": 6.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 9.898421,
+    "var.fromVar": 1,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "receive+0.9",
+   "t": 6.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 2.003777,
+    "var.fromVar": 1,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "receive+1",
+   "t": 7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 2.718389,
+    "var.fromVar": 4,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.1",
+   "t": 7.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 2.566377,
+    "var.fromVar": 1,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.2",
+   "t": 7.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": -0.664283,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.3",
+   "t": 7.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 8.319337,
+    "var.fromVar": 0,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.4",
+   "t": 7.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 1.209403,
+    "var.fromVar": 1,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.5",
+   "t": 7.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 6.66667,
+    "var.fromVar": 3,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.6",
+   "t": 7.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 2.094044,
+    "var.fromVar": 2,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.7",
+   "t": 7.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 4.506416,
+    "var.fromVar": 4,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.8",
+   "t": 7.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": -0.878699,
+    "var.fromVar": 3,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "ride+0.9",
+   "t": 7.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 7.807971,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "ride+1",
+   "t": 8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 8.65741,
+    "var.fromVar": 3,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.1",
+   "t": 8.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 7.938854,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.2",
+   "t": 8.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 9.580082,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.3",
+   "t": 8.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 1.306888,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.4",
+   "t": 8.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 1.919776,
+    "var.fromVar": 1,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.5",
+   "t": 8.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 8.419821,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.6",
+   "t": 8.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 4.503646,
+    "var.fromVar": 1,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.7",
+   "t": 8.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 7.582161,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.8",
+   "t": 8.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 8.180146,
+    "var.fromVar": 2,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+0.9",
+   "t": 8.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 7.443601,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+1",
+   "t": 9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 5.010703,
+    "var.fromVar": 5,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.1",
+   "t": 9.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 1.219146,
+    "var.fromVar": 0,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.2",
+   "t": 9.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": -0.373408,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.3",
+   "t": 9.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 9.496957,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.4",
+   "t": 9.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 2.502984,
+    "var.fromVar": 4,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.5",
+   "t": 9.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": -0.074031,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.6",
+   "t": 9.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": 3.510127,
+    "var.fromVar": 5,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.7",
+   "t": 9.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 0.41168,
+    "var.fromVar": 1,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.8",
+   "t": 9.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 1.025918,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+1.9",
+   "t": 9.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 7.809403,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+2",
+   "t": 10,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 3.69654,
+    "var.fromVar": 1,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.1",
+   "t": 10.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": -1.397418,
+    "var.fromVar": 2,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.2",
+   "t": 10.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 5.274205,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.3",
+   "t": 10.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 8.897559,
+    "var.fromVar": 2,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.4",
+   "t": 10.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": -2.344262,
+    "var.fromVar": 3,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.5",
+   "t": 10.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 9.175157,
+    "var.fromVar": 1,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.6",
+   "t": 10.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 0.184721,
+    "var.fromVar": 1,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.7",
+   "t": 10.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": -1.710401,
+    "var.fromVar": 0,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.8",
+   "t": 10.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": -1.432808,
+    "var.fromVar": 3,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+2.9",
+   "t": 10.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 2.565241,
+    "var.fromVar": 3,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+3",
+   "t": 11,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 3.27911,
+    "var.fromVar": 2,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.1",
+   "t": 11.1,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 6.239761,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.2",
+   "t": 11.2,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": 2.034812,
+    "var.fromVar": 2,
+    "var.reversed": 3
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.3",
+   "t": 11.3,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 1,
+    "var.float": 6.834991,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.4",
+   "t": 11.4,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 6,
+    "var.float": 4.537139,
+    "var.fromVar": 1,
+    "var.reversed": 5
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.5",
+   "t": 11.5,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 5,
+    "var.float": -1.260365,
+    "var.fromVar": 0,
+    "var.reversed": 4
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.6",
+   "t": 11.6,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 1.192466,
+    "var.fromVar": 0,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.7",
+   "t": 11.7,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 2.573649,
+    "var.fromVar": 3,
+    "var.reversed": 6
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.8",
+   "t": 11.8,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 4,
+    "var.float": 1.320579,
+    "var.fromVar": 2,
+    "var.reversed": 2
+   },
+   "log": []
+  },
+  {
+   "at": "end+3.9",
+   "t": 11.9,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 2,
+    "var.float": 7.634459,
+    "var.fromVar": 2,
+    "var.reversed": 1
+   },
+   "log": []
+  },
+  {
+   "at": "end+4",
+   "t": 12,
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "rotation": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "state": {
+    "var.dice": 3,
+    "var.float": -0.155619,
+    "var.fromVar": 0,
+    "var.reversed": 1
+   },
+   "log": []
+  }
+ ]
+}
