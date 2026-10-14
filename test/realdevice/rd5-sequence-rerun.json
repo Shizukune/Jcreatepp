@@ -1,0 +1,92 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t61",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_sequence",
+              "id": "t60",
+              "inputs": {
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_if_edge",
+                    "id": "t57",
+                    "inputs": {
+                      "CONDITION": {
+                        "block": {
+                          "type": "jcreatepp_bool_literal",
+                          "id": "t52",
+                          "fields": {
+                            "VALUE": "true"
+                          }
+                        }
+                      },
+                      "DO": {
+                        "block": {
+                          "type": "jcreatepp_add_position",
+                          "id": "t56",
+                          "inputs": {
+                            "X": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t53",
+                                "fields": {
+                                  "NUM": 0
+                                }
+                              }
+                            },
+                            "Y": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t54",
+                                "fields": {
+                                  "NUM": 0.5
+                                }
+                              }
+                            },
+                            "Z": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t55",
+                                "fields": {
+                                  "NUM": 0
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_wait_seconds",
+                        "id": "t59",
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t58",
+                              "fields": {
+                                "NUM": 0.5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

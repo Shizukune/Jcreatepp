@@ -1,0 +1,45 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_ride_template",
+        "id": "t87",
+        "fields": {
+          "FORWARD_AXIS": "Z"
+        },
+        "inputs": {
+          "FORWARD_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "t84",
+              "fields": {
+                "NUM": 3
+              }
+            }
+          },
+          "UP_DOWN_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "t85",
+              "fields": {
+                "NUM": 1
+              }
+            }
+          },
+          "TURN_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "t86",
+              "fields": {
+                "NUM": 60
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

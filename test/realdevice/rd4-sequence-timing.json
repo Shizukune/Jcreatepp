@@ -1,0 +1,144 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t51",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_sequence",
+              "id": "t50",
+              "inputs": {
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_add_position",
+                    "id": "t39",
+                    "inputs": {
+                      "X": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t36",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "Y": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t37",
+                          "fields": {
+                            "NUM": 1
+                          }
+                        }
+                      },
+                      "Z": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t38",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_wait_seconds",
+                        "id": "t41",
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t40",
+                              "fields": {
+                                "NUM": 1
+                              }
+                            }
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "jcreatepp_wait_seconds",
+                            "id": "t43",
+                            "inputs": {
+                              "SECONDS": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "t42",
+                                  "fields": {
+                                    "NUM": 1
+                                  }
+                                }
+                              }
+                            },
+                            "next": {
+                              "block": {
+                                "type": "jcreatepp_wait_seconds",
+                                "id": "t45",
+                                "inputs": {
+                                  "SECONDS": {
+                                    "block": {
+                                      "type": "math_number",
+                                      "id": "t44",
+                                      "fields": {
+                                        "NUM": 1
+                                      }
+                                    }
+                                  }
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "jcreatepp_add_position",
+                                    "id": "t49",
+                                    "inputs": {
+                                      "X": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "t46",
+                                          "fields": {
+                                            "NUM": 0
+                                          }
+                                        }
+                                      },
+                                      "Y": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "t47",
+                                          "fields": {
+                                            "NUM": -1
+                                          }
+                                        }
+                                      },
+                                      "Z": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "t48",
+                                          "fields": {
+                                            "NUM": 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

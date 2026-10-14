@@ -1,0 +1,142 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t35",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_if_else",
+              "id": "t34",
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_compare",
+                    "id": "t25",
+                    "fields": {
+                      "OP": "EQ"
+                    },
+                    "inputs": {
+                      "A": {
+                        "block": {
+                          "type": "jcreatepp_arithmetic",
+                          "id": "t23",
+                          "fields": {
+                            "OP": "ADD"
+                          },
+                          "inputs": {
+                            "A": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t21",
+                                "fields": {
+                                  "NUM": 0.1
+                                }
+                              }
+                            },
+                            "B": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t22",
+                                "fields": {
+                                  "NUM": 0.2
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "B": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t24",
+                          "fields": {
+                            "NUM": 0.3
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_add_position",
+                    "id": "t29",
+                    "inputs": {
+                      "X": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t26",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "Y": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t27",
+                          "fields": {
+                            "NUM": 1
+                          }
+                        }
+                      },
+                      "Z": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t28",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "ELSE": {
+                  "block": {
+                    "type": "jcreatepp_add_position",
+                    "id": "t33",
+                    "inputs": {
+                      "X": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t30",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "Y": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t31",
+                          "fields": {
+                            "NUM": -1
+                          }
+                        }
+                      },
+                      "Z": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t32",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

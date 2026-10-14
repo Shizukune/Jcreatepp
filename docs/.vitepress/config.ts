@@ -14,6 +14,7 @@
       { text: 'Unityへ持っていく', link: '/export-to-unity' },
       { text: 'Clusterルール', link: '/cluster-rules' },
       { text: '困ったとき', link: '/troubleshooting' },
+      { text: '更新履歴', link: '/changelog' },
     ],
     sidebar: [
       {
@@ -21,6 +22,7 @@
         items: [
           { text: 'Jcreate++を開く', link: '/app/' },
           { text: 'Jcreate++とは', link: '/' },
+          { text: '3Dプレビュー', link: '/preview' },
         ],
       },
       {
@@ -53,6 +55,7 @@
           { text: 'JSを保存してUnityに持っていく', link: '/export-to-unity' },
           { text: 'Cluster Scriptの最低限のルール', link: '/cluster-rules' },
           { text: 'トラブルシュート', link: '/troubleshooting' },
+          { text: '更新履歴', link: '/changelog' },
         ],
       },
     ],

@@ -1,0 +1,102 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "t14",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_rotation",
+              "id": "t13",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t10",
+                    "fields": {
+                      "NUM": 30
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t11",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t12",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t20",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_smooth_rotate_by",
+              "id": "t19",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t15",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t16",
+                    "fields": {
+                      "NUM": 90
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t17",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "DURATION": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t18",
+                    "fields": {
+                      "NUM": 2
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}

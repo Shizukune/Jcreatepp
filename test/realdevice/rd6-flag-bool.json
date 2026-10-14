@@ -1,0 +1,112 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t73",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_flag",
+              "id": "t62",
+              "fields": {
+                "FLAG_NAME": "lamp",
+                "OPERATION": "toggle"
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_if_else",
+                  "id": "t72",
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_bool_var",
+                        "id": "t63",
+                        "fields": {
+                          "VAR_NAME": "lamp"
+                        }
+                      }
+                    },
+                    "DO": {
+                      "block": {
+                        "type": "jcreatepp_add_position",
+                        "id": "t67",
+                        "inputs": {
+                          "X": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t64",
+                              "fields": {
+                                "NUM": 0
+                              }
+                            }
+                          },
+                          "Y": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t65",
+                              "fields": {
+                                "NUM": 1
+                              }
+                            }
+                          },
+                          "Z": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t66",
+                              "fields": {
+                                "NUM": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "ELSE": {
+                      "block": {
+                        "type": "jcreatepp_add_position",
+                        "id": "t71",
+                        "inputs": {
+                          "X": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t68",
+                              "fields": {
+                                "NUM": 0
+                              }
+                            }
+                          },
+                          "Y": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t69",
+                              "fields": {
+                                "NUM": -1
+                              }
+                            }
+                          },
+                          "Z": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t70",
+                              "fields": {
+                                "NUM": 0
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

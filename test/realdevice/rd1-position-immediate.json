@@ -1,0 +1,85 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t9",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_add_position",
+              "id": "t4",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t1",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t2",
+                    "fields": {
+                      "NUM": 0.5
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t3",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_add_position",
+                  "id": "t8",
+                  "inputs": {
+                    "X": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t5",
+                        "fields": {
+                          "NUM": 0
+                        }
+                      }
+                    },
+                    "Y": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t6",
+                        "fields": {
+                          "NUM": 0.5
+                        }
+                      }
+                    },
+                    "Z": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t7",
+                        "fields": {
+                          "NUM": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

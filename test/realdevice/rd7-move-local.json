@@ -1,0 +1,93 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "t78",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_rotation",
+              "id": "t77",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t74",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t75",
+                    "fields": {
+                      "NUM": 90
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t76",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t83",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_move_local",
+              "id": "t82",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t79",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t80",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t81",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}
