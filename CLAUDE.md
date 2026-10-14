@@ -10,7 +10,7 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
 - `src/index.ts` UI（DOM）。テストからは読み込まない
 - `src/variables.ts` 変数の正本: 種類・`$.state` キー規則（codegen はここを使う）・IR からの変数一覧（`Program.variables`）。ブロック側の読み書き表は `src/blocks/variableBlocks.ts`（両者の一致は `test/variables.test.ts`）
 - `src/sim/` Cluster Script 互換の `$` モックと実行器（DOM 非依存。テストと 3D プレビューで共用）
-- `src/preview/` 3D プレビュー（three.js、タブを開いたときに動的 import）。座標系の変換は `coords.ts` だけに置く
+- `src/preview/` 3D プレビュー（three.js、タブを開いたときに動的 import）。`previewApp.ts` は配線のみで、`scene.ts`（描画）/ `editGizmo.ts`（3D編集）/ `panel.ts`（状態・ログ）/ `rideControls.ts`（乗車操作）に分かれる。座標系の変換は `coords.ts` だけに置く
 - `programToJS(program, { trace: true })` はプレビュー専用。Cluster に出すコード・表示・保存には絶対に使わない（`test/sim.test.ts` で trace 有無の一致を確認）
 - 処理の流れは Blockly → IR → コード生成。新機能もこの流れに沿わせる（将来の 3D エディタ / Unity Editor 統合は IR を共有する前提）
 

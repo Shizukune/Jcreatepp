@@ -1,23 +1,20 @@
 /**
- * 3D preview (P1, read-only) + state panel (P2).
- *
- * Runs the generated code (built with { trace: true }) on the src/sim mock and draws the
- * item's transform with three.js. Only reads simulator state; it never edits Blockly.
+ * 3D preview: runs the generated code (built with { trace: true }) on the src/sim mock and shows
+ * it. This file wires the parts together; they live in
+ *   scene.ts (three.js), editGizmo.ts (3D editing), panel.ts (state / log), rideControls.ts (keys).
+ * Only reads simulator state; Blockly is changed only through onEdit (a finished gizmo drag).
  * Loaded lazily from src/index.ts the first time the preview tab is opened.
  */
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { Quaternion, Vector3 } from '../sim/math';
+import { Vector3 } from '../sim/math';
 import { createRunner, type Runner } from '../sim/runner';
-import type { LogEntry } from '../sim/clusterMock';
-import { fromThreePosition, fromThreeQuaternion, toThreePosition, toThreeQuaternion } from './coords';
-import { nearestEuler, type EditTarget, type Xyz } from './blockEdit';
-import { safeId } from '../codegen/shared';
-import { buildStateRows } from './stateRows';
-import { SteerInput, type SteerChange } from './steerInput';
 import type { VariableInfo } from '../variables';
+import type { EditTarget, Xyz } from './blockEdit';
+import { toThreePosition, toThreeQuaternion } from './coords';
+import { createEditGizmo } from './editGizmo';
+import { previewProblems, renderLogPanel, renderStatePanel } from './panel';
+import { attachRideControls } from './rideControls';
+import { createScene } from './scene';
 
 export type Preview = {
   /** New generated code (trace build) or null when the workspace has errors / is empty. */
@@ -37,9 +34,9 @@ export type PreviewOptions = {
   onEdit?: (blockId: string, values: Xyz) => void;
 };
 
-const TRAIL_POINTS = 300;
 const HIGHLIGHT_SECONDS = 0.3;
 const MAX_LOG = 200;
+const PLAYER_POSITION = new Vector3(0, 0, 2);
 
 export function createPreview(root: HTMLElement, options: PreviewOptions = {}): Preview {
   root.innerHTML = `
@@ -75,10 +72,9 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   `;
 
   const $ = <T extends HTMLElement>(sel: string) => root.querySelector(sel) as T;
-  const view = $<HTMLDivElement>('.pvView');
+  const viewEl = $<HTMLDivElement>('.pvView');
   const rideHint = $<HTMLDivElement>('.pvRide');
   const notice = $<HTMLDivElement>('.pvNotice');
-  const editEl = $<HTMLDivElement>('.pvEdit');
   const timeEl = $<HTMLSpanElement>('.pvTime');
   const stateEl = $<HTMLDivElement>('.pvState');
   const logEl = $<HTMLDivElement>('.pvLog');
@@ -87,78 +83,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   const rideBtn = $<HTMLButtonElement>('[data-ev="ride"]');
   const playerChk = $<HTMLInputElement>('[data-opt="player"]');
 
-  // ── three.js scene ──
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  view.appendChild(renderer.domElement);
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d1b2a);
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 500);
-  camera.position.set(6, 5, 8);
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.5, 0);
-  controls.update();
-
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 2));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(5, 10, 3);
-  scene.add(sun);
-  scene.add(new THREE.GridHelper(40, 40, 0x3a5a7a, 0x1f3348));
-  // Cluster axes: +X red, +Y green, +Z blue (drawn at three's -Z).
-  const axes = new THREE.Group();
-  const axis = (dir: Vector3, color: number) =>
-    axes.add(new THREE.ArrowHelper(toThreePosition(dir).normalize(), new THREE.Vector3(), 1.5, color, 0.2, 0.1));
-  axis(new Vector3(1, 0, 0), 0xff5555);
-  axis(new Vector3(0, 1, 0), 0x55ff55);
-  axis(new Vector3(0, 0, 1), 0x5599ff);
-  scene.add(axes);
-
-  // The item: a box with a cone on its Cluster forward (+Z).
-  const item = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xe94560 }));
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 16), new THREE.MeshStandardMaterial({ color: 0xffd166 }));
-  nose.position.copy(toThreePosition(new Vector3(0, 0, 0.72)));
-  nose.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), toThreePosition(new Vector3(0, 0, 1)));
-  item.add(box, nose);
-  scene.add(item);
-
-  const virtualPlayer = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 1, 4, 12), new THREE.MeshStandardMaterial({ color: 0x55c2ff }));
-  virtualPlayer.visible = false;
-  scene.add(virtualPlayer);
-
-  const trailPositions = new Float32Array(TRAIL_POINTS * 3);
-  const trailGeometry = new THREE.BufferGeometry();
-  trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-  const trail = new THREE.Line(trailGeometry, new THREE.LineBasicMaterial({ color: 0xa3d8f4 }));
-  scene.add(trail);
-
-  // ── 3D editing (P4): ghost of the selected block's result + gizmo ──
-  const ghostMaterial = new THREE.MeshStandardMaterial({ color: 0x55ffcc, transparent: true, opacity: 0.35, depthWrite: false });
-  const ghost = new THREE.Group();
-  const ghostNose = new THREE.Mesh(nose.geometry, ghostMaterial);
-  ghostNose.position.copy(nose.position);
-  ghostNose.quaternion.copy(nose.quaternion);
-  ghost.add(new THREE.Mesh(box.geometry, ghostMaterial), ghostNose);
-  ghost.visible = false;
-  scene.add(ghost);
-  const moveLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: 0x55ffcc, dashSize: 0.2, gapSize: 0.1 }));
-  moveLine.visible = false;
-  scene.add(moveLine);
-  const gizmo = new TransformControls(camera, renderer.domElement);
-  gizmo.setSpace('world');
-  scene.add(gizmo.getHelper());
-  let editTarget: EditTarget | null = null;
-  let dragging = false;
-  let dragBasis = new Vector3();
-  // Set when the edited block / code changes mid-drag: the drag result is then discarded.
-  let dragCancelled = false;
-  // Item position right before each block last ran ("run" trace), used as the basis for moves.
-  const runBasis = new Map<string, Vector3>();
-  const runBasisRot = new Map<string, Quaternion>();
-  let dragBasisRot = new Quaternion();
-  let trailCount = 0;
-
-  // ── simulation ──
+  // ── simulation state ──
   let code: string | null = null;
   let runner: Runner | null = null;
   let playing = false;
@@ -167,185 +92,38 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   let lastFrame = 0;
   let frameId = 0;
   let variables: VariableInfo[] = [];
-
-  gizmo.addEventListener('dragging-changed', (e) => {
-    dragging = !!e.value;
-    controls.enabled = !dragging;
-    if (dragging) {
-      // Edit against a fixed basis: stop the simulation and freeze where the block starts from.
-      playing = false;
-      playBtn.textContent = '▶ 再生';
-      dragCancelled = false;
-      if (editTarget) {
-        dragBasis = basisFor(editTarget);
-        dragBasisRot = rotationBasisFor(editTarget);
-      }
-    } else {
-      commitEdit();
-    }
-  });
-
-  /** Where the target block starts from: its last pre-execution position, else the current one. */
-  function basisFor(t: EditTarget): Vector3 {
-    if (t.mode === 'width') return oscillationOrigin(t);
-    return runBasis.get(t.blockId)?.clone() ?? currentPosition();
-  }
-
-  /** The rotation the target block starts from (for relative turns). */
-  function rotationBasisFor(t: EditTarget): Quaternion {
-    return runBasisRot.get(t.blockId)?.clone() ?? (runner ? runner.item.rotation.clone() : new Quaternion());
-  }
-
-  /** "往復する" swings around the position stored when it first ran. */
-  function oscillationOrigin(t: EditTarget): Vector3 {
-    const stored = runner?.$.state[`__jpp_osc_init_pos_${safeId(t.blockId)}`];
-    return stored instanceof Vector3 ? stored.clone() : currentPosition();
-  }
-
-  /** Relative modes need the block to have run once to know their real starting point. */
-  function hasRunBasis(t: EditTarget): boolean {
-    if (t.mode === 'width') return runner?.$.state[`__jpp_osc_init_pos_${safeId(t.blockId)}`] instanceof Vector3;
-    if (t.mode === 'move' || t.mode === 'local' || t.mode === 'turn') return runBasis.has(t.blockId);
-    return true;
-  }
-
-  function axisVector(axis: 'X' | 'Y' | 'Z' | undefined): Vector3 {
-    return axis === 'Y' ? new Vector3(0, 1, 0) : axis === 'Z' ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0);
-  }
-
-  function currentPosition(): Vector3 {
-    return runner ? runner.item.position.clone() : new Vector3();
-  }
-
-  function updateGhost() {
-    const t = editTarget;
-    ghost.visible = !!t;
-    moveLine.visible = !!t && (t.mode === 'move' || t.mode === 'local' || t.mode === 'width');
-    editEl.hidden = !t;
-    if (!t) {
-      gizmo.detach();
-      return;
-    }
-    const rotating = t.mode === 'rotation' || t.mode === 'turn';
-    editEl.textContent = (t.editable
-      ? `3D編集: 「${t.label}」 — 緑の箱を${rotating ? '回転' : 'ドラッグ'}すると数値が変わります`
-      : `3D編集: 「${t.label}」 — ${t.reason}`) +
-      (hasRunBasis(t) ? '' : '\n※まだ実行されていないため、今の位置・向きを仮の起点として表示しています（再生すると実際の起点になります）');
-    if (dragging) {
-      if (t.mode === 'move' || t.mode === 'local') setLine(dragBasis, fromThreePosition(ghost.position));
-      if (t.mode === 'width') {
-        const half = fromThreePosition(ghost.position).sub(dragBasis);
-        setLine(dragBasis.clone().sub(half), dragBasis.clone().add(half));
-      }
-      return;
-    }
-    const v = new Vector3(t.values.x, t.values.y, t.values.z);
-    if (t.mode === 'position') {
-      ghost.position.copy(toThreePosition(v));
-      ghost.quaternion.copy(item.quaternion);
-    } else if (t.mode === 'move') {
-      const basis = basisFor(t);
-      const end = basis.clone().add(v);
-      ghost.position.copy(toThreePosition(end));
-      ghost.quaternion.copy(item.quaternion);
-      setLine(basis, end);
-    } else if (t.mode === 'local') {
-      // Same as the generated code: the offset is turned by the facing before the move.
-      const basis = basisFor(t);
-      const end = basis.clone().add(v.clone().applyQuaternion(rotationBasisFor(t)));
-      ghost.position.copy(toThreePosition(end));
-      ghost.quaternion.copy(item.quaternion);
-      setLine(basis, end);
-    } else if (t.mode === 'rotation') {
-      ghost.position.copy(item.position);
-      ghost.quaternion.copy(toThreeQuaternion(new Quaternion().setFromEulerAngles(v)));
-    } else if (t.mode === 'turn') {
-      // Same as the generated code: start rotation * euler(delta).
-      ghost.position.copy(item.position);
-      ghost.quaternion.copy(toThreeQuaternion(rotationBasisFor(t).multiply(new Quaternion().setFromEulerAngles(v))));
-    } else {
-      // Width: ghost at one end of the swing, line across the whole swing.
-      const origin = oscillationOrigin(t);
-      const half = axisVector(t.axis).multiplyScalar(t.values.x);
-      ghost.position.copy(toThreePosition(origin.clone().add(half)));
-      ghost.quaternion.copy(item.quaternion);
-      setLine(origin.clone().sub(half), origin.clone().add(half));
-    }
-    if (t.editable) {
-      if (gizmo.object !== ghost) gizmo.attach(ghost);
-      gizmo.setMode(rotating ? 'rotate' : 'translate');
-      // Width is a single number: only offer the oscillation axis.
-      gizmo.showX = t.mode !== 'width' || t.axis === 'X';
-      gizmo.showY = t.mode !== 'width' || t.axis === 'Y';
-      gizmo.showZ = t.mode !== 'width' || t.axis === 'Z';
-    } else {
-      gizmo.detach();
-    }
-  }
-
-  function setLine(from: Vector3, to: Vector3) {
-    const attr = moveLine.geometry.attributes.position as THREE.BufferAttribute;
-    const a = toThreePosition(from);
-    const b = toThreePosition(to);
-    attr.setXYZ(0, a.x, a.y, a.z);
-    attr.setXYZ(1, b.x, b.y, b.z);
-    attr.needsUpdate = true;
-    moveLine.computeLineDistances();
-  }
-
-  /**
-   * Euler angles for q near the old values. If the rotation did not really change, keep the old
-   * values exactly: an equivalent triple would end at the same pose but animate differently.
-   */
-  function keepIfSameRotation(q: Quaternion, old: Xyz): Xyz {
-    if (q.equals(new Quaternion().setFromEulerAngles(new Vector3(old.x, old.y, old.z)), 1e-5)) return old;
-    const e = q.createEulerAngles();
-    return nearestEuler({ x: e.x, y: e.y, z: e.z }, old);
-  }
-
-  function commitEdit() {
-    const t = editTarget;
-    if (!t || !t.editable || !options.onEdit || dragCancelled) return;
-    let values: Xyz;
-    if (t.mode === 'position') {
-      const p = fromThreePosition(ghost.position);
-      values = { x: p.x, y: p.y, z: p.z };
-    } else if (t.mode === 'move') {
-      const d = fromThreePosition(ghost.position).sub(dragBasis);
-      values = { x: d.x, y: d.y, z: d.z };
-    } else if (t.mode === 'local') {
-      // World offset back into the block's right / up / forward.
-      const d = fromThreePosition(ghost.position).sub(dragBasis).applyQuaternion(dragBasisRot.clone().invert());
-      values = { x: d.x, y: d.y, z: d.z };
-    } else if (t.mode === 'rotation') {
-      values = keepIfSameRotation(fromThreeQuaternion(ghost.quaternion), t.values);
-    } else if (t.mode === 'turn') {
-      // delta = start^-1 * result, as Euler angles near the old values.
-      values = keepIfSameRotation(dragBasisRot.clone().invert().multiply(fromThreeQuaternion(ghost.quaternion)), t.values);
-    } else {
-      const offset = fromThreePosition(ghost.position).sub(dragBasis);
-      values = { x: Math.abs(offset.dot(axisVector(t.axis))), y: 0, z: 0 };
-    }
-    options.onEdit(t.blockId, values);
-  }
   const traceTimes = new Map<string, number>();
   let lastActive = '';
 
-  const playerHandlePosition = () => new Vector3(0, 0, 2);
+  const view = createScene(viewEl);
+  const edit = createEditGizmo({
+    view,
+    editEl: $<HTMLDivElement>('.pvEdit'),
+    getRunner: () => runner,
+    onDragStart: () => setPlaying(false),
+    onEdit: options.onEdit,
+  });
+  const ride = attachRideControls(viewEl, () => runner, () => riding);
+
+  function setPlaying(next: boolean) {
+    playing = next;
+    playBtn.textContent = playing ? '⏸ 停止' : '▶ 再生';
+  }
+
+  function setRiding(next: boolean) {
+    riding = next;
+    ride.reset();
+    rideBtn.textContent = riding ? '降りる' : '乗る';
+    rideHint.hidden = !riding;
+  }
 
   function reset() {
     traceTimes.clear();
-    runBasis.clear();
-    runBasisRot.clear();
-    trailCount = 0;
-    trailGeometry.setDrawRange(0, 0);
-    item.position.set(0, 0, 0);
-    item.quaternion.identity();
-    riding = false;
-    rideBtn.textContent = '乗る';
-    rideHint.hidden = true;
-    steerInput.clear();
-    steerInput.resetSent();
+    edit.clearRuns();
+    view.clearTrail();
+    view.item.position.set(0, 0, 0);
+    view.item.quaternion.identity();
+    setRiding(false);
     runner = null;
     timeEl.textContent = '0.00 秒';
     lastActive = '';
@@ -359,11 +137,8 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
         onTrace: (id, phase) => {
           if (!runner) return;
           traceTimes.set(id, runner.time);
-          // The trace call precedes the statement, so this is the position before it runs.
-          if (phase === 'run') {
-            runBasis.set(id, runner.item.position.clone());
-            runBasisRot.set(id, runner.item.rotation.clone());
-          }
+          // The trace call precedes the statement, so this is the transform before it runs.
+          if (phase === 'run') edit.recordRun(id, runner.item.position, runner.item.rotation);
         },
       });
       syncVirtualPlayer();
@@ -376,11 +151,11 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   }
 
   function syncVirtualPlayer() {
+    view.virtualPlayer.visible = playerChk.checked;
+    view.virtualPlayer.position.copy(toThreePosition(PLAYER_POSITION.clone().add(new Vector3(0, 0.8, 0))));
     if (!runner) return;
     runner.world.players.length = 0;
-    if (playerChk.checked) runner.world.players.push(runner.createHandle('player', 'player1', playerHandlePosition()));
-    virtualPlayer.visible = playerChk.checked;
-    virtualPlayer.position.copy(toThreePosition(playerHandlePosition().add(new Vector3(0, 0.8, 0))));
+    if (playerChk.checked) runner.world.players.push(runner.createHandle('player', 'player1', PLAYER_POSITION.clone()));
   }
 
   function showNotice(text: string) {
@@ -396,13 +171,9 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       case 'release': runner.grab(false); break;
       case 'collide': runner.collide(); break;
       case 'ride':
-        riding = !riding;
+        setRiding(!riding);
         runner.ride(riding);
-        steerInput.resetSent();
-        sendSteer(steerInput.clear());
-        rideBtn.textContent = riding ? '降りる' : '乗る';
-        rideHint.hidden = !riding;
-        if (riding) view.focus();
+        if (riding) viewEl.focus();
         break;
       case 'receive': {
         const name = (root.querySelector('[data-recv="name"]') as HTMLInputElement).value;
@@ -420,8 +191,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     const act = target.getAttribute('data-act');
     const ev = target.getAttribute('data-ev');
     if (act === 'play') {
-      playing = !playing;
-      playBtn.textContent = playing ? '⏸ 停止' : '▶ 再生';
+      setPlaying(!playing);
     } else if (act === 'step') {
       runner?.update(1 / 60);
       renderPanels();
@@ -433,32 +203,6 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   });
   playerChk.addEventListener('change', syncVirtualPlayer);
 
-  // ── ride controls: keyboard → onSteer / onSteerAdditionalAxis (only while the 3D view has focus) ──
-  const steerInput = new SteerInput();
-
-  function sendSteer(change: SteerChange) {
-    if (!runner) return;
-    if (change.steer) runner.steer(change.steer);
-    if (change.axis !== undefined) runner.steerAdditionalAxis(change.axis);
-  }
-
-  view.addEventListener('keydown', (e) => {
-    if (!riding || !SteerInput.handles(e.code)) return;
-    e.preventDefault(); // arrows would scroll the page
-    sendSteer(steerInput.press(e.code));
-  });
-  view.addEventListener('keyup', (e) => sendSteer(steerInput.release(e.code)));
-  // Losing focus (clicking elsewhere, switching windows or tabs) releases all keys,
-  // so the vehicle never keeps driving with a key that was released elsewhere.
-  const releaseAll = () => sendSteer(steerInput.clear());
-  view.addEventListener('blur', releaseAll);
-  window.addEventListener('blur', releaseAll);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) releaseAll();
-  });
-  view.addEventListener('pointerdown', () => view.focus());
-
-  // ── panels (P2) ──
   function renderPanels() {
     if (!runner) {
       stateEl.innerHTML = '';
@@ -466,58 +210,9 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       return;
     }
     timeEl.textContent = `${runner.time.toFixed(2)} 秒`;
-    const groups = new Map<string, string[]>();
-    for (const row of buildStateRows(variables, runner.$.state as Record<string, unknown>)) {
-      const note = row.note ? `<td class="pvNote">${esc(row.note)}</td>` : '<td></td>';
-      const rows = groups.get(row.group) ?? [];
-      rows.push(`<tr><td>${esc(row.name)}</td><td>${esc(row.value)}</td>${note}</tr>`);
-      groups.set(row.group, rows);
-    }
-    stateEl.innerHTML = [...groups.entries()]
-      .map(([label, rows]) => `<h3>${esc(label)}</h3><table>${rows.join('')}</table>`)
-      .join('') || '<p class="pvEmpty">変数・フラグはまだありません</p>';
-
-    const problems = [
-      ...[...runner.unsupported].map((name) => `プレビュー未対応: ${name}`),
-      ...runner.errors().slice(-1).map((m) => `実行時エラー: ${m}`),
-    ];
-    showNotice(problems.join('\n'));
-    logEl.innerHTML = '<h3>ログ</h3>' + runner.log.slice(-12).reverse().map((l) => `<div>${esc(formatLog(l))}</div>`).join('');
-  }
-
-  // ── render loop ──
-  function frame(now: number) {
-    frameId = requestAnimationFrame(frame);
-    const realDt = Math.min(0.1, (now - lastFrame) / 1000 || 0);
-    lastFrame = now;
-    if (runner && playing) {
-      runner.advance(realDt * Number(speedSel.value));
-      // The preview only shows recent entries; keep memory bounded during long playback.
-      if (runner.log.length > MAX_LOG) runner.log.splice(0, runner.log.length - MAX_LOG);
-    }
-    if (runner) {
-      item.position.copy(toThreePosition(runner.item.position));
-      item.quaternion.copy(toThreeQuaternion(runner.item.rotation));
-      pushTrail(item.position);
-      reportActiveBlocks(runner.time);
-      if (playing) renderPanels();
-    }
-    if (editTarget) updateGhost();
-    resize();
-    renderer.render(scene, camera);
-  }
-
-  function pushTrail(p: THREE.Vector3) {
-    const last = trailCount > 0 ? (trailCount - 1) * 3 : -1;
-    if (last >= 0 && Math.abs(trailPositions[last] - p.x) + Math.abs(trailPositions[last + 1] - p.y) + Math.abs(trailPositions[last + 2] - p.z) < 1e-4) return;
-    if (trailCount === TRAIL_POINTS) {
-      trailPositions.copyWithin(0, 3);
-      trailCount--;
-    }
-    trailPositions.set([p.x, p.y, p.z], trailCount * 3);
-    trailCount++;
-    trailGeometry.setDrawRange(0, trailCount);
-    trailGeometry.attributes.position.needsUpdate = true;
+    renderStatePanel(stateEl, runner, variables);
+    showNotice(previewProblems(runner).join('\n'));
+    renderLogPanel(logEl, runner);
   }
 
   function reportActiveBlocks(time: number) {
@@ -530,21 +225,30 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     }
   }
 
-  function resize() {
-    const w = view.clientWidth;
-    const h = view.clientHeight;
-    if (w === 0 || h === 0) return;
-    if (renderer.domElement.width !== Math.floor(w * renderer.getPixelRatio()) || renderer.domElement.height !== Math.floor(h * renderer.getPixelRatio())) {
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+  function frame(now: number) {
+    frameId = requestAnimationFrame(frame);
+    const realDt = Math.min(0.1, (now - lastFrame) / 1000 || 0);
+    lastFrame = now;
+    if (runner && playing) {
+      runner.advance(realDt * Number(speedSel.value));
+      // The preview only shows recent entries; keep memory bounded during long playback.
+      if (runner.log.length > MAX_LOG) runner.log.splice(0, runner.log.length - MAX_LOG);
     }
+    if (runner) {
+      view.item.position.copy(toThreePosition(runner.item.position));
+      view.item.quaternion.copy(toThreeQuaternion(runner.item.rotation));
+      view.pushTrail(view.item.position);
+      reportActiveBlocks(runner.time);
+      if (playing) renderPanels();
+    }
+    edit.update();
+    view.render();
   }
 
   return {
     setCode(next, reason) {
       if (next !== code) {
-        if (dragging) dragCancelled = true;
+        edit.codeChanged();
         code = next;
         reset();
       }
@@ -555,15 +259,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       renderPanels();
     },
     setEditTarget(target) {
-      if (dragging) {
-        // Keep the gizmo stable, but never write a drag result into a different / changed block.
-        if (!target || !editTarget || target.blockId !== editTarget.blockId || target.mode !== editTarget.mode || !target.editable) {
-          dragCancelled = true;
-        }
-        return;
-      }
-      editTarget = target;
-      updateGhost();
+      edit.setTarget(target);
     },
     setVisible(v) {
       if (v === visible) return;
@@ -579,20 +275,4 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       }
     },
   };
-}
-
-function esc(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-}
-
-function formatLog(l: LogEntry): string {
-  switch (l.type) {
-    case 'send': return `送信 → ${l.target}「${l.message}」${l.arg === null || l.arg === undefined ? '' : ` 値=${JSON.stringify(l.arg)}`}`;
-    case 'audio': return `音「${l.id}」音量 ${l.volume}`;
-    case 'text': return `文字 ${l.subNode}(${l.component}) = ${l.text}`;
-    case 'enabled': return `${l.subNode}(${l.component}) を ${l.enabled ? '有効' : '無効'}`;
-    case 'force': return `力を加える (${l.force.x.toFixed(1)}, ${l.force.y.toFixed(1)}, ${l.force.z.toFixed(1)}) ※物理は再現しません`;
-    case 'player': return `プレイヤー ${l.method}(${l.value})`;
-    case 'error': return `エラー[${l.event}] ${l.message}`;
-  }
 }

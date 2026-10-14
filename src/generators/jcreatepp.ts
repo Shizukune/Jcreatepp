@@ -26,7 +26,6 @@ import {
   UNIQUE_EVENT_BLOCK_TYPES,
   type EventContext,
 } from '../blocks/context';
-import { findEventContext } from '../validator';
 import { blockLabel, placementError, valueInSequenceError } from '../blocks/placement';
 import { collectVariables } from '../variables';
 
