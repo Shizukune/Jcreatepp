@@ -311,5 +311,6 @@ export function formatUnityRequirements(requirements: UnityRequirement[]): strin
     }
   }
 
-  return lines.join('\n');
+  // Requirements are kept per block (blockId), but the same text is shown only once.
+  return [...new Set(lines)].join('\n');
 }

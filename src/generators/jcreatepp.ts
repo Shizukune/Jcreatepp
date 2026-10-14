@@ -81,7 +81,7 @@ export function workspaceToProgram(
         eventCounts[type] = (eventCounts[type] || 0) + 1;
 
         if (eventCounts[type] > 1) {
-          errors.push(`${blockLabel(type)} が複数あります。同種イベントは1つまでです。`);
+          errors.push(`「${blockLabel(type)}」が複数あります。同種イベントは1つまでです。`);
           continue; // 2個目以降は無視
         }
       }
@@ -1114,36 +1114,36 @@ function ensureCollideContext(eventType: EventContext, errors: string[]): boolea
 /** ブロック type → 日本語ラベル */
 function blockLabel(type: string): string {
   switch (type) {
-    case 'jcreatepp_on_start': return '「開始時」';
-    case 'jcreatepp_on_update': return '「毎フレーム」';
-    case 'jcreatepp_on_interact': return '「インタラクト時」';
-    case 'jcreatepp_on_collide': return '「衝突したとき」';
-    case 'jcreatepp_on_grab_start': return '「持ったとき」';
-    case 'jcreatepp_on_grab_end': return '「離したとき」';
-    case 'jcreatepp_on_receive': return '「メッセージを受け取ったとき」';
-    case 'jcreatepp_set_position': return '「位置を〜にする」';
-    case 'jcreatepp_add_position': return '「位置を〜ずつ変える」';
-    case 'jcreatepp_smooth_move_by': return '「位置を〜だけ〜秒かけて動かす」';
-    case 'jcreatepp_set_rotation': return '「角度を〜にする」';
-    case 'jcreatepp_add_rotation': return '「角度を〜ずつ変える」';
-    case 'jcreatepp_smooth_rotate_by': return '「角度を〜だけ〜秒かけて回す」';
-    case 'jcreatepp_continuous_rotation': return '「回転し続ける」';
-    case 'jcreatepp_timed_random_warp': return '「一定間隔でランダムワープ」';
-    case 'jcreatepp_timed_move_return': return '「一定時間移動して戻る」';
-    case 'jcreatepp_set_move_speed': return '「プレイヤーの移動速度倍率を変える」';
-    case 'jcreatepp_set_jump_speed': return '「プレイヤーのジャンプ速度倍率を変える」';
-    case 'jcreatepp_if': return '「もし〜なら」';
-    case 'jcreatepp_if_else': return '「もし〜なら、でなければ」';
-    case 'jcreatepp_sequence': return '「一連の動作（完了まで待つ）」';
-    case 'jcreatepp_wait_seconds': return '「〜秒待つ」';
-    case 'jcreatepp_wait_until': return '「〜まで待つ」';
-    case 'jcreatepp_run_for_seconds': return '「N秒間、毎フレーム実行する」';
-    case 'jcreatepp_compare': return '「比較条件」';
-    case 'jcreatepp_not': return '「〜ではない」';
-    case 'jcreatepp_and': return '「かつ」';
-    case 'jcreatepp_or': return '「または」';
-    case 'jcreatepp_delta_time': return '「経過時間」';
-    case 'jcreatepp_player': return '「プレイヤー」';
+    case 'jcreatepp_on_start': return '開始時';
+    case 'jcreatepp_on_update': return '毎フレーム';
+    case 'jcreatepp_on_interact': return 'インタラクト時';
+    case 'jcreatepp_on_collide': return '衝突したとき';
+    case 'jcreatepp_on_grab_start': return '持ったとき';
+    case 'jcreatepp_on_grab_end': return '離したとき';
+    case 'jcreatepp_on_receive': return 'メッセージを受け取ったとき';
+    case 'jcreatepp_set_position': return '位置を〜にする';
+    case 'jcreatepp_add_position': return '位置を〜ずつ変える';
+    case 'jcreatepp_smooth_move_by': return '位置を〜だけ〜秒かけて動かす';
+    case 'jcreatepp_set_rotation': return '角度を〜にする';
+    case 'jcreatepp_add_rotation': return '角度を〜ずつ変える';
+    case 'jcreatepp_smooth_rotate_by': return '角度を〜だけ〜秒かけて回す';
+    case 'jcreatepp_continuous_rotation': return '回転し続ける';
+    case 'jcreatepp_timed_random_warp': return '一定間隔でランダムワープ';
+    case 'jcreatepp_timed_move_return': return '一定時間移動して戻る';
+    case 'jcreatepp_set_move_speed': return 'プレイヤーの移動速度倍率を変える';
+    case 'jcreatepp_set_jump_speed': return 'プレイヤーのジャンプ速度倍率を変える';
+    case 'jcreatepp_if': return 'もし〜なら';
+    case 'jcreatepp_if_else': return 'もし〜なら、でなければ';
+    case 'jcreatepp_sequence': return '一連の動作（完了まで待つ）';
+    case 'jcreatepp_wait_seconds': return '〜秒待つ';
+    case 'jcreatepp_wait_until': return '〜まで待つ';
+    case 'jcreatepp_run_for_seconds': return 'N秒間、毎フレーム実行する';
+    case 'jcreatepp_compare': return '比較条件';
+    case 'jcreatepp_not': return '〜ではない';
+    case 'jcreatepp_and': return 'かつ';
+    case 'jcreatepp_or': return 'または';
+    case 'jcreatepp_delta_time': return '経過時間';
+    case 'jcreatepp_player': return 'プレイヤー';
     default: return type;
   }
 }
