@@ -122,6 +122,29 @@ function highlightBlocks(ids: string[]) {
 }
 
 let currentTab: 'code' | 'preview' = 'code';
+let blockEdit: typeof import('./preview/blockEdit') | null = null;
+
+// Last block selected in Blockly. Kept while focus moves to the 3D view (Blockly deselects on
+// focus loss), so the gizmo stays after a drag; replaced when another block is selected.
+let editBlockId: string | null = null;
+
+/** Forgets the edited block (workspace cleared / replaced: block ids may be reused by a loaded file). */
+function resetEditTarget() {
+  editBlockId = null;
+  preview?.setEditTarget(null);
+}
+
+/** Tells the preview which selected block (if any) its 3D gizmo should edit. */
+function updateEditTarget() {
+  if (!preview || !blockEdit) return;
+  const selected = Blockly.getSelected();
+  if (selected instanceof Blockly.BlockSvg) editBlockId = selected.id;
+  const block = editBlockId ? ws.getBlockById(editBlockId) : null;
+  preview.setEditTarget(blockEdit.getEditTarget(block));
+}
+
+// Selection is a UI event, so it needs its own listener (the main one skips UI events).
+ws.addChangeListener(() => updateEditTarget());
 
 async function showTab(tab: 'code' | 'preview') {
   currentTab = tab;
@@ -137,7 +160,15 @@ async function showTab(tab: 'code' | 'preview') {
     previewLoading = true;
     try {
       const { createPreview } = await import('./preview/previewApp');
-      preview = createPreview(previewView, { onActiveBlocks: highlightBlocks });
+      preview = createPreview(previewView, {
+        onActiveBlocks: highlightBlocks,
+        onEdit: (blockId, values) => {
+          // Writes the numbers as one undo step; the change listener then regenerates the preview.
+          if (!blockEdit?.applyEdit(ws, blockId, values)) console.warn('3D edit was not applied:', blockId);
+        },
+      });
+      blockEdit = await import('./preview/blockEdit');
+      updateEditTarget();
       // After a page load nothing has been generated yet; generate so the preview has a program.
       generateCode();
       updatePreview();
@@ -319,6 +350,7 @@ btnSave?.addEventListener('click', () => {
 btnLoad?.addEventListener('click', () => {
   console.log('[btnLoad] clicked');
   try {
+    resetEditTarget();
     loadFromFile(ws);
   } catch (e) {
     console.error('[btnLoad] failed:', e);
@@ -348,6 +380,7 @@ btnClear?.addEventListener('click', () => {
 
     // 出力ペインをリセット
     clearOutputPane();
+    resetEditTarget();
     console.log('[btnClear] workspace cleared');
   } catch (e) {
     // 万が一エラーが出ても Events は必ず有効に戻す

@@ -252,6 +252,14 @@ body {
   white-space: pre-wrap;
 }
 
+.pvEdit {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #55ffcc;
+  background: #12302a;
+  border-bottom: 1px solid #1a4a3a;
+}
+
 .pvState,
 .pvLog {
   max-height: 160px;

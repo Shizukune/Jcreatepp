@@ -8,21 +8,27 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { Vector3 } from '../sim/math';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+import { Quaternion, Vector3 } from '../sim/math';
 import { createRunner, type Runner } from '../sim/runner';
 import type { LogEntry } from '../sim/clusterMock';
-import { toThreePosition, toThreeQuaternion } from './coords';
+import { fromThreePosition, fromThreeQuaternion, toThreePosition, toThreeQuaternion } from './coords';
+import { nearestEuler, type EditTarget, type Xyz } from './blockEdit';
 
 export type Preview = {
   /** New generated code (trace build) or null when the workspace has errors / is empty. */
   setCode(code: string | null, reason?: string): void;
   /** Called when the tab becomes visible / hidden. */
   setVisible(visible: boolean): void;
+  /** Block selected in Blockly that the 3D gizmo can edit (P4), or null. */
+  setEditTarget(target: EditTarget | null): void;
 };
 
 export type PreviewOptions = {
   /** Block ids that ran recently (for highlighting). Called only when the set changes. */
   onActiveBlocks?: (blockIds: string[]) => void;
+  /** Called once when a gizmo drag ends, with the new X/Y/Z for the block (Cluster coordinates). */
+  onEdit?: (blockId: string, values: Xyz) => void;
 };
 
 const TRAIL_POINTS = 300;
@@ -54,6 +60,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       </span>
       <label class="pvCheck"><input type="checkbox" data-opt="player" /> 2m前にプレイヤー</label>
     </div>
+    <div class="pvEdit" hidden></div>
     <div class="pvView"></div>
     <div class="pvNotice" hidden></div>
     <div class="pvState"></div>
@@ -63,6 +70,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   const $ = <T extends HTMLElement>(sel: string) => root.querySelector(sel) as T;
   const view = $<HTMLDivElement>('.pvView');
   const notice = $<HTMLDivElement>('.pvNotice');
+  const editEl = $<HTMLDivElement>('.pvEdit');
   const timeEl = $<HTMLSpanElement>('.pvTime');
   const stateEl = $<HTMLDivElement>('.pvState');
   const logEl = $<HTMLDivElement>('.pvLog');
@@ -115,6 +123,29 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
   const trail = new THREE.Line(trailGeometry, new THREE.LineBasicMaterial({ color: 0xa3d8f4 }));
   scene.add(trail);
+
+  // ── 3D editing (P4): ghost of the selected block's result + gizmo ──
+  const ghostMaterial = new THREE.MeshStandardMaterial({ color: 0x55ffcc, transparent: true, opacity: 0.35, depthWrite: false });
+  const ghost = new THREE.Group();
+  const ghostNose = new THREE.Mesh(nose.geometry, ghostMaterial);
+  ghostNose.position.copy(nose.position);
+  ghostNose.quaternion.copy(nose.quaternion);
+  ghost.add(new THREE.Mesh(box.geometry, ghostMaterial), ghostNose);
+  ghost.visible = false;
+  scene.add(ghost);
+  const moveLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: 0x55ffcc, dashSize: 0.2, gapSize: 0.1 }));
+  moveLine.visible = false;
+  scene.add(moveLine);
+  const gizmo = new TransformControls(camera, renderer.domElement);
+  gizmo.setSpace('world');
+  scene.add(gizmo.getHelper());
+  let editTarget: EditTarget | null = null;
+  let dragging = false;
+  let dragBasis = new Vector3();
+  // Set when the edited block / code changes mid-drag: the drag result is then discarded.
+  let dragCancelled = false;
+  // Item position right before each block last ran ("run" trace), used as the basis for moves.
+  const runBasis = new Map<string, Vector3>();
   let trailCount = 0;
 
   // ── simulation ──
@@ -125,6 +156,92 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   let visible = false;
   let lastFrame = 0;
   let frameId = 0;
+
+  gizmo.addEventListener('dragging-changed', (e) => {
+    dragging = !!e.value;
+    controls.enabled = !dragging;
+    if (dragging) {
+      // Edit against a fixed basis: stop the simulation and freeze the current position.
+      playing = false;
+      playBtn.textContent = '▶ 再生';
+      dragCancelled = false;
+      dragBasis = editTarget ? basisFor(editTarget) : currentPosition();
+    } else {
+      commitEdit();
+    }
+  });
+
+  /** Where the target block starts from: its last pre-execution position, else the current one. */
+  function basisFor(t: EditTarget): Vector3 {
+    return runBasis.get(t.blockId)?.clone() ?? currentPosition();
+  }
+
+  function currentPosition(): Vector3 {
+    return runner ? runner.item.position.clone() : new Vector3();
+  }
+
+  function updateGhost() {
+    const t = editTarget;
+    ghost.visible = !!t;
+    moveLine.visible = !!t && t.mode === 'move';
+    editEl.hidden = !t;
+    if (!t) {
+      gizmo.detach();
+      return;
+    }
+    editEl.textContent = t.editable
+      ? `3D編集: 「${t.label}」 — 緑の箱を${t.mode === 'rotation' ? '回転' : 'ドラッグ'}すると数値が変わります`
+      : `3D編集: 「${t.label}」 — ${t.reason}`;
+    if (dragging) {
+      if (t.mode === 'move') setMoveLine(dragBasis);
+      return;
+    }
+    const v = new Vector3(t.values.x, t.values.y, t.values.z);
+    if (t.mode === 'position') {
+      ghost.position.copy(toThreePosition(v));
+      ghost.quaternion.copy(item.quaternion);
+    } else if (t.mode === 'move') {
+      const basis = basisFor(t);
+      ghost.position.copy(toThreePosition(basis.clone().add(v)));
+      ghost.quaternion.copy(item.quaternion);
+      setMoveLine(basis);
+    } else {
+      ghost.position.copy(item.position);
+      ghost.quaternion.copy(toThreeQuaternion(new Quaternion().setFromEulerAngles(v)));
+    }
+    if (t.editable) {
+      if (gizmo.object !== ghost) gizmo.attach(ghost);
+      gizmo.setMode(t.mode === 'rotation' ? 'rotate' : 'translate');
+    } else {
+      gizmo.detach();
+    }
+  }
+
+  function setMoveLine(basis: Vector3) {
+    const attr = moveLine.geometry.attributes.position as THREE.BufferAttribute;
+    const from = toThreePosition(basis);
+    attr.setXYZ(0, from.x, from.y, from.z);
+    attr.setXYZ(1, ghost.position.x, ghost.position.y, ghost.position.z);
+    attr.needsUpdate = true;
+    moveLine.computeLineDistances();
+  }
+
+  function commitEdit() {
+    const t = editTarget;
+    if (!t || !t.editable || !options.onEdit || dragCancelled) return;
+    let values: Xyz;
+    if (t.mode === 'position') {
+      const p = fromThreePosition(ghost.position);
+      values = { x: p.x, y: p.y, z: p.z };
+    } else if (t.mode === 'move') {
+      const d = fromThreePosition(ghost.position).sub(dragBasis);
+      values = { x: d.x, y: d.y, z: d.z };
+    } else {
+      const e = fromThreeQuaternion(ghost.quaternion).createEulerAngles();
+      values = nearestEuler({ x: e.x, y: e.y, z: e.z }, t.values);
+    }
+    options.onEdit(t.blockId, values);
+  }
   const traceTimes = new Map<string, number>();
   let lastActive = '';
 
@@ -132,6 +249,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
 
   function reset() {
     traceTimes.clear();
+    runBasis.clear();
     trailCount = 0;
     trailGeometry.setDrawRange(0, 0);
     item.position.set(0, 0, 0);
@@ -148,8 +266,11 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     }
     try {
       runner = createRunner(code, {
-        onTrace: (id) => {
-          if (runner) traceTimes.set(id, runner.time);
+        onTrace: (id, phase) => {
+          if (!runner) return;
+          traceTimes.set(id, runner.time);
+          // The trace call precedes the statement, so this is the position before it runs.
+          if (phase === 'run') runBasis.set(id, runner.item.position.clone());
         },
       });
       syncVirtualPlayer();
@@ -269,6 +390,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       reportActiveBlocks(runner.time);
       if (playing) renderPanels();
     }
+    if (editTarget) updateGhost();
     resize();
     renderer.render(scene, camera);
   }
@@ -310,10 +432,22 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   return {
     setCode(next, reason) {
       if (next !== code) {
+        if (dragging) dragCancelled = true;
         code = next;
         reset();
       }
       if (!code) showNotice(reason || 'ブロックを配置するとプレビューできます');
+    },
+    setEditTarget(target) {
+      if (dragging) {
+        // Keep the gizmo stable, but never write a drag result into a different / changed block.
+        if (!target || !editTarget || target.blockId !== editTarget.blockId || target.mode !== editTarget.mode || !target.editable) {
+          dragCancelled = true;
+        }
+        return;
+      }
+      editTarget = target;
+      updateGhost();
     },
     setVisible(v) {
       if (v === visible) return;

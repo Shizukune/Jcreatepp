@@ -117,6 +117,22 @@ test('trace reports run / wait / tick with block ids', () => {
   for (const expected of ['move:run', 'move:tick', 'seq:run', 'wait:wait']) assert.ok(seen.has(expected), `missing ${expected}`);
 });
 
+test('a "run" trace fires before its statement (3D move basis = position before the move)', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_position', { id: 'place', inputs: xyz(5, 0, 0) }),
+    b('jcreatepp_add_position', { id: 'move', inputs: xyz(1, 0, 0) }),
+  ])), { trace: true });
+  const before = new Map<string, number>();
+  const r: ReturnType<typeof createRunner> = createRunner(code, {
+    onTrace: (id, phase) => {
+      if (phase === 'run') before.set(id, r.item.position.x);
+    },
+  });
+  r.start();
+  assert.equal(before.get('move'), 5, 'basis is the position before the move');
+  assert.equal(r.item.position.x, 6, 'basis + delta = actual result');
+});
+
 // ── state values are not aliased by later movement ──
 
 test('save position -> move -> load position restores the saved point', () => {

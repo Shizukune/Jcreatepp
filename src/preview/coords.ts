@@ -7,7 +7,7 @@
  */
 
 import * as THREE from 'three';
-import type { Quaternion, Vector3 } from '../sim/math';
+import { Quaternion, Vector3 } from '../sim/math';
 
 export function toThreePosition(v: Vector3, out = new THREE.Vector3()): THREE.Vector3 {
   return out.set(v.x, v.y, -v.z);
@@ -15,4 +15,14 @@ export function toThreePosition(v: Vector3, out = new THREE.Vector3()): THREE.Ve
 
 export function toThreeQuaternion(q: Quaternion, out = new THREE.Quaternion()): THREE.Quaternion {
   return out.set(-q.x, -q.y, q.z, q.w);
+}
+
+/** Inverse of toThreePosition (the mirror is its own inverse). */
+export function fromThreePosition(v: THREE.Vector3): Vector3 {
+  return new Vector3(v.x, v.y, -v.z);
+}
+
+/** Inverse of toThreeQuaternion. */
+export function fromThreeQuaternion(q: THREE.Quaternion): Quaternion {
+  return new Quaternion(-q.x, -q.y, q.z, q.w);
 }
