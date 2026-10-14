@@ -1,0 +1,125 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b2",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_save_position",
+              "id": "b1"
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b4",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_load_position",
+              "id": "b3"
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      },
+      {
+        "type": "jcreatepp_add_position",
+        "id": "b8",
+        "inputs": {
+          "X": {
+            "block": {
+              "type": "math_number",
+              "id": "b5",
+              "fields": {
+                "NUM": 1
+              }
+            }
+          },
+          "Y": {
+            "block": {
+              "type": "math_number",
+              "id": "b6",
+              "fields": {
+                "NUM": 0
+              }
+            }
+          },
+          "Z": {
+            "block": {
+              "type": "math_number",
+              "id": "b7",
+              "fields": {
+                "NUM": 0
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 400
+      },
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b9",
+        "x": 0,
+        "y": 600
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b14",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_add_position",
+              "id": "b13",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "jcreatepp_delta_time",
+                    "id": "b10"
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b11",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b12",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 800
+      },
+      {
+        "type": "jcreatepp_on_receive",
+        "id": "b15",
+        "fields": {
+          "MESSAGE": ""
+        },
+        "x": 0,
+        "y": 1000
+      }
+    ]
+  }
+}

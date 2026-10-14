@@ -1,0 +1,222 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b20",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_sequence",
+              "id": "b19",
+              "inputs": {
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_add_position",
+                    "id": "b4",
+                    "inputs": {
+                      "X": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "b1",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "Y": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "b2",
+                          "fields": {
+                            "NUM": 1
+                          }
+                        }
+                      },
+                      "Z": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "b3",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_wait_seconds",
+                        "id": "b6",
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "b5",
+                              "fields": {
+                                "NUM": 1
+                              }
+                            }
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "jcreatepp_run_for_seconds",
+                            "id": "b12",
+                            "inputs": {
+                              "SECONDS": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "b7",
+                                  "fields": {
+                                    "NUM": 2
+                                  }
+                                }
+                              },
+                              "DO": {
+                                "block": {
+                                  "type": "jcreatepp_add_rotation",
+                                  "id": "b11",
+                                  "inputs": {
+                                    "X": {
+                                      "block": {
+                                        "type": "math_number",
+                                        "id": "b8",
+                                        "fields": {
+                                          "NUM": 0
+                                        }
+                                      }
+                                    },
+                                    "Y": {
+                                      "block": {
+                                        "type": "math_number",
+                                        "id": "b9",
+                                        "fields": {
+                                          "NUM": 2
+                                        }
+                                      }
+                                    },
+                                    "Z": {
+                                      "block": {
+                                        "type": "math_number",
+                                        "id": "b10",
+                                        "fields": {
+                                          "NUM": 0
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "next": {
+                              "block": {
+                                "type": "jcreatepp_wait_until",
+                                "id": "b14",
+                                "inputs": {
+                                  "CONDITION": {
+                                    "block": {
+                                      "type": "jcreatepp_flag",
+                                      "id": "b13",
+                                      "fields": {
+                                        "FLAG_NAME": "ready"
+                                      }
+                                    }
+                                  }
+                                },
+                                "next": {
+                                  "block": {
+                                    "type": "jcreatepp_add_position",
+                                    "id": "b18",
+                                    "inputs": {
+                                      "X": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "b15",
+                                          "fields": {
+                                            "NUM": 0
+                                          }
+                                        }
+                                      },
+                                      "Y": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "b16",
+                                          "fields": {
+                                            "NUM": -1
+                                          }
+                                        }
+                                      },
+                                      "Z": {
+                                        "block": {
+                                          "type": "math_number",
+                                          "id": "b17",
+                                          "fields": {
+                                            "NUM": 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b25",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_sequence",
+              "id": "b24",
+              "inputs": {
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_set_flag",
+                    "id": "b21",
+                    "fields": {
+                      "FLAG_NAME": "ready",
+                      "OPERATION": "toggle"
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_wait_seconds",
+                        "id": "b23",
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "b22",
+                              "fields": {
+                                "NUM": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}

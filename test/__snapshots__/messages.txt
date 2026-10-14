@@ -1,0 +1,130 @@
+// ==== errors ====
+// ==== warnings ====
+// ==== unity requirements ====
+Unity側で必要な設定
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- 近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- 近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- World Item Reference List に "door" を登録してください。指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- World Item Reference List に "board" を登録してください。指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- 衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。衝突相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになり送信されません。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- 衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。衝突相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになり送信されません。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
+- 衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。
+// ==== code ====
+$.onUpdate((deltaTime) => {
+  {
+    const __jpp_send_cond_b4 = ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (3))).length > 0);
+    if (__jpp_send_cond_b4 && !$.state["__jpp_send_once_b4"]) {
+      const __jpp_send_pos_b4 = $.getPosition() || new Vector3(0,0,0);
+      const __jpp_send_items_b4 = $.getItemsNear(__jpp_send_pos_b4, (10));
+      for (const __jpp_send_item_b4 of __jpp_send_items_b4) {
+        __jpp_send_item_b4.send("open", null);
+      }
+      $.state["__jpp_send_once_b4"] = true;
+    }
+    if (!__jpp_send_cond_b4) {
+      $.state["__jpp_send_once_b4"] = false;
+    }
+  }
+  {
+    const __jpp_send_cond_b12 = (($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length) > 1);
+    if (__jpp_send_cond_b12 && !$.state["__jpp_send_once_b12"]) {
+      const __jpp_send_pos_b12 = $.getPosition() || new Vector3(0,0,0);
+      const __jpp_send_items_b12 = $.getItemsNear(__jpp_send_pos_b12, (10));
+      for (const __jpp_send_item_b12 of __jpp_send_items_b12) {
+        __jpp_send_item_b12.send("count", ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length));
+      }
+      $.state["__jpp_send_once_b12"] = true;
+    }
+    if (!__jpp_send_cond_b12) {
+      $.state["__jpp_send_once_b12"] = false;
+    }
+  }
+  {
+    const __jpp_send_cond_b15 = ((() => { const __jpp_hit = $.raycast(($.getPosition() || new Vector3(0,0,0)), new Vector3(0,0,1).applyQuaternion(($.getRotation() || new Quaternion())).normalize(), Math.max(0, (4))); return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "player"); })());
+    if (__jpp_send_cond_b15 && !$.state["__jpp_send_once_b15"]) {
+      const __jpp_send_item_b15 = $.worldItemReference("door");
+      if (__jpp_send_item_b15 && __jpp_send_item_b15.exists()) {
+        __jpp_send_item_b15.send("close", null);
+      }
+      $.state["__jpp_send_once_b15"] = true;
+    }
+    if (!__jpp_send_cond_b15) {
+      $.state["__jpp_send_once_b15"] = false;
+    }
+  }
+  {
+    const __jpp_send_cond_b18 = true;
+    if (__jpp_send_cond_b18 && !$.state["__jpp_send_once_b18"]) {
+      const __jpp_send_item_b18 = $.worldItemReference("board");
+      if (__jpp_send_item_b18 && __jpp_send_item_b18.exists()) {
+        __jpp_send_item_b18.send("text", "hi");
+      }
+      $.state["__jpp_send_once_b18"] = true;
+    }
+    if (!__jpp_send_cond_b18) {
+      $.state["__jpp_send_once_b18"] = false;
+    }
+  }
+});
+
+$.onCollide((collision) => {
+  {
+    const __jpp_send_cond_b36 = true;
+    if (__jpp_send_cond_b36 && !$.state["__jpp_send_once_b36"]) {
+      const __jpp_send_handle_b36 = (collision && collision.handle ? collision.handle : null);
+      if (__jpp_send_handle_b36 && typeof __jpp_send_handle_b36.send === "function" && (typeof __jpp_send_handle_b36.exists !== "function" || __jpp_send_handle_b36.exists())) {
+        __jpp_send_handle_b36.send("hit", null);
+      }
+      $.state["__jpp_send_once_b36"] = true;
+    }
+    if (!__jpp_send_cond_b36) {
+      $.state["__jpp_send_once_b36"] = false;
+    }
+  }
+  {
+    const __jpp_send_cond_b39 = true;
+    if (__jpp_send_cond_b39 && !$.state["__jpp_send_once_b39"]) {
+      const __jpp_send_handle_b39 = (collision && collision.handle ? collision.handle : null);
+      if (__jpp_send_handle_b39 && typeof __jpp_send_handle_b39.send === "function" && (typeof __jpp_send_handle_b39.exists !== "function" || __jpp_send_handle_b39.exists())) {
+        __jpp_send_handle_b39.send("who", (collision && collision.handle ? collision.handle : null));
+      }
+      $.state["__jpp_send_once_b39"] = true;
+    }
+    if (!__jpp_send_cond_b39) {
+      $.state["__jpp_send_once_b39"] = false;
+    }
+  }
+});
+
+$.onReceive((msg, arg, sender) => {
+  if (msg === "open") {
+    $.state["var.got"] = (typeof arg === "number" ? arg : 0);
+    $.state["str.msg"] = (typeof arg === "string" ? arg : "");
+    {
+      if (true) {
+        if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+          sender.send("ack", null);
+        }
+      }
+    }
+    {
+      if ((typeof arg === "boolean" ? arg : false)) {
+        if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+          sender.send("echo", (typeof arg === "boolean" ? arg : false));
+        }
+      }
+    }
+  }
+  if (msg === "push") {
+    $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, 0, 1)));
+  }
+}, { item: true, player: true });

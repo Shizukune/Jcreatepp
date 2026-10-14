@@ -1,0 +1,30 @@
+# Jcreate++ 開発ルール（Claude Code 向け）
+
+Blockly で組んだブロックから Cluster Script（JavaScript）を生成するエディタ。
+
+## 構成
+- `src/blocks/` ブロック定義・イベント文脈ルール（`context.ts` が正本）
+- `src/generators/jcreatepp.ts` Blockly ワークスペース → IR（`src/ir.ts`）変換とエラー検出
+- `src/codegen/` IR → Cluster Script 生成（Cluster Script の構文はここだけが持つ）
+- `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内
+- `src/index.ts` UI（DOM）。テストからは読み込まない
+- 処理の流れは Blockly → IR → コード生成。新機能もこの流れに沿わせる（将来の 3D エディタ / Unity Editor 統合は IR を共有する前提）
+
+## 守ること
+- 保存データ互換性: ブロックの `type`・入力名・フィールド名・ドロップダウン値は変更しない（例: `_once` 接尾辞は互換のため残している）
+- 既存機能に影響する変更・大きな構造変更は、着手前にユーザーへ確認する
+- 依存ライブラリを安易に追加しない。認証情報をリポジトリに置かない
+- シーケンス制御・変数制御のリファクタリングは、ユーザーの指示があるまで行わない（問題を見つけたら記録のみ）
+
+## 確認手順（完了報告の前に必ず実行）
+1. `npx tsc --noEmit`
+2. `npm test` — 回帰テスト（Node 組み込みテストランナー、追加依存なし）
+   - `test/fixtures/*.json` は保存形式そのもののワークスペース。`test/__snapshots__/*.txt` に生成結果（エラー・Unity設定案内・コード）を固定
+   - 出力が意図どおりに変わった場合のみ `npm run test:update` で更新し、差分をユーザーに示す
+   - 新しいブロックや生成パターンを追加したら fixture も追加する
+   - 生成コードのstateキーにはブロックIDが入るため、既存 fixture のIDは変えない
+3. Codex レビュー（読み取り専用）: `powershell -ExecutionPolicy Bypass -File ..\codex-review.ps1 -Uncommitted -Context "<目的・想定動作>" -Focus "<重点>"`
+   - 指摘は鵜呑みにせず、コードと照合して妥当性を判断してから報告する
+
+## 報告形式
+【実装概要】【変更ファイル】【テスト結果】【Codexレビュー】【Claude Codeの評価】【対応方針】【未解決事項】

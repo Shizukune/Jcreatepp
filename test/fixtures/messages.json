@@ -1,0 +1,380 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "b19",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_send_message_once",
+              "id": "b4",
+              "fields": {
+                "MESSAGE": "open"
+              },
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_players_near",
+                    "id": "b2",
+                    "inputs": {
+                      "RANGE": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "b1",
+                          "fields": {
+                            "NUM": 3
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "RANGE": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b3",
+                    "fields": {
+                      "NUM": 10
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_send_message_value_once",
+                  "id": "b12",
+                  "fields": {
+                    "MESSAGE": "count",
+                    "VALUE_TYPE": "number"
+                  },
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_compare",
+                        "id": "b8",
+                        "fields": {
+                          "OP": "GT"
+                        },
+                        "inputs": {
+                          "A": {
+                            "block": {
+                              "type": "jcreatepp_players_near_count",
+                              "id": "b6",
+                              "inputs": {
+                                "RANGE": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "b5",
+                                    "fields": {
+                                      "NUM": 5
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "B": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "b7",
+                              "fields": {
+                                "NUM": 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "RANGE": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "b9",
+                        "fields": {
+                          "NUM": 10
+                        }
+                      }
+                    },
+                    "VALUE": {
+                      "block": {
+                        "type": "jcreatepp_players_near_count",
+                        "id": "b11",
+                        "inputs": {
+                          "RANGE": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "b10",
+                              "fields": {
+                                "NUM": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_send_message_to_item_once",
+                      "id": "b15",
+                      "fields": {
+                        "ITEM_NAME": "door",
+                        "MESSAGE": "close"
+                      },
+                      "inputs": {
+                        "CONDITION": {
+                          "block": {
+                            "type": "jcreatepp_raycast_forward",
+                            "id": "b14",
+                            "fields": {
+                              "TARGET": "player"
+                            },
+                            "inputs": {
+                              "DISTANCE": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "b13",
+                                  "fields": {
+                                    "NUM": 4
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "jcreatepp_send_message_value_to_item_once",
+                          "id": "b18",
+                          "fields": {
+                            "ITEM_NAME": "board",
+                            "MESSAGE": "text",
+                            "VALUE_TYPE": "string"
+                          },
+                          "inputs": {
+                            "CONDITION": {
+                              "block": {
+                                "type": "jcreatepp_bool_literal",
+                                "id": "b16",
+                                "fields": {
+                                  "VALUE": "true"
+                                }
+                              }
+                            },
+                            "VALUE": {
+                              "block": {
+                                "type": "jcreatepp_string_literal",
+                                "id": "b17",
+                                "fields": {
+                                  "TEXT": "hi"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_receive",
+        "id": "b29",
+        "fields": {
+          "MESSAGE": "open"
+        },
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_number_var",
+              "id": "b21",
+              "fields": {
+                "VAR_NAME": "got"
+              },
+              "inputs": {
+                "VALUE": {
+                  "block": {
+                    "type": "jcreatepp_message_value_number",
+                    "id": "b20"
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_set_string_var",
+                  "id": "b23",
+                  "fields": {
+                    "VAR_NAME": "msg"
+                  },
+                  "inputs": {
+                    "VALUE": {
+                      "block": {
+                        "type": "jcreatepp_message_value_string",
+                        "id": "b22"
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_reply_message_once",
+                      "id": "b25",
+                      "fields": {
+                        "MESSAGE": "ack"
+                      },
+                      "inputs": {
+                        "CONDITION": {
+                          "block": {
+                            "type": "jcreatepp_bool_literal",
+                            "id": "b24",
+                            "fields": {
+                              "VALUE": "true"
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "jcreatepp_reply_message_value_once",
+                          "id": "b28",
+                          "fields": {
+                            "MESSAGE": "echo",
+                            "VALUE_TYPE": "boolean"
+                          },
+                          "inputs": {
+                            "CONDITION": {
+                              "block": {
+                                "type": "jcreatepp_message_value_boolean",
+                                "id": "b26"
+                              }
+                            },
+                            "VALUE": {
+                              "block": {
+                                "type": "jcreatepp_message_value_boolean",
+                                "id": "b27"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      },
+      {
+        "type": "jcreatepp_on_receive",
+        "id": "b34",
+        "fields": {
+          "MESSAGE": "push"
+        },
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_add_position",
+              "id": "b33",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b30",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b31",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b32",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 400
+      },
+      {
+        "type": "jcreatepp_on_collide",
+        "id": "b40",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_send_message_to_collision_once",
+              "id": "b36",
+              "fields": {
+                "MESSAGE": "hit"
+              },
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_bool_literal",
+                    "id": "b35",
+                    "fields": {
+                      "VALUE": "true"
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_send_message_value_to_collision_once",
+                  "id": "b39",
+                  "fields": {
+                    "MESSAGE": "who",
+                    "VALUE_TYPE": "handle"
+                  },
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_bool_literal",
+                        "id": "b37",
+                        "fields": {
+                          "VALUE": "true"
+                        }
+                      }
+                    },
+                    "VALUE": {
+                      "block": {
+                        "type": "jcreatepp_collision_target",
+                        "id": "b38"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 600
+      }
+    ]
+  }
+}

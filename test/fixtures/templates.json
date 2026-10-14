@@ -1,0 +1,77 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_ride_template",
+        "id": "b4",
+        "inputs": {
+          "FORWARD_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "b1",
+              "fields": {
+                "NUM": 5
+              }
+            }
+          },
+          "UP_DOWN_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "b2",
+              "fields": {
+                "NUM": 2
+              }
+            }
+          },
+          "TURN_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "b3",
+              "fields": {
+                "NUM": 90
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_chase_template",
+        "id": "b8",
+        "inputs": {
+          "MOVE_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "b5",
+              "fields": {
+                "NUM": 3
+              }
+            }
+          },
+          "MAX_DISTANCE": {
+            "block": {
+              "type": "math_number",
+              "id": "b6",
+              "fields": {
+                "NUM": 10
+              }
+            }
+          },
+          "MIN_DISTANCE": {
+            "block": {
+              "type": "math_number",
+              "id": "b7",
+              "fields": {
+                "NUM": 1
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}

@@ -1,0 +1,344 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b8",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_number_var",
+              "id": "b2",
+              "fields": {
+                "VAR_NAME": "score"
+              },
+              "inputs": {
+                "VALUE": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b1",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_set_string_var",
+                  "id": "b4",
+                  "fields": {
+                    "VAR_NAME": "label"
+                  },
+                  "inputs": {
+                    "VALUE": {
+                      "block": {
+                        "type": "jcreatepp_string_literal",
+                        "id": "b3",
+                        "fields": {
+                          "TEXT": "hello"
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_set_bool_var",
+                      "id": "b6",
+                      "fields": {
+                        "VAR_NAME": "ok"
+                      },
+                      "inputs": {
+                        "VALUE": {
+                          "block": {
+                            "type": "jcreatepp_bool_literal",
+                            "id": "b5",
+                            "fields": {
+                              "VALUE": "true"
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "jcreatepp_set_flag",
+                          "id": "b7",
+                          "fields": {
+                            "FLAG_NAME": "door",
+                            "OPERATION": "false"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b29",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_if",
+              "id": "b17",
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_not",
+                    "id": "b10",
+                    "inputs": {
+                      "BOOL": {
+                        "block": {
+                          "type": "jcreatepp_cooldown_active",
+                          "id": "b9",
+                          "fields": {
+                            "COOLDOWN_NAME": "tap"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_change_number_var",
+                    "id": "b14",
+                    "fields": {
+                      "VAR_NAME": "score"
+                    },
+                    "inputs": {
+                      "DELTA": {
+                        "block": {
+                          "type": "jcreatepp_random_number",
+                          "id": "b13",
+                          "fields": {
+                            "MODE": "integer"
+                          },
+                          "inputs": {
+                            "MIN": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "b11",
+                                "fields": {
+                                  "NUM": 1
+                                }
+                              }
+                            },
+                            "MAX": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "b12",
+                                "fields": {
+                                  "NUM": 6
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_start_cooldown",
+                        "id": "b16",
+                        "fields": {
+                          "COOLDOWN_NAME": "tap"
+                        },
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "b15",
+                              "fields": {
+                                "NUM": 2
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_if_else",
+                  "id": "b28",
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_and",
+                        "id": "b24",
+                        "inputs": {
+                          "A": {
+                            "block": {
+                              "type": "jcreatepp_compare",
+                              "id": "b20",
+                              "fields": {
+                                "OP": "GTE"
+                              },
+                              "inputs": {
+                                "A": {
+                                  "block": {
+                                    "type": "jcreatepp_number_var",
+                                    "id": "b18",
+                                    "fields": {
+                                      "VAR_NAME": "score"
+                                    }
+                                  }
+                                },
+                                "B": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "b19",
+                                    "fields": {
+                                      "NUM": 10
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "B": {
+                            "block": {
+                              "type": "jcreatepp_or",
+                              "id": "b23",
+                              "inputs": {
+                                "A": {
+                                  "block": {
+                                    "type": "jcreatepp_bool_var",
+                                    "id": "b21",
+                                    "fields": {
+                                      "VAR_NAME": "ok"
+                                    }
+                                  }
+                                },
+                                "B": {
+                                  "block": {
+                                    "type": "jcreatepp_flag",
+                                    "id": "b22",
+                                    "fields": {
+                                      "FLAG_NAME": "door"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "DO": {
+                      "block": {
+                        "type": "jcreatepp_set_flag",
+                        "id": "b25",
+                        "fields": {
+                          "FLAG_NAME": "door",
+                          "OPERATION": "toggle"
+                        }
+                      }
+                    },
+                    "ELSE": {
+                      "block": {
+                        "type": "jcreatepp_set_string_var",
+                        "id": "b27",
+                        "fields": {
+                          "VAR_NAME": "label"
+                        },
+                        "inputs": {
+                          "VALUE": {
+                            "block": {
+                              "type": "jcreatepp_string_var",
+                              "id": "b26",
+                              "fields": {
+                                "VAR_NAME": "label"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      },
+      {
+        "type": "jcreatepp_on_update",
+        "id": "b36",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_if_edge",
+              "id": "b35",
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_compare",
+                    "id": "b32",
+                    "fields": {
+                      "OP": "LTE"
+                    },
+                    "inputs": {
+                      "A": {
+                        "block": {
+                          "type": "jcreatepp_cooldown_remaining",
+                          "id": "b30",
+                          "fields": {
+                            "COOLDOWN_NAME": "tap"
+                          }
+                        }
+                      },
+                      "B": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "b31",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_set_bool_var",
+                    "id": "b34",
+                    "fields": {
+                      "VAR_NAME": "ok"
+                    },
+                    "inputs": {
+                      "VALUE": {
+                        "block": {
+                          "type": "jcreatepp_bool_literal",
+                          "id": "b33",
+                          "fields": {
+                            "VALUE": "false"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 400
+      }
+    ]
+  }
+}

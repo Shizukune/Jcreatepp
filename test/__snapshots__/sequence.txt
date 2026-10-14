@@ -1,0 +1,133 @@
+// ==== errors ====
+// ==== warnings ====
+// ==== unity requirements ====
+Unity側で必要な設定
+- 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
+// ==== code ====
+$.onStart(() => {
+  if (!$.state["__jpp_seq_active_b24"]) {
+    $.state["__jpp_seq_active_b24"] = true;
+    $.state["__jpp_seq_step_b24"] = 0;
+    $.state["__jpp_seq_time_b24"] = 0;
+  }
+});
+
+$.onUpdate((deltaTime) => {
+  if ($.state["__jpp_seq_active_b24"]) {
+    let step = $.state["__jpp_seq_step_b24"] || 0;
+    let yielded = false;
+    let guard = 0;
+    const MAX_SYNC_STEPS_PER_TICK = 100;
+  
+    while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
+      guard++;
+      switch (step) {
+        case 0: {
+          $.state["__jpp_flag_ready"] = !$.state["__jpp_flag_ready"];
+          step++;
+          break;
+        }
+        case 1: {
+          let time = ($.state["__jpp_seq_time_b24"] || 0) + deltaTime;
+          $.state["__jpp_seq_time_b24"] = time;
+          if (time >= 5) {
+            $.state["__jpp_seq_time_b24"] = 0;
+            step++;
+          } else {
+            yielded = true;
+          }
+          break;
+        }
+        case 2: {
+          $.state["__jpp_seq_active_b24"] = false;
+          step = 0;
+          $.state["__jpp_seq_step_b24"] = 0;
+          $.state["__jpp_seq_time_b24"] = 0;
+          yielded = true;
+          break;
+        }
+        default: {
+          yielded = true;
+          break;
+        }
+      }
+    }
+  
+    $.state["__jpp_seq_step_b24"] = step;
+  }
+  if ($.state["__jpp_seq_active_b19"]) {
+    let step = $.state["__jpp_seq_step_b19"] || 0;
+    let yielded = false;
+    let guard = 0;
+    const MAX_SYNC_STEPS_PER_TICK = 100;
+  
+    while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
+      guard++;
+      switch (step) {
+        case 0: {
+          $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, 1, 0)));
+          step++;
+          break;
+        }
+        case 1: {
+          let time = ($.state["__jpp_seq_time_b19"] || 0) + deltaTime;
+          $.state["__jpp_seq_time_b19"] = time;
+          if (time >= 1) {
+            $.state["__jpp_seq_time_b19"] = 0;
+            step++;
+          } else {
+            yielded = true;
+          }
+          break;
+        }
+        case 2: {
+          let time = ($.state["__jpp_seq_time_b19"] || 0) + deltaTime;
+          $.state["__jpp_seq_time_b19"] = time;
+          if (time <= 2) {
+            $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
+            yielded = true;
+          } else {
+            $.state["__jpp_seq_time_b19"] = 0;
+            step++;
+          }
+          break;
+        }
+        case 3: {
+          if (!!$.state["__jpp_flag_ready"]) {
+            step++;
+          } else {
+            yielded = true;
+          }
+          break;
+        }
+        case 4: {
+          $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, -1, 0)));
+          step++;
+          break;
+        }
+        case 5: {
+          $.state["__jpp_seq_active_b19"] = false;
+          step = 0;
+          $.state["__jpp_seq_step_b19"] = 0;
+          $.state["__jpp_seq_time_b19"] = 0;
+          yielded = true;
+          break;
+        }
+        default: {
+          yielded = true;
+          break;
+        }
+      }
+    }
+  
+    $.state["__jpp_seq_step_b19"] = step;
+  }
+});
+
+$.onInteract((player) => {
+  if (!$.state["__jpp_seq_active_b19"]) {
+    $.state["__jpp_seq_active_b19"] = true;
+    $.state["__jpp_seq_step_b19"] = 0;
+    $.state["__jpp_seq_time_b19"] = 0;
+  }
+});

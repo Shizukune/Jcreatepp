@@ -1,0 +1,80 @@
+// ==== errors ====
+// ==== warnings ====
+// ==== unity requirements ====
+Unity側で必要な設定
+- 移動系テンプレートを使うため、このアイテムは移動可能な設定が必要です。
+// ==== code ====
+$.onRide((isGetOn, player) => {
+  if (isGetOn) {
+    $.state["__jpp_ride_active"] = true;
+  } else {
+    $.state["__jpp_ride_active"] = false;
+    $.state["__jpp_ride_fwd"] = 0;
+    $.state["__jpp_ride_upd"] = 0;
+    $.state["__jpp_ride_trn"] = 0;
+  }
+});
+
+$.onSteer((input, player) => {
+  if ($.state["__jpp_ride_active"]) {
+    $.state["__jpp_ride_fwd"] = input.y * (5);
+    $.state["__jpp_ride_trn"] = input.x * (90);
+  }
+});
+
+$.onSteerAdditionalAxis((input, player) => {
+  if ($.state["__jpp_ride_active"]) {
+    $.state["__jpp_ride_upd"] = input * (2);
+  }
+});
+
+$.onUpdate((deltaTime) => {
+  if ($.state["__jpp_ride_active"]) {
+    const pos = $.getPosition() || new Vector3(0,0,0);
+    const rot = $.getRotation() || new Quaternion();
+    const trnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
+    const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, trnAmount, 0)));
+  
+    const direction = nextRot.clone().createEulerAngles();
+    const forwardRadian = ((direction.y + 270) % 360) * Math.PI / 180;
+    const fwdAmount = $.state["__jpp_ride_fwd"] || 0;
+    const forwardVec = new Vector3(
+      Math.sin(forwardRadian) * fwdAmount * deltaTime,
+      0,
+      Math.cos(forwardRadian) * fwdAmount * deltaTime
+    );
+    const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state["__jpp_ride_upd"] || 0) * deltaTime);
+  
+    $.setPosition(pos.clone().add(forwardVec).add(upVec));
+    $.setRotation(nextRot);
+  }
+  {
+    const __jpp_chase_pos = $.getPosition() || new Vector3(0,0,0);
+    const __jpp_chase_players = $.getPlayersNear(__jpp_chase_pos, (10));
+    let __jpp_chase_target = null;
+    let __jpp_chase_distance = Infinity;
+    for (const __jpp_chase_player of __jpp_chase_players) {
+      const __jpp_chase_player_pos = __jpp_chase_player.getPosition();
+      if (!__jpp_chase_player_pos) continue;
+      const __jpp_chase_dist = __jpp_chase_player_pos.clone().sub(__jpp_chase_pos).length();
+      if (__jpp_chase_dist < __jpp_chase_distance) {
+        __jpp_chase_distance = __jpp_chase_dist;
+        __jpp_chase_target = __jpp_chase_player;
+      }
+    }
+    if (__jpp_chase_target && __jpp_chase_target.exists()) {
+      const __jpp_chase_target_pos = __jpp_chase_target.getPosition();
+      if (__jpp_chase_target_pos) {
+        const __jpp_chase_dir = __jpp_chase_target_pos.clone().sub(__jpp_chase_pos);
+        const __jpp_chase_len = __jpp_chase_dir.length();
+        if (__jpp_chase_len > 0) {
+          const __jpp_chase_angle = Math.atan2(__jpp_chase_dir.x, __jpp_chase_dir.z) * 180 / Math.PI;
+          $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, __jpp_chase_angle, 0)));
+          if (__jpp_chase_len > (1)) {
+            $.setPosition(__jpp_chase_pos.add(__jpp_chase_dir.normalize().multiplyScalar((3) * deltaTime)));
+          }
+        }
+      }
+    }
+  }
+});

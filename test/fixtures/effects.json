@@ -1,0 +1,98 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b9",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_play_audio",
+              "id": "b2",
+              "fields": {
+                "AUDIO_ID": "se"
+              },
+              "inputs": {
+                "VOLUME": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "b1",
+                    "fields": {
+                      "NUM": 0.8
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_set_subnode_text",
+                  "id": "b4",
+                  "fields": {
+                    "SUBNODE_NAME": "Label",
+                    "COMPONENT": "TextMeshPro"
+                  },
+                  "inputs": {
+                    "TEXT": {
+                      "block": {
+                        "type": "jcreatepp_string_literal",
+                        "id": "b3",
+                        "fields": {
+                          "TEXT": "pressed"
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_set_component_enabled",
+                      "id": "b6",
+                      "fields": {
+                        "SUBNODE_NAME": "Body",
+                        "COMPONENT": "MeshRenderer"
+                      },
+                      "inputs": {
+                        "ENABLED": {
+                          "block": {
+                            "type": "jcreatepp_bool_literal",
+                            "id": "b5",
+                            "fields": {
+                              "VALUE": "false"
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "jcreatepp_set_component_enabled",
+                          "id": "b8",
+                          "fields": {
+                            "SUBNODE_NAME": "Lamp",
+                            "COMPONENT": "Light"
+                          },
+                          "inputs": {
+                            "ENABLED": {
+                              "block": {
+                                "type": "jcreatepp_bool_literal",
+                                "id": "b7",
+                                "fields": {
+                                  "VALUE": "true"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}
