@@ -15,12 +15,16 @@ import type { LogEntry } from '../sim/clusterMock';
 import { fromThreePosition, fromThreeQuaternion, toThreePosition, toThreeQuaternion } from './coords';
 import { nearestEuler, type EditTarget, type Xyz } from './blockEdit';
 import { safeId } from '../codegen/shared';
+import { buildStateRows } from './stateRows';
+import type { VariableInfo } from '../variables';
 
 export type Preview = {
   /** New generated code (trace build) or null when the workspace has errors / is empty. */
   setCode(code: string | null, reason?: string): void;
   /** Called when the tab becomes visible / hidden. */
   setVisible(visible: boolean): void;
+  /** Variables of the current program (IR), shown in the state panel even before they are set. */
+  setVariables(variables: VariableInfo[]): void;
   /** Block selected in Blockly that the 3D gizmo can edit (P4), or null. */
   setEditTarget(target: EditTarget | null): void;
 };
@@ -159,6 +163,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   let visible = false;
   let lastFrame = 0;
   let frameId = 0;
+  let variables: VariableInfo[] = [];
 
   gizmo.addEventListener('dragging-changed', (e) => {
     dragging = !!e.value;
@@ -427,24 +432,15 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       return;
     }
     timeEl.textContent = `${runner.time.toFixed(2)} 秒`;
-    // Quoted keys: "・" is not a valid identifier character for the production minifier.
-    const groups: Record<string, string[]> = { '数値変数': [], '文字変数': [], '真偽値変数・フラグ': [], 'クールダウン': [], '一連の動作': [] };
-    const state = runner.$.state as Record<string, unknown>;
-    for (const key of Object.keys(state).sort()) {
-      const v = state[key];
-      const show = (label: string, name: string, value: string) => groups[label].push(`<tr><td>${esc(name)}</td><td>${esc(value)}</td></tr>`);
-      if (key.startsWith('var.')) show('数値変数', key.slice(4), String(v));
-      else if (key.startsWith('str.')) show('文字変数', key.slice(4), JSON.stringify(v));
-      else if (key.startsWith('bool.')) show('真偽値変数・フラグ', key.slice(5), String(!!v));
-      else if (key.startsWith('__jpp_cd_')) show('クールダウン', key.slice(9), `残り ${Number(v).toFixed(2)} 秒`);
-      else if (key.startsWith('__jpp_seq_active_')) {
-        const id = key.slice(17);
-        show('一連の動作', id, v ? `実行中（ステップ ${Number(state[`__jpp_seq_step_${id}`] ?? 0) + 1}）` : '停止');
-      }
+    const groups = new Map<string, string[]>();
+    for (const row of buildStateRows(variables, runner.$.state as Record<string, unknown>)) {
+      const note = row.note ? `<td class="pvNote">${esc(row.note)}</td>` : '<td></td>';
+      const rows = groups.get(row.group) ?? [];
+      rows.push(`<tr><td>${esc(row.name)}</td><td>${esc(row.value)}</td>${note}</tr>`);
+      groups.set(row.group, rows);
     }
-    stateEl.innerHTML = Object.entries(groups)
-      .filter(([, rows]) => rows.length > 0)
-      .map(([label, rows]) => `<h3>${label}</h3><table>${rows.join('')}</table>`)
+    stateEl.innerHTML = [...groups.entries()]
+      .map(([label, rows]) => `<h3>${esc(label)}</h3><table>${rows.join('')}</table>`)
       .join('') || '<p class="pvEmpty">変数・フラグはまだありません</p>';
 
     const problems = [
@@ -519,6 +515,10 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
         reset();
       }
       if (!code) showNotice(reason || 'ブロックを配置するとプレビューできます');
+    },
+    setVariables(next) {
+      variables = next;
+      renderPanels();
     },
     setEditTarget(target) {
       if (dragging) {

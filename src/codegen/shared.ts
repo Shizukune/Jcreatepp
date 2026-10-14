@@ -1,4 +1,5 @@
 import type { Program, Stmt } from '../ir';
+import { variableStateKey, type VariableKind } from '../variables';
 
 export type SequenceStmt = Extract<Stmt, { kind: 'sequence' }>;
 
@@ -6,8 +7,9 @@ export function jsString(value: string): string {
   return JSON.stringify(value);
 }
 
-export function stateKey(prefix: string, name: string): string {
-  return jsString(prefix + name);
+/** Quoted $.state key of a user variable (the naming rule lives in src/variables.ts). */
+export function variableKeyJS(kind: VariableKind, name: string): string {
+  return jsString(variableStateKey(kind, name));
 }
 
 /**

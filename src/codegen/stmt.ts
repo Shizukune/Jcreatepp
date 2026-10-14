@@ -1,6 +1,6 @@
 import type { Expr, MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, decimalNormalized, exprToJS, settledNumberToJS } from './expr';
-import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, stateKey } from './shared';
+import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, variableKeyJS } from './shared';
 import { traceLine } from './trace';
 
 export function stmtToJS(stmt: Stmt): string {
@@ -85,19 +85,19 @@ function stmtToJSCore(stmt: Stmt): string {
       return setFlagToJS(stmt);
 
     case 'set_number_var':
-      return `$.state[${stateKey('var.', stmt.name)}] = ${settledNumberToJS(stmt.value)};`;
+      return `$.state[${variableKeyJS('number', stmt.name)}] = ${settledNumberToJS(stmt.value)};`;
 
     case 'change_number_var':
-      return `$.state[${stateKey('var.', stmt.name)}] = ${decimalNormalized(`($.state[${stateKey('var.', stmt.name)}] || 0) + (${exprToJS(stmt.delta)})`)};`;
+      return `$.state[${variableKeyJS('number', stmt.name)}] = ${decimalNormalized(`($.state[${variableKeyJS('number', stmt.name)}] || 0) + (${exprToJS(stmt.delta)})`)};`;
 
     case 'set_string_var':
-      return `$.state[${stateKey('str.', stmt.name)}] = ${exprToJS(stmt.value)};`;
+      return `$.state[${variableKeyJS('string', stmt.name)}] = ${exprToJS(stmt.value)};`;
 
     case 'set_bool_var':
-      return `$.state[${stateKey('bool.', stmt.name)}] = ${boolExprToJS(stmt.value)};`;
+      return `$.state[${variableKeyJS('bool', stmt.name)}] = ${boolExprToJS(stmt.value)};`;
 
     case 'start_cooldown':
-      return `$.state[${stateKey('__jpp_cd_', stmt.name)}] = Math.max(0, (${settledNumberToJS(stmt.seconds)}));`;
+      return `$.state[${variableKeyJS('cooldown', stmt.name)}] = Math.max(0, (${settledNumberToJS(stmt.seconds)}));`;
 
     case 'send_message':
       return sendMessageToJS(stmt);
@@ -329,14 +329,14 @@ function timedMoveReturnToJS(stmt: Extract<Stmt, { kind: 'timed_move_return' }>)
 
 function setFlagToJS(stmt: Extract<Stmt, { kind: 'set_flag' }>): string {
   if (stmt.operation === 'true') {
-    return `$.state[${stateKey('bool.', stmt.name)}] = true;`;
+    return `$.state[${variableKeyJS('bool', stmt.name)}] = true;`;
   }
 
   if (stmt.operation === 'false') {
-    return `$.state[${stateKey('bool.', stmt.name)}] = false;`;
+    return `$.state[${variableKeyJS('bool', stmt.name)}] = false;`;
   }
 
-  return `$.state[${stateKey('bool.', stmt.name)}] = !$.state[${stateKey('bool.', stmt.name)}];`;
+  return `$.state[${variableKeyJS('bool', stmt.name)}] = !$.state[${variableKeyJS('bool', stmt.name)}];`;
 }
 
 function oscillateToJS(stmt: Extract<Stmt, { kind: 'oscillate' }>): string {

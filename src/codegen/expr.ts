@@ -1,5 +1,5 @@
 import type { BoolExpr, Expr } from '../ir';
-import { jsString, stateKey } from './shared';
+import { jsString, variableKeyJS } from './shared';
 import { useHelper } from './helpers';
 
 type CompareOperator = Extract<BoolExpr, { kind: 'compare' }>['operator'];
@@ -19,9 +19,9 @@ export function exprToJS(expr: Expr): string {
     case 'collision_handle':
       return '(collision && collision.handle ? collision.handle : null)';
     case 'number_var':
-      return `($.state[${stateKey('var.', expr.name)}] || 0)`;
+      return `($.state[${variableKeyJS('number', expr.name)}] || 0)`;
     case 'string_var':
-      return `($.state[${stateKey('str.', expr.name)}] || "")`;
+      return `($.state[${variableKeyJS('string', expr.name)}] || "")`;
     case 'random_number': {
       const min = exprToJS(expr.min);
       const max = exprToJS(expr.max);
@@ -35,7 +35,7 @@ export function exprToJS(expr: Expr): string {
     case 'players_near_count':
       return `($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (${exprToJS(expr.range)}))).length)`;
     case 'cooldown_remaining':
-      return `(typeof $.state[${stateKey('__jpp_cd_', expr.name)}] === "number" ? $.state[${stateKey('__jpp_cd_', expr.name)}] : 0)`;
+      return `(typeof $.state[${variableKeyJS('cooldown', expr.name)}] === "number" ? $.state[${variableKeyJS('cooldown', expr.name)}] : 0)`;
     case 'message_value':
       if (expr.valueType === 'string') {
         return `(typeof arg === "string" ? arg : "")`;
@@ -78,11 +78,11 @@ export function boolExprToJS(expr: BoolExpr): string {
     case 'bool_literal':
       return expr.value ? 'true' : 'false';
     case 'flag':
-      return `!!$.state[${stateKey('bool.', expr.name)}]`;
+      return `!!$.state[${variableKeyJS('bool', expr.name)}]`;
     case 'bool_var':
-      return `!!$.state[${stateKey('bool.', expr.name)}]`;
+      return `!!$.state[${variableKeyJS('bool', expr.name)}]`;
     case 'cooldown_active':
-      return `((typeof $.state[${stateKey('__jpp_cd_', expr.name)}] === "number" ? $.state[${stateKey('__jpp_cd_', expr.name)}] : 0) > 0)`;
+      return `((typeof $.state[${variableKeyJS('cooldown', expr.name)}] === "number" ? $.state[${variableKeyJS('cooldown', expr.name)}] : 0) > 0)`;
     case 'message_value_bool':
       return `(typeof arg === "boolean" ? arg : false)`;
     case 'players_near':

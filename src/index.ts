@@ -108,6 +108,7 @@ function updatePreview() {
   if (!preview) return;
   // The preview runs a trace build; the code shown / downloaded above is never traced.
   preview.setCode(lastProgram ? programToJS(lastProgram, { trace: true }) : null, previewReason);
+  preview.setVariables(lastProgram?.variables ?? []);
 }
 
 function highlightBlocks(ids: string[]) {

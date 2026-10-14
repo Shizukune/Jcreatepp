@@ -327,3 +327,8 @@ body {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+.pvState td.pvNote {
+  color: #ffd166;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+}

@@ -13,6 +13,8 @@ import {
   type EventContext,
 } from './blocks/context';
 import { placementError, valueInSequenceError } from './blocks/placement';
+import { blockVariableAccess, neverSetMessage } from './blocks/variableBlocks';
+import { variableStateKey } from './variables';
 
 const MESSAGE_TYPE_MAX_BYTES = 100;
 
@@ -120,6 +122,25 @@ export function collectWarnings(workspace: Blockly.Workspace): Map<Blockly.Block
 
     validateNames(block, warn);
     validateMessageBlock(block, warn);
+  }
+
+  // Variables that are read but never set anywhere (only blocks inside events run).
+  const setVariables = new Set<string>();
+  for (const block of allBlocks) {
+    const access = blockVariableAccess(block.type, (field) => block.getFieldValue(field));
+    if (access?.write && findEventContext(block)) {
+      setVariables.add(variableStateKey(access.kind, access.name));
+    }
+  }
+  for (const block of allBlocks) {
+    const access = blockVariableAccess(block.type, (field) => block.getFieldValue(field));
+    if (!access?.read || !findEventContext(block)) continue;
+    const name = access.name;
+    // Empty names are reported by validateNames; flags named true / false are literals.
+    if (!name.trim() || (block.type === 'jcreatepp_flag' && (name.trim() === 'true' || name.trim() === 'false'))) continue;
+    if (!setVariables.has(variableStateKey(access.kind, name))) {
+      warn(block, neverSetMessage(access.kind, name));
+    }
   }
 
   return warnings;

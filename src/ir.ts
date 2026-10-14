@@ -5,6 +5,8 @@
  * Keep user-facing behavior out of this file; codegen owns Cluster Script syntax.
  */
 
+import type { VariableInfo } from './variables';
+
 export type Program = {
   onStart?: Handler;
   onUpdate?: Handler;
@@ -23,6 +25,8 @@ export type Program = {
     maxDistance: Expr;
     minDistance: Expr;
   };
+  /** Variables used by the program (filled by the converter; see src/variables.ts). Codegen ignores it. */
+  variables?: VariableInfo[];
 };
 
 export type Handler = {

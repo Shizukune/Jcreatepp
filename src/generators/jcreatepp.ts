@@ -28,6 +28,7 @@ import {
 } from '../blocks/context';
 import { findEventContext } from '../validator';
 import { blockLabel, placementError, valueInSequenceError } from '../blocks/placement';
+import { collectVariables } from '../variables';
 
 // ── 変換結果 ──
 
@@ -118,6 +119,7 @@ export function workspaceToProgram(
     }
   }
 
+  program.variables = collectVariables(program);
   return { program, errors, warnings };
 }
 
