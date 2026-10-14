@@ -101,6 +101,16 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
           craftItemBlockers.add(`サブノード "${requirement.subNodeName}" の ${requirement.componentType} はクラフトアイテムでは使えません（TextView を使ってください）。`);
         }
         break;
+      case 'ridable_item':
+        components.add('RidableItem');
+        checks.add(requirement.reason);
+        break;
+      case 'grabbable_item':
+        components.add('GrabbableItem');
+        components.add('MovableItem');
+        checks.add(requirement.reason);
+        break;
+      case 'interact_collider':
       case 'overlap_detector':
       case 'collision_shape':
       case 'send_rate_limit':
@@ -111,19 +121,6 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
     }
   }
 
-  // Event hooks that only work with a matching component (not covered by collectUnityRequirements).
-  if (program.rideTemplate) {
-    components.add('RidableItem');
-    checks.add('Ridable Item の Seat（座る位置）に子オブジェクトを設定してください。乗るには Collider も必要です。');
-  }
-  if (program.onGrabStart || program.onGrabEnd) {
-    components.add('GrabbableItem');
-    components.add('MovableItem');
-    checks.add('つかむには Collider が必要です。');
-  }
-  if (program.onInteract) {
-    checks.add('インタラクトするには Collider が必要です。');
-  }
   if (components.has('RidableItem') && components.has('GrabbableItem')) {
     craftItemBlockers.add('乗り物とつかむイベントは同じアイテムで同時に使えません（RidableItem と GrabbableItem は併用不可）。');
   }
@@ -149,4 +146,14 @@ export function buildUnitySetup(program: Program, code: string): UnitySetup {
 
 function isTextComponent(componentType: string): boolean {
   return ['TextView', 'Text', 'TextMesh', 'TextMeshPro', 'TextMeshProUGUI'].includes(componentType);
+}
+
+/** One-line size note shown under the generated code (UI text; kept here so it can be tested). */
+export function describeScriptSize(bytes: number): { text: string; overCraftItemLimit: boolean } {
+  const n = (value: number) => value.toLocaleString('en-US');
+  const overCraftItemLimit = bytes > CRAFT_ITEM_SCRIPT_MAX_BYTES;
+  const text = overCraftItemLimit
+    ? `スクリプトの大きさ: ${n(bytes)} バイト — クラフトアイテムの上限（${n(CRAFT_ITEM_SCRIPT_MAX_BYTES)} バイト）を超えています。ワールドに置くアイテムとしては使えます。`
+    : `スクリプトの大きさ: ${n(bytes)} / ${n(CRAFT_ITEM_SCRIPT_MAX_BYTES)} バイト（クラフトアイテムの上限）`;
+  return { text, overCraftItemLimit };
 }

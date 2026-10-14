@@ -19,6 +19,7 @@ import { javascriptGenerator, Order } from 'blockly/javascript';
 import { workspaceToProgram } from './generators/jcreatepp';
 import { programToJS } from './codegen';
 import { collectUnityRequirements, formatUnityRequirements } from './unityRequirements';
+import { describeScriptSize, scriptByteLength } from './unitySetup';
 import { validateWorkspace } from './validator';
 import { save, load, saveToFile, loadFromFile } from './serialization';
 import { toolbox } from './toolbox';
@@ -55,6 +56,7 @@ const blocklyDiv = document.getElementById('blocklyDiv');
 const codeEl = document.getElementById('generatedCode')?.querySelector('code');
 const errorEl = document.getElementById('errorMessages');
 const unityRequirementsEl = document.getElementById('unityRequirements');
+const scriptSizeEl = document.getElementById('scriptSize');
 const scriptFileNameInput = document.getElementById('scriptFileName') as HTMLInputElement | null;
 const workspaceFileNameInput = document.getElementById('workspaceFileName') as HTMLInputElement | null;
 const btnGenerate = document.getElementById('btnGenerate');
@@ -216,6 +218,21 @@ function downloadTextFile(content: string, filename: string, type: string) {
   }, 100);
 }
 
+/** 生成コードの大きさ（クラフトアイテムの上限との比較）を表示する */
+function showScriptSize(code: string) {
+  if (!scriptSizeEl) return;
+  const size = describeScriptSize(scriptByteLength(code));
+  scriptSizeEl.textContent = size.text;
+  scriptSizeEl.classList.toggle('over', size.overCraftItemLimit);
+  scriptSizeEl.style.display = 'block';
+}
+
+function hideScriptSize() {
+  if (!scriptSizeEl) return;
+  scriptSizeEl.textContent = '';
+  scriptSizeEl.style.display = 'none';
+}
+
 /** 出力ペインをクリアする */
 function clearOutputPane() {
   if (codeEl) {
@@ -229,6 +246,7 @@ function clearOutputPane() {
     unityRequirementsEl.textContent = '';
     unityRequirementsEl.style.display = 'none';
   }
+  hideScriptSize();
   lastGeneratedCode = '';
   lastProgram = null;
   previewReason = 'ブロックを配置するとプレビューできます';
@@ -267,6 +285,7 @@ const generateCode = () => {
         unityRequirementsEl.textContent = '';
         unityRequirementsEl.style.display = 'none';
       }
+      hideScriptSize();
       lastGeneratedCode = '';
       return;
     }
@@ -290,8 +309,10 @@ const generateCode = () => {
     if (codeEl) {
       codeEl.textContent = code;
     }
+    showScriptSize(code);
   } catch (err) {
     console.error('generateCode error:', err);
+    hideScriptSize();
     if (codeEl) {
       codeEl.textContent = '// 内部エラーが発生しました。コンソールを確認してください。';
     }

@@ -7,7 +7,7 @@ import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { numberLiteral, stringLiteral, type Program } from '../src/ir';
-import { buildUnitySetup, CRAFT_ITEM_SCRIPT_MAX_BYTES, scriptByteLength } from '../src/unitySetup';
+import { buildUnitySetup, CRAFT_ITEM_SCRIPT_MAX_BYTES, describeScriptSize, scriptByteLength } from '../src/unitySetup';
 import { programToJS } from '../src/codegen/program';
 import { convertState } from './harness';
 
@@ -107,4 +107,14 @@ test('every fixture: code that moves the item requires MovableItem, audio / refe
       assert.ok(setup.subNodes.some((n) => n.name === name), `${file}: sub node ${name}`);
     }
   }
+});
+
+test('size note: under and over the craft item limit', () => {
+  const under = describeScriptSize(6849);
+  assert.equal(under.overCraftItemLimit, false);
+  assert.ok(under.text.includes('6,849 / 20,000'));
+  const over = describeScriptSize(20001);
+  assert.equal(over.overCraftItemLimit, true);
+  assert.ok(over.text.includes('20,001'));
+  assert.equal(describeScriptSize(20000).overCraftItemLimit, false);
 });

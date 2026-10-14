@@ -314,6 +314,20 @@ body {
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }
 
+#scriptSize {
+  padding: 4px 14px;
+  font-size: 12px;
+  color: #8fa8c0;
+  background: #10202f;
+  border-bottom: 1px solid #1f3348;
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+}
+
+#scriptSize.over {
+  color: #ffd166;
+  background: #2a2616;
+}
+
 #generatedCode {
   flex: 1;
   overflow: auto;

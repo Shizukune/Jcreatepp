@@ -10,7 +10,10 @@ export type UnityRequirement =
   | { kind: 'material_set'; id: string; reason: string; blockId: string }
   | { kind: 'subnode_component'; subNodeName: string; componentType: string; reason: string; blockId: string }
   | { kind: 'player_detection'; reason: string; blockId: string }
-  | { kind: 'raycast'; reason: string; blockId: string };
+  | { kind: 'raycast'; reason: string; blockId: string }
+  | { kind: 'ridable_item'; reason: string; blockId: string }
+  | { kind: 'grabbable_item'; reason: string; blockId: string }
+  | { kind: 'interact_collider'; reason: string; blockId: string };
 
 export function collectUnityRequirements(program: Program): UnityRequirement[] {
   const requirements: UnityRequirement[] = [];
@@ -271,6 +274,30 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
     });
   }
 
+  if (program.onInteract) {
+    add({
+      kind: 'interact_collider',
+      reason: 'インタラクト（クリック・使う）するには、アイテムにColliderが必要です。',
+      blockId: '',
+    });
+  }
+
+  if (program.onGrabStart || program.onGrabEnd) {
+    add({
+      kind: 'grabbable_item',
+      reason: 'つかむイベントを使うには、アイテムにGrabbable Item（とMovable Item）、Colliderが必要です。',
+      blockId: '',
+    });
+  }
+
+  if (program.rideTemplate) {
+    add({
+      kind: 'ridable_item',
+      reason: '乗り物ギミックを使うには、アイテムにRidable Itemを付け、Seat（座る位置）に子オブジェクトを設定してください。Colliderも必要です。',
+      blockId: '',
+    });
+  }
+
   if (program.rideTemplate || program.chaseTemplate) {
     add({
       kind: 'movable_item',
@@ -312,6 +339,9 @@ export function formatUnityRequirements(requirements: UnityRequirement[]): strin
         break;
       case 'player_detection':
       case 'raycast':
+      case 'ridable_item':
+      case 'grabbable_item':
+      case 'interact_collider':
         lines.push(`- ${requirement.reason}`);
         break;
     }

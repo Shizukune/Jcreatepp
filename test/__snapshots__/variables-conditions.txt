@@ -1,7 +1,8 @@
 // ==== errors ====
 // ==== warnings ====
 // ==== unity requirements ====
-
+Unity側で必要な設定
+- インタラクト（クリック・使う）するには、アイテムにColliderが必要です。
 // ==== code ====
 // クールダウンの残り秒数（始まっていなければ 0）
 const getCooldown = (name) => { const v = $.state["__jpp_cd_" + name]; return typeof v === "number" ? v : 0; };
