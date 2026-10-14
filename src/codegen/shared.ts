@@ -3,8 +3,9 @@ import { variableStateKey, type VariableKind } from '../variables';
 
 export type SequenceStmt = Extract<Stmt, { kind: 'sequence' }>;
 
+/** JS string literal. U+2028 / U+2029 are escaped (same value; also safe for older engines). */
 export function jsString(value: string): string {
-  return JSON.stringify(value);
+  return JSON.stringify(value).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }
 
 /** Quoted $.state key of a user variable (the naming rule lives in src/variables.ts). */
@@ -65,7 +66,7 @@ export function smoothRotateKeys(id: string): Record<
 
 export function indent(code: string, spaces: number): string {
   const pad = ' '.repeat(spaces);
-  return code.replace(/^/gm, pad);
+  return code.replace(/^(?=.)/gm, pad);
 }
 
 export function axisVector(axis: 'X' | 'Y' | 'Z'): string {

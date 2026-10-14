@@ -4,51 +4,57 @@
 Unity側で必要な設定
 - 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
 // ==== code ====
+// ── 開始時 ──
 $.onStart(() => {
+  // 角度を x:0 y:90 z:0 にする
   $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0)));
 });
 
+// ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
-  // Jcreate++ smooth movement
-  {
-    if ($.state["__jpp_smooth_move_b11_active"]) {
-      const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-      const duration = Math.max(0.001, (typeof $.state["__jpp_smooth_move_b11_duration"] === "number" ? $.state["__jpp_smooth_move_b11_duration"] : 0.001));
-      const current = $.getPosition() || new Vector3(0, 0, 0);
-      const fromX = (typeof $.state["__jpp_smooth_move_b11_from_x"] === "number") ? $.state["__jpp_smooth_move_b11_from_x"] : current.x;
-      const fromY = (typeof $.state["__jpp_smooth_move_b11_from_y"] === "number") ? $.state["__jpp_smooth_move_b11_from_y"] : current.y;
-      const fromZ = (typeof $.state["__jpp_smooth_move_b11_from_z"] === "number") ? $.state["__jpp_smooth_move_b11_from_z"] : current.z;
-      const toX = (typeof $.state["__jpp_smooth_move_b11_to_x"] === "number") ? $.state["__jpp_smooth_move_b11_to_x"] : fromX;
-      const toY = (typeof $.state["__jpp_smooth_move_b11_to_y"] === "number") ? $.state["__jpp_smooth_move_b11_to_y"] : fromY;
-      const toZ = (typeof $.state["__jpp_smooth_move_b11_to_z"] === "number") ? $.state["__jpp_smooth_move_b11_to_z"] : fromZ;
-      const elapsed = Math.min(duration, (typeof $.state["__jpp_smooth_move_b11_elapsed"] === "number" ? $.state["__jpp_smooth_move_b11_elapsed"] : 0) + delta);
-      const t = elapsed / duration;
-      $.setPosition(new Vector3(
-        fromX + ((toX - fromX) * t),
-        fromY + ((toY - fromY) * t),
-        fromZ + ((toZ - fromZ) * t)
-      ));
-      $.state["__jpp_smooth_move_b11_elapsed"] = elapsed;
-      if (elapsed >= duration) {
-        $.state["__jpp_smooth_move_b11_active"] = false;
-        $.setPosition(new Vector3(toX, toY, toZ));
-      }
+  // 「向いている方向に 右:1 上:0 前:0 を 1 秒かけて進む」の途中の動き
+  if ($.state["__jpp_smooth_move_b11_active"]) {
+    const read = (key, fallback) => (typeof $.state[key] === "number" ? $.state[key] : fallback);
+    const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
+    const duration = Math.max(0.001, read("__jpp_smooth_move_b11_duration", 0.001));
+    const current = $.getPosition() || new Vector3(0, 0, 0);
+    const fromX = read("__jpp_smooth_move_b11_from_x", current.x);
+    const fromY = read("__jpp_smooth_move_b11_from_y", current.y);
+    const fromZ = read("__jpp_smooth_move_b11_from_z", current.z);
+    const toX = read("__jpp_smooth_move_b11_to_x", fromX);
+    const toY = read("__jpp_smooth_move_b11_to_y", fromY);
+    const toZ = read("__jpp_smooth_move_b11_to_z", fromZ);
+    const elapsed = Math.min(duration, read("__jpp_smooth_move_b11_elapsed", 0) + delta);
+    const t = elapsed / duration; // 0（始点）〜 1（終点）
+    $.setPosition(new Vector3(
+      fromX + (toX - fromX) * t,
+      fromY + (toY - fromY) * t,
+      fromZ + (toZ - fromZ) * t
+    ));
+    $.state["__jpp_smooth_move_b11_elapsed"] = elapsed;
+    if (elapsed >= duration) {
+      $.state["__jpp_smooth_move_b11_active"] = false;
+      $.setPosition(new Vector3(toX, toY, toZ));
     }
   }
 });
 
+// ── インタラクト時 ──
 $.onInteract((player) => {
+  // 向いている方向に 右:0 上:0 前:2 進む
   {
-    const __jpp_rot = $.getRotation() || new Quaternion();
-    const __jpp_pos = $.getPosition() || new Vector3(0, 0, 0);
-    $.setPosition(__jpp_pos.add(new Vector3(0, 0, 2).applyQuaternion(__jpp_rot)));
+    const rot = $.getRotation() || new Quaternion();
+    const pos = $.getPosition() || new Vector3(0, 0, 0);
+    $.setPosition(pos.add(new Vector3(0, 0, 2).applyQuaternion(rot)));
   }
+  // 向いている方向に 右:1 上:0 前:0 を 1 秒かけて進む
   {
+    // 動き始め: 始点と終点を覚えて、毎フレームの処理で少しずつ動かす
     const from = $.getPosition() || new Vector3(0, 0, 0);
     const to = from.clone().add(new Vector3(1, 0, 0).applyQuaternion($.getRotation() || new Quaternion()));
     $.state["__jpp_smooth_move_b11_active"] = true;
     $.state["__jpp_smooth_move_b11_elapsed"] = 0;
-    $.state["__jpp_smooth_move_b11_duration"] = Math.max(0.001, (1));
+    $.state["__jpp_smooth_move_b11_duration"] = 1;
     $.state["__jpp_smooth_move_b11_from_x"] = from.x;
     $.state["__jpp_smooth_move_b11_from_y"] = from.y;
     $.state["__jpp_smooth_move_b11_from_z"] = from.z;

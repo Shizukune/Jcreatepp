@@ -6,6 +6,9 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
 - `src/blocks/` ブロック定義・イベント文脈ルール（値ブロックのイベント文脈は `context.ts`、文ブロックの置き場所と「一連の動作」まわりは `placement.ts` が正本。変換エラーとエディタ警告の両方がここを使う。置き場所ルールを足すときは `placement.ts` だけを変え、`test/placement.test.ts` の固定ケースも足す）
 - `src/generators/jcreatepp.ts` Blockly ワークスペース → IR（`src/ir.ts`）変換とエラー検出
 - `src/codegen/` IR → Cluster Script 生成（Cluster Script の構文はここだけが持つ）
+  - 生成コードは読む人（学習者）向け: 各文の前に `describe.ts` の日本語コメント、括弧は `format.ts` の `group()` / `bare()` で必要な所だけ、補助関数は `helpers.ts` で使うときだけ先頭に定義
+  - 利用者の文字列をコメントに入れるときは必ず `commentText()`、文字列リテラルは `jsString()`（U+2028/2029 で注釈やリテラルを抜けられないように）
+  - 生成コードの見た目を変える変更では `test/__behavior__`（動作スナップショット）が1バイトも変わらないことを確認する
 - `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内
 - `src/index.ts` UI（DOM）。テストからは読み込まない
 - `src/variables.ts` 変数の正本: 種類・`$.state` キー規則（codegen はここを使う）・IR からの変数一覧（`Program.variables`）。ブロック側の読み書き表は `src/blocks/variableBlocks.ts`（両者の一致は `test/variables.test.ts`）

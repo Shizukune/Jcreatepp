@@ -7,33 +7,38 @@ Unity側で必要な設定
 - サブノード "Body" に MeshRenderer コンポーネントを付けてください。表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。
 - サブノード "Lamp" に Light コンポーネントを付けてください。表示や当たり判定を切り替えるには、指定したサブノードに対応するUnityコンポーネントが必要です。
 // ==== code ====
+// ── インタラクト時 ──
 $.onInteract((player) => {
+  // 音 se を 音量 0.8 で鳴らす
   {
-    const __jpp_audio = $.audio("se");
-    if (__jpp_audio) {
-      __jpp_audio.volume = Math.max(0, Math.min(2.5, (0.8)));
-      __jpp_audio.play();
+    const audio = $.audio("se");
+    if (audio) {
+      audio.volume = 0.8;
+      audio.play();
     }
   }
+  // サブノード Label の TextMeshPro の文字を 「pressed」 にする
   {
-    const __jpp_node = $.subNode("Label");
-    const __jpp_text = __jpp_node && __jpp_node.getUnityComponent("TextMeshPro");
-    if (__jpp_text) {
-      __jpp_text.unityProp.text = String("pressed");
+    const node = $.subNode("Label");
+    const textComponent = node && node.getUnityComponent("TextMeshPro");
+    if (textComponent) {
+      textComponent.unityProp.text = String("pressed");
     }
   }
+  // サブノード Body の MeshRenderer を false にする
   {
-    const __jpp_node = $.subNode("Body");
-    const __jpp_component = __jpp_node && __jpp_node.getUnityComponent("MeshRenderer");
-    if (__jpp_component) {
-      __jpp_component.unityProp.enabled = false;
+    const node = $.subNode("Body");
+    const component = node && node.getUnityComponent("MeshRenderer");
+    if (component) {
+      component.unityProp.enabled = false;
     }
   }
+  // サブノード Lamp の Light を true にする
   {
-    const __jpp_node = $.subNode("Lamp");
-    const __jpp_component = __jpp_node && __jpp_node.getUnityComponent("Light");
-    if (__jpp_component) {
-      __jpp_component.unityProp.enabled = true;
+    const node = $.subNode("Lamp");
+    const component = node && node.getUnityComponent("Light");
+    if (component) {
+      component.unityProp.enabled = true;
     }
   }
 });

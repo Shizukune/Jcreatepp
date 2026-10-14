@@ -4,7 +4,9 @@
 Unity側で必要な設定
 - 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
 // ==== code ====
+// ── 開始時 ──
 $.onStart(() => {
+  // 一連の動作を始める（中は「毎フレーム」の中で順番に進む）
   if (!$.state["__jpp_seq_active_b24"]) {
     $.state["__jpp_seq_active_b24"] = true;
     $.state["__jpp_seq_step_b24"] = 0;
@@ -12,30 +14,36 @@ $.onStart(() => {
   }
 });
 
+// ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  // 一連の動作（ブロック b24）: 実行中なら、今のステップから続きを進める
   if ($.state["__jpp_seq_active_b24"]) {
     let step = $.state["__jpp_seq_step_b24"] || 0;
-    let budget = deltaTime; // this frame's time, consumed by waiting steps
-    let yielded = false;
+    let budget = deltaTime; // このフレームで使える時間（待つステップが使う）
+    let yielded = false; // true になったら、続きは次のフレーム
     let guard = 0;
     const MAX_SYNC_STEPS_PER_TICK = 100;
-  
+
     while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
       guard++;
       switch (step) {
         case 0: {
+          // フラグ ready を 切り替える
           $.state["bool.ready"] = !$.state["bool.ready"];
           step++;
           break;
         }
         case 1: {
+          // 5 秒待つ
           let time = ($.state["__jpp_seq_time_b24"] || 0) + budget;
-          const seconds = Math.max(0, 5);
+          const seconds = 5;
           if (time >= seconds - 1e-6) {
+            // 待ち終わり: 余った時間は次のステップに回す
             budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b24"] = 0;
             step++;
           } else {
+            // まだ待つ: 続きは次のフレーム
             $.state["__jpp_seq_time_b24"] = time;
             budget = 0;
             yielded = true;
@@ -43,6 +51,7 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 2: {
+          // 最後まで進んだので終わる（次に始めるときは最初から）
           $.state["__jpp_seq_active_b24"] = false;
           step = 0;
           $.state["__jpp_seq_step_b24"] = 0;
@@ -56,32 +65,38 @@ $.onUpdate((deltaTime) => {
         }
       }
     }
-  
+
     $.state["__jpp_seq_step_b24"] = step;
   }
+
+  // 一連の動作（ブロック b19）: 実行中なら、今のステップから続きを進める
   if ($.state["__jpp_seq_active_b19"]) {
     let step = $.state["__jpp_seq_step_b19"] || 0;
-    let budget = deltaTime; // this frame's time, consumed by waiting steps
-    let yielded = false;
+    let budget = deltaTime; // このフレームで使える時間（待つステップが使う）
+    let yielded = false; // true になったら、続きは次のフレーム
     let guard = 0;
     const MAX_SYNC_STEPS_PER_TICK = 100;
-  
+
     while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
       guard++;
       switch (step) {
         case 0: {
+          // 位置を x:0 y:1 z:0 ずつ変える
           $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, 1, 0)));
           step++;
           break;
         }
         case 1: {
+          // 1 秒待つ
           let time = ($.state["__jpp_seq_time_b19"] || 0) + budget;
-          const seconds = Math.max(0, 1);
+          const seconds = 1;
           if (time >= seconds - 1e-6) {
+            // 待ち終わり: 余った時間は次のステップに回す
             budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b19"] = 0;
             step++;
           } else {
+            // まだ待つ: 続きは次のフレーム
             $.state["__jpp_seq_time_b19"] = time;
             budget = 0;
             yielded = true;
@@ -89,13 +104,15 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 2: {
+          // 2 秒間、毎フレーム実行する
           const start = $.state["__jpp_seq_time_b19"] || 0;
           const time = start + budget;
-          const seconds = Math.max(0, 2);
+          const seconds = 2;
           if (budget > 0 && start < seconds) {
+            // 角度を x:0 y:2 z:0 ずつ変える
             {
-              const __jpp_rot = $.getRotation();
-              $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
+              const rot = $.getRotation();
+              $.setRotation((rot ? rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));
             }
           }
           if (time < seconds - 1e-6) {
@@ -110,6 +127,7 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 3: {
+          // フラグ ready まで待つ
           if (!!$.state["bool.ready"]) {
             step++;
           } else {
@@ -118,11 +136,13 @@ $.onUpdate((deltaTime) => {
           break;
         }
         case 4: {
+          // 位置を x:0 y:-1 z:0 ずつ変える
           $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, -1, 0)));
           step++;
           break;
         }
         case 5: {
+          // 最後まで進んだので終わる（次に始めるときは最初から）
           $.state["__jpp_seq_active_b19"] = false;
           step = 0;
           $.state["__jpp_seq_step_b19"] = 0;
@@ -136,12 +156,14 @@ $.onUpdate((deltaTime) => {
         }
       }
     }
-  
+
     $.state["__jpp_seq_step_b19"] = step;
   }
 });
 
+// ── インタラクト時 ──
 $.onInteract((player) => {
+  // 一連の動作を始める（中は「毎フレーム」の中で順番に進む）
   if (!$.state["__jpp_seq_active_b19"]) {
     $.state["__jpp_seq_active_b19"] = true;
     $.state["__jpp_seq_step_b19"] = 0;

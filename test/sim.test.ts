@@ -253,13 +253,13 @@ test('V-3: normalization keeps huge finite values finite, applies to cooldown st
     b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'neg' }, inputs: { VALUE: arith('SUB', num(-Number.MAX_VALUE), num(0)) } }),
     b('jcreatepp_start_cooldown', { fields: { COOLDOWN_NAME: 'cd' }, inputs: { SECONDS: arith('ADD', num(0.1), num(0.2)) } }),
   ])));
-  assert.equal(code.split('const __jpp_num').length - 1, 1, 'helper defined once');
+  assert.equal(code.split('const roundDecimal').length - 1, 1, 'helper defined once');
   const r = createRunner(code);
   r.start();
   assert.equal(r.$.state['var.max'], Number.MAX_VALUE);
   assert.equal(r.$.state['var.neg'], -Number.MAX_VALUE);
   assert.equal(r.$.state['__jpp_cd_cd'], 0.3);
-  assert.ok(!generateCode(workspace(onEvent('jcreatepp_on_start', [b('jcreatepp_save_position')]))).includes('__jpp_num'), 'no helper without arithmetic');
+  assert.ok(!generateCode(workspace(onEvent('jcreatepp_on_start', [b('jcreatepp_save_position')]))).includes('roundDecimal'), 'no helper without arithmetic');
 });
 
 test('V-4: flag names "true" / "false" stay literals when read (documented exception)', () => {
@@ -321,6 +321,42 @@ test('ride steering: right input turns right (yaw +90 per second at turn speed 9
 test('the toolbox places new ride templates with "アイテムの前（+Z）"', () => {
   const toolboxJson = JSON.stringify(toolbox);
   assert.match(toolboxJson, /"type":"jcreatepp_ride_template","fields":\{"FORWARD_AXIS":"Z"\}/);
+});
+
+// ── generated code safety ──
+
+test('user text cannot break out of a comment or string (U+2028 / U+2029 / newlines)', () => {
+  const LS = String.fromCharCode(0x2028);
+  const PS = String.fromCharCode(0x2029);
+  const evil = (sep: string) => `a${sep}$.state.injected = true; //`;
+  for (const sep of [LS, PS, '\n', '*/']) {
+    const code = generateCode(workspace(
+      onEvent('jcreatepp_on_receive', [b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'got' }, inputs: { VALUE: num(1) } })], { MESSAGE: evil(sep) }),
+      onEvent('jcreatepp_on_start', [b('jcreatepp_sequence', { id: evil(sep), stmts: { DO: [b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(0.1) } })] } })]),
+    ));
+    const r = createRunner(code);
+    r.start();
+    r.advance(0.5);
+    r.receive('other');
+    assert.equal(r.$.state.injected, undefined, `separator ${JSON.stringify(sep)}`);
+    r.receive(evil(sep));
+    assert.equal(r.$.state['var.got'], 1, 'the message name still matches exactly');
+  }
+});
+
+test('timers ignore negative or missing frame times (cooldown, smooth move / rotate)', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_start_cooldown', { fields: { COOLDOWN_NAME: 'cd' }, inputs: { SECONDS: num(2) } }),
+    b('jcreatepp_smooth_move_by', { inputs: { ...xyz(1, 0, 0), DURATION: num(1) } }),
+    b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(1) } }),
+  ])));
+  const r = createRunner(code);
+  r.interact();
+  r.update(-1);
+  r.update(undefined as unknown as number);
+  assert.equal(r.$.state['__jpp_cd_cd'], 2);
+  assert.ok(r.item.position.equals(new Vector3(0, 0, 0)), JSON.stringify(r.item.position));
+  assert.ok(r.item.rotation.equals(new Quaternion()));
 });
 
 // ── state values are not aliased by later movement ──

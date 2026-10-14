@@ -3,44 +3,65 @@
 // ==== unity requirements ====
 
 // ==== code ====
-const __jpp_num = (v) => { const n = Number(v.toPrecision(15)); return isFinite(n) || !isFinite(v) ? n : v; };
+// クールダウンの残り秒数（始まっていなければ 0）
+const getCooldown = (name) => { const v = $.state["__jpp_cd_" + name]; return typeof v === "number" ? v : 0; };
+// 小数の計算誤差をなくす（有効数字15桁にそろえる。例: 0.1 + 0.2 → 0.3）
+const roundDecimal = (v) => { const n = Number(v.toPrecision(15)); return isFinite(n) || !isFinite(v) ? n : v; };
 
+// ── 開始時 ──
 $.onStart(() => {
+  // 数値変数 score を 0 にする
   $.state["var.score"] = 0;
+  // 文字変数 label を 「hello」 にする
   $.state["str.label"] = "hello";
+  // 真偽値変数 ok を true にする
   $.state["bool.ok"] = true;
+  // フラグ door を false にする
   $.state["bool.door"] = false;
 });
 
+// ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  // もし クールダウン tap の残り秒数 ≦ 0 になった瞬間だけ
   {
-    const __jpp_edge_cond_b35 = ((typeof $.state["__jpp_cd_tap"] === "number" ? $.state["__jpp_cd_tap"] : 0) <= 0);
-    if (__jpp_edge_cond_b35 && !$.state["__jpp_edge_b35"]) {
+    const condition = getCooldown("tap") <= 0;
+    if (condition && !$.state["__jpp_edge_b35"]) {
+      // 真偽値変数 ok を false にする
       $.state["bool.ok"] = false;
       $.state["__jpp_edge_b35"] = true;
     }
-    if (!__jpp_edge_cond_b35) {
+    if (!condition) {
       $.state["__jpp_edge_b35"] = false;
     }
   }
-  // Jcreate++ cooldown timers
+
+  // クールダウンの残り秒数を減らす
   {
-    const __jpp_cd_value = $.state["__jpp_cd_tap"];
-    const __jpp_cd_delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-    if (typeof __jpp_cd_value === "number" && __jpp_cd_value > 0) {
-      $.state["__jpp_cd_tap"] = Math.max(0, __jpp_cd_value - __jpp_cd_delta);
+    const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
+    for (const key of ["__jpp_cd_tap"]) {
+      const left = $.state[key];
+      if (typeof left === "number" && left > 0) {
+        $.state[key] = Math.max(0, left - delta);
+      }
     }
   }
 });
 
+// ── インタラクト時 ──
 $.onInteract((player) => {
-  if (!(((typeof $.state["__jpp_cd_tap"] === "number" ? $.state["__jpp_cd_tap"] : 0) > 0))) {
-    $.state["var.score"] = __jpp_num(($.state["var.score"] || 0) + (Math.floor((Math.min((1), (6))) + Math.random() * ((Math.max((1), (6))) - (Math.min((1), (6))) + 1))));
-    $.state["__jpp_cd_tap"] = Math.max(0, (2));
+  // もし 「クールダウン tap 中」ではない なら
+  if (!(getCooldown("tap") > 0)) {
+    // 数値変数 score を 1〜6 のランダムな整数 だけ増やす
+    $.state["var.score"] = roundDecimal(($.state["var.score"] || 0) + Math.floor(1 + Math.random() * 6));
+    // クールダウン tap を 2 秒で開始する
+    $.state["__jpp_cd_tap"] = 2;
   }
-  if (((($.state["var.score"] || 0) >= 10) && (!!$.state["bool.ok"] || !!$.state["bool.door"]))) {
+  // もし 数値変数 score ≧ 10 かつ 真偽値変数 ok または フラグ door なら
+  if ((($.state["var.score"] || 0) >= 10) && (!!$.state["bool.ok"] || !!$.state["bool.door"])) {
+    // フラグ door を 切り替える
     $.state["bool.door"] = !$.state["bool.door"];
   } else {
-    $.state["str.label"] = ($.state["str.label"] || "");
+    // 文字変数 label を 文字変数 label にする
+    $.state["str.label"] = $.state["str.label"] || "";
   }
 });

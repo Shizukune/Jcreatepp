@@ -4,88 +4,110 @@
 Unity側で必要な設定
 - 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
 // ==== code ====
+// ── 開始時 ──
 $.onStart(() => {
+  // 位置を x:0 y:1 z:2 にする
   $.setPosition(new Vector3(0, 1, 2));
+  // 角度を x:0 y:90 z:0 にする
   $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0)));
-  $.state["__jpp_saved_position"] = $.getPosition() || new Vector3(0,0,0);
+  // 今の位置を保存する
+  $.state["__jpp_saved_position"] = $.getPosition() || new Vector3(0, 0, 0);
 });
 
+// ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
-  $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3((2 * deltaTime), 0, 0)));
+  // 位置を x:(2 × 経過時間) y:0 z:0 ずつ変える
+  $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(2 * deltaTime, 0, 0)));
+  // 角度を x:0 y:1 z:0 ずつ変える
   {
-    const __jpp_rot = $.getRotation();
-    $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
+    const rot = $.getRotation();
+    $.setRotation((rot ? rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
   }
-  $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (45) * deltaTime)));
-  if (!$.state["__jpp_osc_init_pos_b25"]) {
-    $.state["__jpp_osc_init_pos_b25"] = $.getPosition() || new Vector3(0,0,0);
-    $.state["__jpp_osc_time_b25"] = 0;
-  }
-  $.state["__jpp_osc_time_b25"] += deltaTime * (1);
-  const __jpp_osc_pos_b25 = $.state["__jpp_osc_init_pos_b25"];
-  const __jpp_osc_offset_b25 = Math.sin($.state["__jpp_osc_time_b25"]) * (2);
-  $.setPosition(new Vector3(
-    __jpp_osc_pos_b25.x + __jpp_osc_offset_b25,
-    __jpp_osc_pos_b25.y + 0,
-    __jpp_osc_pos_b25.z + 0
-  ));
+  // Y 軸を 速度 45 で回転し続ける
+  $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 45 * deltaTime)));
+  // X 方向に 幅 2 速さ 1 で往復する
   {
-    const __jpp_timer_key_b28 = "__jpp_timed_warp_time_b28";
-    $.state[__jpp_timer_key_b28] = ($.state[__jpp_timer_key_b28] || 0) + deltaTime;
-    if ($.state[__jpp_timer_key_b28] >= (3)) {
-      const __jpp_pos_b28 = $.getPosition() || new Vector3(0,0,0);
-      const __jpp_range_b28 = (5);
+    if (!$.state["__jpp_osc_init_pos_b25"]) {
+      // 最初の位置を往復の中心として覚える
+      $.state["__jpp_osc_init_pos_b25"] = $.getPosition() || new Vector3(0, 0, 0);
+      $.state["__jpp_osc_time_b25"] = 0;
+    }
+    $.state["__jpp_osc_time_b25"] += deltaTime * 1;
+    const origin = $.state["__jpp_osc_init_pos_b25"];
+    const offset = Math.sin($.state["__jpp_osc_time_b25"]) * 2;
+    $.setPosition(new Vector3(
+      origin.x + offset,
+      origin.y + 0,
+      origin.z + 0
+    ));
+  }
+  // 3 秒ごとに 範囲 5 へランダムワープ
+  {
+    $.state["__jpp_timed_warp_time_b28"] = ($.state["__jpp_timed_warp_time_b28"] || 0) + deltaTime;
+    if ($.state["__jpp_timed_warp_time_b28"] >= 3) {
+      const pos = $.getPosition() || new Vector3(0, 0, 0);
+      const range = 5;
       $.setPosition(new Vector3(
-        __jpp_pos_b28.x + (Math.random() * 2 - 1) * __jpp_range_b28,
-        __jpp_pos_b28.y,
-        __jpp_pos_b28.z + (Math.random() * 2 - 1) * __jpp_range_b28
+        pos.x + (Math.random() * 2 - 1) * range,
+        pos.y,
+        pos.z + (Math.random() * 2 - 1) * range
       ));
-      $.state[__jpp_timer_key_b28] = 0;
+      $.state["__jpp_timed_warp_time_b28"] = 0;
     }
   }
+  // X:0 Y:1 Z:0 方向へ 速度 2 で 1.5 秒移動して戻る
   {
-    const __jpp_active_key_b34 = "__jpp_move_return_active_b34";
-    const __jpp_time_key_b34 = "__jpp_move_return_time_b34";
-    const __jpp_pos_key_b34 = "__jpp_move_return_pos_b34";
-    if (!$.state[__jpp_active_key_b34]) {
-      $.state[__jpp_active_key_b34] = true;
-      $.state[__jpp_time_key_b34] = 0;
-      $.state[__jpp_pos_key_b34] = $.getPosition() || new Vector3(0,0,0);
+    if (!$.state["__jpp_move_return_active_b34"]) {
+      // 動き始めの位置を覚える
+      $.state["__jpp_move_return_active_b34"] = true;
+      $.state["__jpp_move_return_time_b34"] = 0;
+      $.state["__jpp_move_return_pos_b34"] = $.getPosition() || new Vector3(0, 0, 0);
     }
-    $.state[__jpp_time_key_b34] = ($.state[__jpp_time_key_b34] || 0) + deltaTime;
-    if ($.state[__jpp_time_key_b34] < (1.5)) {
-      const __jpp_dir_b34 = new Vector3(0, 1, 0);
-      if (__jpp_dir_b34.length() > 0) {
-        const __jpp_pos_b34 = $.getPosition() || new Vector3(0,0,0);
-        $.setPosition(__jpp_pos_b34.add(__jpp_dir_b34.normalize().multiplyScalar((2) * deltaTime)));
+    $.state["__jpp_move_return_time_b34"] = ($.state["__jpp_move_return_time_b34"] || 0) + deltaTime;
+    if ($.state["__jpp_move_return_time_b34"] < 1.5) {
+      const dir = new Vector3(0, 1, 0);
+      if (dir.length() > 0) {
+        const pos = $.getPosition() || new Vector3(0, 0, 0);
+        $.setPosition(pos.add(dir.normalize().multiplyScalar(2 * deltaTime)));
       }
     } else {
-      if ($.state[__jpp_pos_key_b34]) {
-        $.setPosition($.state[__jpp_pos_key_b34]);
+      // 時間が来たら元の位置に戻る
+      if ($.state["__jpp_move_return_pos_b34"]) {
+        $.setPosition($.state["__jpp_move_return_pos_b34"]);
       }
-      $.state[__jpp_active_key_b34] = false;
-      $.state[__jpp_time_key_b34] = 0;
+      $.state["__jpp_move_return_active_b34"] = false;
+      $.state["__jpp_move_return_time_b34"] = 0;
     }
   }
 });
 
+// ── インタラクト時 ──
 $.onInteract((player) => {
+  // 現在位置から範囲 X:3 Z:4 へランダム移動する
   {
-    const __jpp_pos = $.getPosition() || new Vector3(0,0,0);
-    $.setPosition(new Vector3(__jpp_pos.x + (Math.random()*2-1)*(3), __jpp_pos.y, __jpp_pos.z + (Math.random()*2-1)*(4)));
+    const pos = $.getPosition() || new Vector3(0, 0, 0);
+    $.setPosition(new Vector3(pos.x + (Math.random() * 2 - 1) * 3, pos.y, pos.z + (Math.random() * 2 - 1) * 4));
   }
+  // 10 の強さで X:0 Y:1 Z:0 の方向に力を加える
   $.addImpulsiveForce(new Vector3(0, 1, 0).normalize().multiplyScalar(10));
+  // 保存した位置に戻る
   if ($.state["__jpp_saved_position"]) {
     $.setPosition($.state["__jpp_saved_position"]);
   }
+  // プレイヤーの移動速度倍率を 2 にする
   player.setMoveSpeedRate(2);
 });
 
+// ── 持ったとき / 離したとき ──
 $.onGrab((isGrab, isLeftHand, player) => {
+  // 持ったとき
   if (isGrab) {
+    // プレイヤーのジャンプ速度倍率を 1.5 にする
     player.setJumpSpeedRate(1.5);
   }
+  // 離したとき
   if (!isGrab) {
+    // プレイヤーのジャンプ速度倍率を 1 にする
     player.setJumpSpeedRate(1);
   }
 });

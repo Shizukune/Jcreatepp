@@ -1,18 +1,13 @@
-﻿import type { Handler, Program } from '../ir';
+import type { Handler, Program } from '../ir';
 import { exprToJS } from './expr';
 import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
 import { getAllSequences, indent, jsString, safeId, smoothRotateKeys, smoothTransitionKeys } from './shared';
-import { stmtToJS } from './stmt';
+import { bodyToJS } from './stmt';
 import { traceLine, withTrace } from './trace';
 import { withHelpers } from './helpers';
-
-const EVENT_PARAMS: Record<string, string> = {
-  onStart: '',
-  onUpdate: 'deltaTime',
-  onInteract: 'player',
-  onCollide: 'collision',
-};
+import { describeStmt } from './describe';
+import { bare, commentText } from './format';
 
 export type CodegenOptions = {
   /** Emit __jpp_trace() calls for the 3D preview. Never use for code sent to Cluster. */
@@ -23,57 +18,60 @@ export function programToJS(program: Program, options: CodegenOptions = {}): str
   return withTrace(options.trace === true, () => withHelpers(() => programToJSCore(program)));
 }
 
+/** `// ── 見出し ──` line above each event. */
+const heading = (title: string) => `// ── ${title} ──`;
+
 function programToJSCore(program: Program): string {
   const parts: string[] = [];
   const allSequences = getAllSequences(program);
 
   if (program.onStart) {
-    parts.push(handlerToJS('onStart', program.onStart));
+    parts.push(handlerToJS('開始時', 'onStart', '', program.onStart));
   }
 
-  const updateBodyLines: string[] = [];
-  if (program.onUpdate) {
-    updateBodyLines.push(...program.onUpdate.body.map((stmt) => indent(stmtToJS(stmt), 2)));
+  const updateSections: string[] = [];
+  if (program.onUpdate && program.onUpdate.body.length > 0) {
+    updateSections.push(bodyToJS(program.onUpdate.body, 2));
   }
 
   for (const sequence of allSequences) {
-    updateBodyLines.push(indent(generateSequenceStateMachine(sequence), 2));
+    updateSections.push(indent(generateSequenceStateMachine(sequence), 2));
   }
 
   const smoothMoves = getSmoothMoveBlocks(program);
   if (smoothMoves.length > 0) {
-    updateBodyLines.push(indent(smoothMoveUpdateToJS(smoothMoves), 2));
+    updateSections.push(indent(smoothMoveUpdateToJS(smoothMoves), 2));
   }
 
   const smoothRotations = getSmoothRotateBlocks(program);
   if (smoothRotations.length > 0) {
-    updateBodyLines.push(indent(smoothRotateUpdateToJS(smoothRotations), 2));
+    updateSections.push(indent(smoothRotateUpdateToJS(smoothRotations), 2));
   }
 
   const cooldownNames = getCooldownNames(program);
   if (cooldownNames.length > 0) {
-    updateBodyLines.push(indent(cooldownTickToJS(cooldownNames), 2));
+    updateSections.push(indent(cooldownTickToJS(cooldownNames), 2));
   }
 
   if (program.rideTemplate) {
     parts.push(rideInputHandlersToJS(program));
-    updateBodyLines.push(indent(rideUpdateToJS(program), 2));
+    updateSections.push(indent(rideUpdateToJS(program), 2));
   }
 
   if (program.chaseTemplate) {
-    updateBodyLines.push(indent(chaseUpdateToJS(program), 2));
+    updateSections.push(indent(chaseUpdateToJS(program), 2));
   }
 
-  if (updateBodyLines.length > 0) {
-    parts.push(`$.onUpdate((deltaTime) => {\n${updateBodyLines.join('\n')}\n});\n`);
+  if (updateSections.length > 0) {
+    parts.push(`${heading('毎フレーム')}\n$.onUpdate((deltaTime) => {\n${updateSections.join('\n\n')}\n});\n`);
   }
 
   if (program.onInteract) {
-    parts.push(handlerToJS('onInteract', program.onInteract));
+    parts.push(handlerToJS('インタラクト時', 'onInteract', 'player', program.onInteract));
   }
 
   if (program.onCollide) {
-    parts.push(handlerToJS('onCollide', program.onCollide));
+    parts.push(handlerToJS('衝突したとき', 'onCollide', 'collision', program.onCollide));
   }
 
   if (program.onGrabStart || program.onGrabEnd) {
@@ -94,37 +92,39 @@ function programToJSCore(program: Program): string {
 type SmoothMoveStmt = Extract<Stmt, { kind: 'smooth_move_by' | 'smooth_move_local' }>;
 type SmoothRotateStmt = Extract<Stmt, { kind: 'smooth_rotate_by' }>;
 
+/** Reads a number from $.state, or the fallback when it was never set. */
+const READ_NUMBER = 'const read = (key, fallback) => (typeof $.state[key] === "number" ? $.state[key] : fallback);';
+
 function smoothMoveUpdateToJS(stmts: SmoothMoveStmt[]): string {
   const lines = stmts.map((stmt) => {
-    const id = safeId(stmt.blockId);
-    const keys = smoothTransitionKeys('move', id);
-    return `{
-  if ($.state[${keys.active}]) {
-    ${traceLine(stmt, 'tick')}const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-    const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
-    const current = $.getPosition() || new Vector3(0, 0, 0);
-    const fromX = (typeof $.state[${keys.fromX}] === "number") ? $.state[${keys.fromX}] : current.x;
-    const fromY = (typeof $.state[${keys.fromY}] === "number") ? $.state[${keys.fromY}] : current.y;
-    const fromZ = (typeof $.state[${keys.fromZ}] === "number") ? $.state[${keys.fromZ}] : current.z;
-    const toX = (typeof $.state[${keys.toX}] === "number") ? $.state[${keys.toX}] : fromX;
-    const toY = (typeof $.state[${keys.toY}] === "number") ? $.state[${keys.toY}] : fromY;
-    const toZ = (typeof $.state[${keys.toZ}] === "number") ? $.state[${keys.toZ}] : fromZ;
-    const elapsed = Math.min(duration, (typeof $.state[${keys.elapsed}] === "number" ? $.state[${keys.elapsed}] : 0) + delta);
-    const t = elapsed / duration;
-    $.setPosition(new Vector3(
-      fromX + ((toX - fromX) * t),
-      fromY + ((toY - fromY) * t),
-      fromZ + ((toZ - fromZ) * t)
-    ));
-    $.state[${keys.elapsed}] = elapsed;
-    if (elapsed >= duration) {
-      $.state[${keys.active}] = false;
-      $.setPosition(new Vector3(toX, toY, toZ));
-    }
+    const keys = smoothTransitionKeys('move', safeId(stmt.blockId));
+    return `// 「${describeStmt(stmt)}」の途中の動き
+if ($.state[${keys.active}]) {
+  ${traceLine(stmt, 'tick')}${READ_NUMBER}
+  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
+  const duration = Math.max(0.001, read(${keys.duration}, 0.001));
+  const current = $.getPosition() || new Vector3(0, 0, 0);
+  const fromX = read(${keys.fromX}, current.x);
+  const fromY = read(${keys.fromY}, current.y);
+  const fromZ = read(${keys.fromZ}, current.z);
+  const toX = read(${keys.toX}, fromX);
+  const toY = read(${keys.toY}, fromY);
+  const toZ = read(${keys.toZ}, fromZ);
+  const elapsed = Math.min(duration, read(${keys.elapsed}, 0) + delta);
+  const t = elapsed / duration; // 0（始点）〜 1（終点）
+  $.setPosition(new Vector3(
+    fromX + (toX - fromX) * t,
+    fromY + (toY - fromY) * t,
+    fromZ + (toZ - fromZ) * t
+  ));
+  $.state[${keys.elapsed}] = elapsed;
+  if (elapsed >= duration) {
+    $.state[${keys.active}] = false;
+    $.setPosition(new Vector3(toX, toY, toZ));
   }
 }`;
   });
-  return `// Jcreate++ smooth movement\n${lines.join('\n')}`;
+  return lines.join('\n');
 }
 
 function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
@@ -169,26 +169,25 @@ function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
 
 function smoothRotateUpdateToJS(stmts: SmoothRotateStmt[]): string {
   const lines = stmts.map((stmt) => {
-    const id = safeId(stmt.blockId);
-    const keys = smoothRotateKeys(id);
-    return `{
-  if ($.state[${keys.active}]) {
-    ${traceLine(stmt, 'tick')}const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-    const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
-    const num = (key) => (typeof $.state[key] === "number") ? $.state[key] : 0;
-    const from = new Quaternion(num(${keys.fromQx}), num(${keys.fromQy}), num(${keys.fromQz}), (typeof $.state[${keys.fromQw}] === "number") ? $.state[${keys.fromQw}] : 1);
-    const elapsed = Math.min(duration, num(${keys.elapsed}) + delta);
-    const t = elapsed / duration;
-    // Same as "rotate_by": start rotation * euler(delta), with the delta scaled by progress.
-    $.setRotation(from.multiply(new Quaternion().setFromEulerAngles(new Vector3(num(${keys.deltaX}) * t, num(${keys.deltaY}) * t, num(${keys.deltaZ}) * t))));
-    $.state[${keys.elapsed}] = elapsed;
-    if (elapsed >= duration) {
-      $.state[${keys.active}] = false;
-    }
+    const keys = smoothRotateKeys(safeId(stmt.blockId));
+    return `// 「${describeStmt(stmt)}」の途中の動き
+if ($.state[${keys.active}]) {
+  ${traceLine(stmt, 'tick')}${READ_NUMBER}
+  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
+  const duration = Math.max(0.001, read(${keys.duration}, 0.001));
+  const from = new Quaternion(read(${keys.fromQx}, 0), read(${keys.fromQy}, 0), read(${keys.fromQz}, 0), read(${keys.fromQw}, 1));
+  const elapsed = Math.min(duration, read(${keys.elapsed}, 0) + delta);
+  const t = elapsed / duration; // 0（始め）〜 1（終わり）
+  // 「角度を〜ずつ変える」と同じ回し方で、回す量を t の割合だけ進める
+  const step = new Vector3(read(${keys.deltaX}, 0) * t, read(${keys.deltaY}, 0) * t, read(${keys.deltaZ}, 0) * t);
+  $.setRotation(from.multiply(new Quaternion().setFromEulerAngles(step)));
+  $.state[${keys.elapsed}] = elapsed;
+  if (elapsed >= duration) {
+    $.state[${keys.active}] = false;
   }
 }`;
   });
-  return `// Jcreate++ smooth rotation\n${lines.join('\n')}`;
+  return lines.join('\n');
 }
 
 function getSmoothRotateBlocks(program: Program): SmoothRotateStmt[] {
@@ -230,25 +229,22 @@ function getSmoothRotateBlocks(program: Program): SmoothRotateStmt[] {
   return stmts;
 }
 
-function handlerToJS(event: string, handler: Handler): string {
-  const params = EVENT_PARAMS[event] ?? '';
-  const body = handler.body.map((stmt) => indent(stmtToJS(stmt), 2)).join('\n');
-
-  return `$.${event}((${params}) => {\n${body}\n});\n`;
+function handlerToJS(title: string, event: string, params: string, handler: Handler): string {
+  return `${heading(title)}\n$.${event}((${params}) => {\n${bodyToJS(handler.body, 2)}\n});\n`;
 }
 
 function cooldownTickToJS(names: string[]): string {
-  const lines = names.map((name) => {
-    const key = jsString(`__jpp_cd_${name}`);
-    return `{
-  const __jpp_cd_value = $.state[${key}];
-  const __jpp_cd_delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
-  if (typeof __jpp_cd_value === "number" && __jpp_cd_value > 0) {
-    $.state[${key}] = Math.max(0, __jpp_cd_value - __jpp_cd_delta);
+  const keys = names.map((name) => jsString(`__jpp_cd_${name}`)).join(', ');
+  return `// クールダウンの残り秒数を減らす
+{
+  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
+  for (const key of [${keys}]) {
+    const left = $.state[key];
+    if (typeof left === "number" && left > 0) {
+      $.state[key] = Math.max(0, left - delta);
+    }
   }
 }`;
-  });
-  return `// Jcreate++ cooldown timers\n${lines.join('\n')}`;
 }
 
 function getCooldownNames(program: Program): string[] {
@@ -299,10 +295,12 @@ function rideInputHandlersToJS(program: Program): string {
   const upDownSpeed = exprToJS(program.rideTemplate.upDownSpeed);
   const turnSpeed = exprToJS(program.rideTemplate.turnSpeed);
 
-  return `$.onRide((isGetOn, player) => {
+  return `${heading('乗り物ギミック: 乗る・降りる・操作')}
+$.onRide((isGetOn, player) => {
   if (isGetOn) {
     $.state["__jpp_ride_active"] = true;
   } else {
+    // 降りたら止める
     $.state["__jpp_ride_active"] = false;
     $.state["__jpp_ride_fwd"] = 0;
     $.state["__jpp_ride_upd"] = 0;
@@ -310,16 +308,18 @@ function rideInputHandlersToJS(program: Program): string {
   }
 });
 
+// 前後・左右の入力（input.y: 前後、input.x: 左右）
 $.onSteer((input, player) => {
   if ($.state["__jpp_ride_active"]) {
-    $.state["__jpp_ride_fwd"] = input.y * (${forwardSpeed});
-    $.state["__jpp_ride_trn"] = input.x * (${turnSpeed});
+    $.state["__jpp_ride_fwd"] = input.y * ${forwardSpeed};
+    $.state["__jpp_ride_trn"] = input.x * ${turnSpeed};
   }
 });
 
+// 上下の入力
 $.onSteerAdditionalAxis((input, player) => {
   if ($.state["__jpp_ride_active"]) {
-    $.state["__jpp_ride_upd"] = input * (${upDownSpeed});
+    $.state["__jpp_ride_upd"] = input * ${upDownSpeed};
   }
 });
 `;
@@ -332,20 +332,22 @@ function rideUpdateToJS(program: Program): string {
 
   // Yaw angle of "forward": +Z itself, or the original template's -X (yaw + 270).
   const forwardAngle = program.rideTemplate.forward === 'z' ? 'direction.y' : '((direction.y + 270) % 360)';
+  const forwardNote = program.rideTemplate.forward === 'z' ? 'アイテムの前（+Z）' : '従来の向き（アイテムの左 -X）';
 
-  return `if ($.state["__jpp_ride_active"]) {
-  const pos = $.getPosition() || new Vector3(0,0,0);
+  return `// 乗り物ギミック: 乗っている間、入力に合わせて動かす（進む向き: ${forwardNote}）
+if ($.state["__jpp_ride_active"]) {
+  const pos = $.getPosition() || new Vector3(0, 0, 0);
   const rot = $.getRotation() || new Quaternion();
-  const trnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
-  const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, trnAmount, 0)));
+  const turnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
+  const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, turnAmount, 0)));
 
   const direction = nextRot.clone().createEulerAngles();
   const forwardRadian = ${forwardAngle} * Math.PI / 180;
-  const fwdAmount = $.state["__jpp_ride_fwd"] || 0;
+  const forwardAmount = $.state["__jpp_ride_fwd"] || 0;
   const forwardVec = new Vector3(
-    Math.sin(forwardRadian) * fwdAmount * deltaTime,
+    Math.sin(forwardRadian) * forwardAmount * deltaTime,
     0,
-    Math.cos(forwardRadian) * fwdAmount * deltaTime
+    Math.cos(forwardRadian) * forwardAmount * deltaTime
   );
   const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state["__jpp_ride_upd"] || 0) * deltaTime);
 
@@ -360,33 +362,34 @@ function chaseUpdateToJS(program: Program): string {
   }
 
   const moveSpeed = exprToJS(program.chaseTemplate.moveSpeed);
-  const maxDistance = exprToJS(program.chaseTemplate.maxDistance);
+  const maxDistance = bare(exprToJS(program.chaseTemplate.maxDistance));
   const minDistance = exprToJS(program.chaseTemplate.minDistance);
 
-  return `{
-  const __jpp_chase_pos = $.getPosition() || new Vector3(0,0,0);
-  const __jpp_chase_players = $.getPlayersNear(__jpp_chase_pos, (${maxDistance}));
-  let __jpp_chase_target = null;
-  let __jpp_chase_distance = Infinity;
-  for (const __jpp_chase_player of __jpp_chase_players) {
-    const __jpp_chase_player_pos = __jpp_chase_player.getPosition();
-    if (!__jpp_chase_player_pos) continue;
-    const __jpp_chase_dist = __jpp_chase_player_pos.clone().sub(__jpp_chase_pos).length();
-    if (__jpp_chase_dist < __jpp_chase_distance) {
-      __jpp_chase_distance = __jpp_chase_dist;
-      __jpp_chase_target = __jpp_chase_player;
+  return `// 追いかけるギミック: いちばん近いプレイヤーの方を向いて近づく
+{
+  const pos = $.getPosition() || new Vector3(0, 0, 0);
+  let target = null;
+  let nearest = Infinity;
+  for (const player of $.getPlayersNear(pos, ${maxDistance})) {
+    const playerPos = player.getPosition();
+    if (!playerPos) continue;
+    const distance = playerPos.clone().sub(pos).length();
+    if (distance < nearest) {
+      nearest = distance;
+      target = player;
     }
   }
-  if (__jpp_chase_target && __jpp_chase_target.exists()) {
-    const __jpp_chase_target_pos = __jpp_chase_target.getPosition();
-    if (__jpp_chase_target_pos) {
-      const __jpp_chase_dir = __jpp_chase_target_pos.clone().sub(__jpp_chase_pos);
-      const __jpp_chase_len = __jpp_chase_dir.length();
-      if (__jpp_chase_len > 0) {
-        const __jpp_chase_angle = Math.atan2(__jpp_chase_dir.x, __jpp_chase_dir.z) * 180 / Math.PI;
-        $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, __jpp_chase_angle, 0)));
-        if (__jpp_chase_len > (${minDistance})) {
-          $.setPosition(__jpp_chase_pos.add(__jpp_chase_dir.normalize().multiplyScalar((${moveSpeed}) * deltaTime)));
+  if (target && target.exists()) {
+    const targetPos = target.getPosition();
+    if (targetPos) {
+      const dir = targetPos.clone().sub(pos);
+      const length = dir.length();
+      if (length > 0) {
+        // 前（+Z）がプレイヤーを向くように回す
+        const angle = Math.atan2(dir.x, dir.z) * 180 / Math.PI;
+        $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, angle, 0)));
+        if (length > ${minDistance}) {
+          $.setPosition(pos.add(dir.normalize().multiplyScalar(${moveSpeed} * deltaTime)));
         }
       }
     }
@@ -395,18 +398,14 @@ function chaseUpdateToJS(program: Program): string {
 }
 
 function grabHandlerToJS(program: Program): string {
-  const lines: string[] = ['$.onGrab((isGrab, isLeftHand, player) => {'];
+  const lines: string[] = [heading('持ったとき / 離したとき'), '$.onGrab((isGrab, isLeftHand, player) => {'];
 
   if (program.onGrabStart) {
-    lines.push('  if (isGrab) {');
-    lines.push(...program.onGrabStart.body.map((stmt) => indent(stmtToJS(stmt), 4)));
-    lines.push('  }');
+    lines.push('  // 持ったとき', '  if (isGrab) {', bodyToJS(program.onGrabStart.body, 4), '  }');
   }
 
   if (program.onGrabEnd) {
-    lines.push('  if (!isGrab) {');
-    lines.push(...program.onGrabEnd.body.map((stmt) => indent(stmtToJS(stmt), 4)));
-    lines.push('  }');
+    lines.push('  // 離したとき', '  if (!isGrab) {', bodyToJS(program.onGrabEnd.body, 4), '  }');
   }
 
   lines.push('});', '');
@@ -428,14 +427,13 @@ function receiveHandlersToJS(program: Program): string {
 
   const lines: string[] = [];
   for (const [message, handlers] of groups) {
+    lines.push(`  // メッセージ「${commentText(message)}」を受け取ったとき`);
     lines.push(`  if (msg === ${jsString(message)}) {`);
     for (const handler of handlers) {
-      for (const stmt of handler.body) {
-        lines.push(indent(stmtToJS(stmt), 4));
-      }
+      lines.push(bodyToJS(handler.body, 4));
     }
     lines.push('  }');
   }
 
-  return `$.onReceive((msg, arg, sender) => {\n${lines.join('\n')}\n}, { item: true, player: true });\n`;
+  return `${heading('メッセージを受け取ったとき')}\n$.onReceive((msg, arg, sender) => {\n${lines.join('\n')}\n}, { item: true, player: true });\n`;
 }

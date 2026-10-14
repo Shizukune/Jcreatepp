@@ -1,11 +1,17 @@
 /**
  * Small runtime helpers emitted once at the top of the generated script, only when used.
+ * Each comes with a Japanese comment so the generated script explains itself.
  */
 
 const DEFINITIONS = {
-  // 15 significant digits removes binary float noise (0.1 + 0.2 -> 0.3). Keeps the original value
-  // when rounding would overflow a finite number to Infinity (near Number.MAX_VALUE).
-  num: 'const __jpp_num = (v) => { const n = Number(v.toPrecision(15)); return isFinite(n) || !isFinite(v) ? n : v; };',
+  roundDecimal: [
+    '// 小数の計算誤差をなくす（有効数字15桁にそろえる。例: 0.1 + 0.2 → 0.3）',
+    'const roundDecimal = (v) => { const n = Number(v.toPrecision(15)); return isFinite(n) || !isFinite(v) ? n : v; };',
+  ].join('\n'),
+  getCooldown: [
+    '// クールダウンの残り秒数（始まっていなければ 0）',
+    'const getCooldown = (name) => { const v = $.state["__jpp_cd_" + name]; return typeof v === "number" ? v : 0; };',
+  ].join('\n'),
 } as const;
 
 export type HelperName = keyof typeof DEFINITIONS;
@@ -15,7 +21,7 @@ let used: Set<HelperName> | null = null;
 /** Marks a helper as needed and returns the name to call it by. */
 export function useHelper(name: HelperName): string {
   used?.add(name);
-  return `__jpp_${name}`;
+  return name;
 }
 
 /** Runs codegen and prepends the definitions of the helpers it used. */

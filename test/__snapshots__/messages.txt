@@ -13,106 +13,112 @@ Unity側で必要な設定
 - 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
 - 衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。
 // ==== code ====
+// ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  // もし 範囲 3m にプレイヤーがいる になったら 範囲 10m のアイテム に メッセージ「open」を1回だけ送る
   {
-    const sentKey = "__jpp_send_once_b4";
-    const canSend = ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (3))).length > 0);
-    if (canSend && !$.state[sentKey]) {
-      const pos = $.getPosition() || new Vector3(0,0,0);
-      const items = $.getItemsNear(pos, (10));
+    // 条件が false から true になったときだけ送る
+    const canSend = $.getPlayersNear($.getPosition() || new Vector3(0, 0, 0), 3).length > 0;
+    if (canSend && !$.state["__jpp_send_once_b4"]) {
+      const items = $.getItemsNear($.getPosition() || new Vector3(0, 0, 0), 10);
       for (const item of items) {
         item.send("open", null);
       }
-      $.state[sentKey] = true;
+      $.state["__jpp_send_once_b4"] = true;
     }
     if (!canSend) {
-      $.state[sentKey] = false;
+      $.state["__jpp_send_once_b4"] = false;
     }
   }
+  // もし 範囲 5m のプレイヤー人数 > 1 になったら 範囲 10m のアイテム に メッセージ「count」 と値 範囲 5m のプレイヤー人数を1回だけ送る
   {
-    const sentKey = "__jpp_send_once_b12";
-    const canSend = (($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length) > 1);
-    if (canSend && !$.state[sentKey]) {
-      const pos = $.getPosition() || new Vector3(0,0,0);
-      const items = $.getItemsNear(pos, (10));
+    // 条件が false から true になったときだけ送る
+    const canSend = $.getPlayersNear($.getPosition() || new Vector3(0, 0, 0), 5).length > 1;
+    if (canSend && !$.state["__jpp_send_once_b12"]) {
+      const items = $.getItemsNear($.getPosition() || new Vector3(0, 0, 0), 10);
       for (const item of items) {
-        item.send("count", ($.getPlayersNear(($.getPosition() || new Vector3(0,0,0)), Math.max(0, (5))).length));
+        item.send("count", $.getPlayersNear($.getPosition() || new Vector3(0, 0, 0), 5).length);
       }
-      $.state[sentKey] = true;
+      $.state["__jpp_send_once_b12"] = true;
     }
     if (!canSend) {
-      $.state[sentKey] = false;
+      $.state["__jpp_send_once_b12"] = false;
     }
   }
+  // もし 前方 4m にプレイヤーがある になったら 指定アイテム door に メッセージ「close」を1回だけ送る
   {
-    const sentKey = "__jpp_send_once_b15";
-    const canSend = ((() => { const __jpp_hit = $.raycast(($.getPosition() || new Vector3(0,0,0)), new Vector3(0,0,1).applyQuaternion(($.getRotation() || new Quaternion())).normalize(), Math.max(0, (4))); return !!(__jpp_hit && __jpp_hit.handle && __jpp_hit.handle.type === "player"); })());
-    if (canSend && !$.state[sentKey]) {
+    // 条件が false から true になったときだけ送る
+    const canSend = (() => { const hit = $.raycast($.getPosition() || new Vector3(0, 0, 0), new Vector3(0, 0, 1).applyQuaternion($.getRotation() || new Quaternion()).normalize(), 4); return !!(hit && hit.handle && hit.handle.type === "player"); })();
+    if (canSend && !$.state["__jpp_send_once_b15"]) {
       const target = $.worldItemReference("door");
       if (target && target.exists()) {
         target.send("close", null);
       }
-      $.state[sentKey] = true;
+      $.state["__jpp_send_once_b15"] = true;
     }
     if (!canSend) {
-      $.state[sentKey] = false;
+      $.state["__jpp_send_once_b15"] = false;
     }
   }
+  // もし true になったら 指定アイテム board に メッセージ「text」 と値 「hi」を1回だけ送る
   {
-    const sentKey = "__jpp_send_once_b18";
+    // 条件が false から true になったときだけ送る
     const canSend = true;
-    if (canSend && !$.state[sentKey]) {
+    if (canSend && !$.state["__jpp_send_once_b18"]) {
       const target = $.worldItemReference("board");
       if (target && target.exists()) {
         target.send("text", "hi");
       }
-      $.state[sentKey] = true;
+      $.state["__jpp_send_once_b18"] = true;
     }
     if (!canSend) {
-      $.state[sentKey] = false;
+      $.state["__jpp_send_once_b18"] = false;
     }
   }
 });
 
+// ── 衝突したとき ──
 $.onCollide((collision) => {
+  // もし true なら 衝突相手 に メッセージ「hit」を送る
   {
-    if (true) {
-      const target = (collision && collision.handle ? collision.handle : null);
-      if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
-        target.send("hit", null);
-      }
+    const target = collision && collision.handle ? collision.handle : null;
+    if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+      target.send("hit", null);
     }
   }
+  // もし true なら 衝突相手 に メッセージ「who」 と値 衝突相手を送る
   {
-    if (true) {
-      const target = (collision && collision.handle ? collision.handle : null);
-      if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
-        target.send("who", (collision && collision.handle ? collision.handle : null));
-      }
+    const target = collision && collision.handle ? collision.handle : null;
+    if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+      target.send("who", collision && collision.handle ? collision.handle : null);
     }
   }
 });
 
+// ── メッセージを受け取ったとき ──
 $.onReceive((msg, arg, sender) => {
+  // メッセージ「open」を受け取ったとき
   if (msg === "open") {
-    $.state["var.got"] = (typeof arg === "number" ? arg : 0);
-    $.state["str.msg"] = (typeof arg === "string" ? arg : "");
+    // 数値変数 got を 受け取った数値 にする
+    $.state["var.got"] = typeof arg === "number" ? arg : 0;
+    // 文字変数 msg を 受け取った文字 にする
+    $.state["str.msg"] = typeof arg === "string" ? arg : "";
+    // もし true なら 送ってきた相手 に メッセージ「ack」を返す
     {
-      if (true) {
-        if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
-          sender.send("ack", null);
-        }
+      if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+        sender.send("ack", null);
       }
     }
-    {
-      if ((typeof arg === "boolean" ? arg : false)) {
-        if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
-          sender.send("echo", (typeof arg === "boolean" ? arg : false));
-        }
+    // もし 受け取った真偽値 なら 送ってきた相手 に メッセージ「echo」 と値 受け取った真偽値を返す
+    if (typeof arg === "boolean" ? arg : false) {
+      if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+        sender.send("echo", typeof arg === "boolean" ? arg : false);
       }
     }
   }
+  // メッセージ「push」を受け取ったとき
   if (msg === "push") {
+    // 位置を x:0 y:0 z:1 ずつ変える
     $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, 0, 1)));
   }
 }, { item: true, player: true });
