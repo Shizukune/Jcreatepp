@@ -1,6 +1,6 @@
 import type { MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
-import { axisVector, jsString, safeId, smoothTransitionKeys, stateKey } from './shared';
+import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, stateKey } from './shared';
 
 export function stmtToJS(stmt: Stmt): string {
   switch (stmt.kind) {
@@ -131,19 +131,19 @@ function smoothMoveByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' }>
 
 function smoothRotateByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_rotate_by' }>): string {
   const id = safeId(stmt.blockId);
-  const keys = smoothTransitionKeys('rotate', id);
+  const keys = smoothRotateKeys(id);
   return `{
-  const rotation = $.getRotation();
-  const from = rotation ? rotation.clone().createEulerAngles() : new Vector3(0, 0, 0);
+  const from = $.getRotation() || new Quaternion();
   $.state[${keys.active}] = true;
   $.state[${keys.elapsed}] = 0;
   $.state[${keys.duration}] = Math.max(0.001, (${exprToJS(stmt.duration)}));
-  $.state[${keys.fromX}] = from.x;
-  $.state[${keys.fromY}] = from.y;
-  $.state[${keys.fromZ}] = from.z;
-  $.state[${keys.toX}] = from.x + (${exprToJS(stmt.x)});
-  $.state[${keys.toY}] = from.y + (${exprToJS(stmt.y)});
-  $.state[${keys.toZ}] = from.z + (${exprToJS(stmt.z)});
+  $.state[${keys.fromQx}] = from.x;
+  $.state[${keys.fromQy}] = from.y;
+  $.state[${keys.fromQz}] = from.z;
+  $.state[${keys.fromQw}] = from.w;
+  $.state[${keys.deltaX}] = (${exprToJS(stmt.x)});
+  $.state[${keys.deltaY}] = (${exprToJS(stmt.y)});
+  $.state[${keys.deltaZ}] = (${exprToJS(stmt.z)});
 }`;
 }
 

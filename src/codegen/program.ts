@@ -2,7 +2,7 @@
 import { exprToJS } from './expr';
 import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
-import { getAllSequences, indent, jsString, safeId, smoothTransitionKeys } from './shared';
+import { getAllSequences, indent, jsString, safeId, smoothRotateKeys, smoothTransitionKeys } from './shared';
 import { stmtToJS } from './stmt';
 
 const EVENT_PARAMS: Record<string, string> = {
@@ -158,31 +158,20 @@ function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
 function smoothRotateUpdateToJS(stmts: SmoothRotateStmt[]): string {
   const lines = stmts.map((stmt) => {
     const id = safeId(stmt.blockId);
-    const keys = smoothTransitionKeys('rotate', id);
+    const keys = smoothRotateKeys(id);
     return `{
   if ($.state[${keys.active}]) {
     const delta = (typeof deltaTime === "number") ? Math.max(0, deltaTime) : 0;
     const duration = Math.max(0.001, (typeof $.state[${keys.duration}] === "number" ? $.state[${keys.duration}] : 0.001));
-    const rotation = $.getRotation();
-    const current = rotation ? rotation.clone().createEulerAngles() : new Vector3(0, 0, 0);
-    const fromX = (typeof $.state[${keys.fromX}] === "number") ? $.state[${keys.fromX}] : current.x;
-    const fromY = (typeof $.state[${keys.fromY}] === "number") ? $.state[${keys.fromY}] : current.y;
-    const fromZ = (typeof $.state[${keys.fromZ}] === "number") ? $.state[${keys.fromZ}] : current.z;
-    const toX = (typeof $.state[${keys.toX}] === "number") ? $.state[${keys.toX}] : fromX;
-    const toY = (typeof $.state[${keys.toY}] === "number") ? $.state[${keys.toY}] : fromY;
-    const toZ = (typeof $.state[${keys.toZ}] === "number") ? $.state[${keys.toZ}] : fromZ;
-    const elapsed = Math.min(duration, (typeof $.state[${keys.elapsed}] === "number" ? $.state[${keys.elapsed}] : 0) + delta);
+    const num = (key) => (typeof $.state[key] === "number") ? $.state[key] : 0;
+    const from = new Quaternion(num(${keys.fromQx}), num(${keys.fromQy}), num(${keys.fromQz}), (typeof $.state[${keys.fromQw}] === "number") ? $.state[${keys.fromQw}] : 1);
+    const elapsed = Math.min(duration, num(${keys.elapsed}) + delta);
     const t = elapsed / duration;
-    const next = new Vector3(
-      fromX + ((toX - fromX) * t),
-      fromY + ((toY - fromY) * t),
-      fromZ + ((toZ - fromZ) * t)
-    );
-    $.setRotation(new Quaternion().setFromEulerAngles(next));
+    // Same as "rotate_by": start rotation * euler(delta), with the delta scaled by progress.
+    $.setRotation(from.multiply(new Quaternion().setFromEulerAngles(new Vector3(num(${keys.deltaX}) * t, num(${keys.deltaY}) * t, num(${keys.deltaZ}) * t))));
     $.state[${keys.elapsed}] = elapsed;
     if (elapsed >= duration) {
       $.state[${keys.active}] = false;
-      $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(toX, toY, toZ)));
     }
   }
 }`;

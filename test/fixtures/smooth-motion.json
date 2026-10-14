@@ -1,0 +1,39 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b1",
+        "x": 0,
+        "y": 0,
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_smooth_move_by",
+              "id": "b2",
+              "inputs": {
+                "X": { "block": { "type": "math_number", "id": "b3", "fields": { "NUM": 0 } } },
+                "Y": { "block": { "type": "math_number", "id": "b4", "fields": { "NUM": 2 } } },
+                "Z": { "block": { "type": "math_number", "id": "b5", "fields": { "NUM": 0 } } },
+                "DURATION": { "block": { "type": "math_number", "id": "b6", "fields": { "NUM": 1 } } }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_smooth_rotate_by",
+                  "id": "b7",
+                  "inputs": {
+                    "X": { "block": { "type": "math_number", "id": "b8", "fields": { "NUM": 0 } } },
+                    "Y": { "block": { "type": "math_number", "id": "b9", "fields": { "NUM": 90 } } },
+                    "Z": { "block": { "type": "math_number", "id": "b10", "fields": { "NUM": 0 } } },
+                    "DURATION": { "block": { "type": "math_number", "id": "b11", "fields": { "NUM": 2 } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

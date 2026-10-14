@@ -39,16 +39,26 @@ export function saveWorkspace(ws: Blockly.Workspace): object {
   return Blockly.serialization.workspaces.save(ws);
 }
 
-/** Runs the same pipeline as generateCode() in src/index.ts and renders a stable text report. */
-export function generateReport(ws: Blockly.Workspace): string {
+function convert(ws: Blockly.Workspace) {
   const log = console.log;
   console.log = () => {}; // workspaceToProgram logs top blocks
-  let result;
   try {
-    result = workspaceToProgram(ws, javascriptGenerator as any);
+    return workspaceToProgram(ws, javascriptGenerator as any);
   } finally {
     console.log = log;
   }
+}
+
+/** Blockly workspace state -> generated code. Throws if conversion reports errors. */
+export function generateCode(state: object): string {
+  const result = convert(loadWorkspace(state));
+  if (result.errors.length > 0) throw new Error(`conversion errors:\n${result.errors.join('\n')}`);
+  return programToJS(result.program);
+}
+
+/** Runs the same pipeline as generateCode() in src/index.ts and renders a stable text report. */
+export function generateReport(ws: Blockly.Workspace): string {
+  const result = convert(ws);
 
   const sections: string[] = [];
   sections.push('// ==== errors ====', ...result.errors);
