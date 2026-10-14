@@ -133,6 +133,25 @@ test('a "run" trace fires before its statement (3D move basis = position before 
   assert.equal(r.item.position.x, 6, 'basis + delta = actual result');
 });
 
+test('3D turn basis: rotation before the block * euler(delta) equals the actual result', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_rotation', { inputs: xyz(20, 40, 0) }),
+    b('jcreatepp_add_rotation', { id: 'turn', inputs: xyz(10, 30, 5) }),
+  ])), { trace: true });
+  let basis: Quaternion | null = null;
+  const r: ReturnType<typeof createRunner> = createRunner(code, {
+    onTrace: (id, phase) => {
+      if (id === 'turn' && phase === 'run') basis = r.item.rotation.clone();
+    },
+  });
+  r.start();
+  const predicted = basis!.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(10, 30, 5)));
+  assert.ok(predicted.equals(r.item.rotation));
+  // And the inverse used when committing a drag recovers the delta.
+  const delta = basis!.clone().invert().multiply(r.item.rotation).createEulerAngles();
+  assert.ok(new Quaternion().setFromEulerAngles(delta).equals(new Quaternion().setFromEulerAngles(new Vector3(10, 30, 5))));
+});
+
 // ── state values are not aliased by later movement ──
 
 test('save position -> move -> load position restores the saved point', () => {
@@ -275,6 +294,36 @@ test('run for N seconds: body runs on each frame overlapping the window, next st
     assert.equal(r.$.state['var.frames'], frames, `dt=${dt}`);
     assert.ok(r.time >= 1 - 1e-9 && r.time < 1 + dt, `dt=${dt}: done at ${r.time}`);
   }
+});
+
+test('sequence timing edge cases: no body run without time, negative seconds give no extra time', () => {
+  const seq = (...steps: object[]) => generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_sequence', { stmts: { DO: [...(steps as any[]), b('jcreatepp_set_flag', { fields: { FLAG_NAME: 'done', OPERATION: 'true' } })] } }),
+  ])));
+  const count = (seconds: number) => b('jcreatepp_run_for_seconds', { inputs: { SECONDS: num(seconds) }, stmts: { DO: [
+    b('jcreatepp_change_number_var', { fields: { VAR_NAME: 'frames' }, inputs: { DELTA: num(1) } }),
+  ] } });
+  const wait = (seconds: number) => b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(seconds) } });
+
+  // wait(1) uses the whole first 1s frame; run_for(1) must start on the next frame only.
+  let r = createRunner(seq(wait(1), count(1)));
+  r.start();
+  r.update(1);
+  assert.equal(r.$.state['var.frames'], undefined, 'no body run with zero remaining time');
+  r.update(1);
+  assert.equal(r.$.state['var.frames'], 1);
+
+  // A negative wait is instant and does not add time for the following wait.
+  r = createRunner(seq(wait(-10), wait(5)));
+  r.start();
+  r.update(0.1);
+  assert.ok(!r.$.state['__jpp_flag_done']);
+
+  // A tiny positive run_for still runs its body once.
+  r = createRunner(seq(count(0.0000005)));
+  r.start();
+  r.update(0.1);
+  assert.equal(r.$.state['var.frames'], 1);
 });
 
 test('S-5 (fixed): if_edge inside a sequence fires on every run of the sequence', () => {

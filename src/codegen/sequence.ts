@@ -17,7 +17,7 @@ export function generateSequenceStateMachine(seq: SequenceStmt): string {
     if (stmt.kind === 'wait_seconds') {
       // Spend this frame's remaining time once; carry any excess over to the next step.
       caseBody = `let time = ($.state["${timeVar}"] || 0) + budget;
-const seconds = ${exprToJS(stmt.seconds)};
+const seconds = Math.max(0, ${exprToJS(stmt.seconds)});
 if (time >= seconds - 1e-6) {
   budget = Math.max(0, time - seconds);
   $.state["${timeVar}"] = 0;
@@ -38,8 +38,8 @@ if (time >= seconds - 1e-6) {
       // Runs the body on every frame that overlaps [0, seconds), then carries the excess time over.
       caseBody = `const start = $.state["${timeVar}"] || 0;
 const time = start + budget;
-const seconds = ${exprToJS(stmt.seconds)};
-if (start < seconds - 1e-6) {
+const seconds = Math.max(0, ${exprToJS(stmt.seconds)});
+if (budget > 0 && start < seconds) {
 ${body.split('\n').map((line) => `  ${line}`).join('\n')}
 }
 if (time < seconds - 1e-6) {

@@ -253,6 +253,7 @@ body {
 }
 
 .pvEdit {
+  white-space: pre-wrap;
   padding: 6px 10px;
   font-size: 12px;
   color: #55ffcc;

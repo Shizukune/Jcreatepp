@@ -77,6 +77,21 @@ test('edited values survive save / load', () => {
   assert.deepEqual(getEditTarget(reloaded.getBlockById('rot'))?.values, { x: 0, y: 10, z: 0 });
 });
 
+test('turn and width modes: targets and write-back', () => {
+  const ws = loadWorkspace(workspace(
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_add_rotation', { id: 'turn', inputs: xyz(0, 30, 0) })]),
+    onEvent('jcreatepp_on_update', [b('jcreatepp_oscillate', { id: 'osc', fields: { AXIS: 'Y' }, inputs: { WIDTH: num(2), SPEED: num(1) } })]),
+  ));
+  assert.deepEqual(getEditTarget(ws.getBlockById('turn'))?.mode, 'turn');
+  const osc = getEditTarget(ws.getBlockById('osc'));
+  assert.deepEqual(osc && { mode: osc.mode, axis: osc.axis, width: osc.values.x, editable: osc.editable }, { mode: 'width', axis: 'Y', width: 2, editable: true });
+  assert.equal(applyEdit(ws, 'osc', { x: -3.456, y: 0, z: 0 }), true);
+  assert.equal(ws.getBlockById('osc')!.getInputTargetBlock('WIDTH')!.getFieldValue('NUM'), 3.46, 'width is positive');
+  assert.equal(ws.getBlockById('osc')!.getInputTargetBlock('SPEED')!.getFieldValue('NUM'), 1, 'speed untouched');
+  assert.equal(applyEdit(ws, 'turn', { x: 0, y: 92.34, z: 0 }), true);
+  assert.deepEqual(getEditTarget(ws.getBlockById('turn'))?.values, { x: 0, y: 92.3, z: 0 });
+});
+
 test('getEditTarget does not climb from a following statement to the previous move block', () => {
   const ws = loadWorkspace(workspace(onEvent('jcreatepp_on_start', [
     b('jcreatepp_add_position', { id: 'move', inputs: xyz(1, 0, 0) }),

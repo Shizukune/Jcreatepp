@@ -30,7 +30,7 @@ $.onUpdate((deltaTime) => {
         }
         case 1: {
           let time = ($.state["__jpp_seq_time_b24"] || 0) + budget;
-          const seconds = 5;
+          const seconds = Math.max(0, 5);
           if (time >= seconds - 1e-6) {
             budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b24"] = 0;
@@ -76,7 +76,7 @@ $.onUpdate((deltaTime) => {
         }
         case 1: {
           let time = ($.state["__jpp_seq_time_b19"] || 0) + budget;
-          const seconds = 1;
+          const seconds = Math.max(0, 1);
           if (time >= seconds - 1e-6) {
             budget = Math.max(0, time - seconds);
             $.state["__jpp_seq_time_b19"] = 0;
@@ -91,8 +91,8 @@ $.onUpdate((deltaTime) => {
         case 2: {
           const start = $.state["__jpp_seq_time_b19"] || 0;
           const time = start + budget;
-          const seconds = 2;
-          if (start < seconds - 1e-6) {
+          const seconds = Math.max(0, 2);
+          if (budget > 0 && start < seconds) {
             {
               const __jpp_rot = $.getRotation();
               $.setRotation((__jpp_rot ? __jpp_rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 2, 0))));

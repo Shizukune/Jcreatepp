@@ -9,7 +9,7 @@
 
 import * as Blockly from 'blockly/core';
 
-export type EditMode = 'position' | 'move' | 'rotation';
+export type EditMode = 'position' | 'move' | 'rotation' | 'turn' | 'width';
 
 export type Xyz = { x: number; y: number; z: number };
 
@@ -20,6 +20,8 @@ export type EditTarget = {
   values: Xyz;
   editable: boolean;
   reason?: string;
+  /** 'width' mode only: the oscillation axis (values.x holds the width). */
+  axis?: 'X' | 'Y' | 'Z';
 };
 
 const SUPPORTED: Record<string, { mode: EditMode; label: string }> = {
@@ -27,13 +29,21 @@ const SUPPORTED: Record<string, { mode: EditMode; label: string }> = {
   jcreatepp_add_position: { mode: 'move', label: '位置を〜ずつ変える' },
   jcreatepp_smooth_move_by: { mode: 'move', label: '位置を〜だけ〜秒かけて動かす' },
   jcreatepp_set_rotation: { mode: 'rotation', label: '角度を〜にする' },
+  jcreatepp_add_rotation: { mode: 'turn', label: '角度を〜ずつ変える' },
+  jcreatepp_smooth_rotate_by: { mode: 'turn', label: '角度を〜だけ〜秒かけて回す' },
+  jcreatepp_oscillate: { mode: 'width', label: '往復する' },
 };
 
-const AXES = [
+const XYZ_INPUTS: ReadonlyArray<readonly [keyof Xyz, string]> = [
   ['x', 'X'],
   ['y', 'Y'],
   ['z', 'Z'],
-] as const;
+];
+const WIDTH_INPUTS: ReadonlyArray<readonly [keyof Xyz, string]> = [['x', 'WIDTH']];
+
+function inputsFor(mode: EditMode) {
+  return mode === 'width' ? WIDTH_INPUTS : XYZ_INPUTS;
+}
 
 /**
  * The selected block, or the supported block whose value input contains it (e.g. a number inside).
@@ -49,7 +59,7 @@ export function getEditTarget(selected: Blockly.Block | null): EditTarget | null
   const { mode, label } = SUPPORTED[block.type];
   const values: Xyz = { x: 0, y: 0, z: 0 };
   let editable = true;
-  for (const [key, input] of AXES) {
+  for (const [key, input] of inputsFor(mode)) {
     const target = block.getInputTargetBlock(input);
     if (target && target.type === 'math_number') {
       values[key] = Number(target.getFieldValue('NUM')) || 0;
@@ -57,9 +67,13 @@ export function getEditTarget(selected: Blockly.Block | null): EditTarget | null
       editable = false;
     }
   }
+  const axis = mode === 'width' ? (block.getFieldValue('AXIS') as 'X' | 'Y' | 'Z') : undefined;
+  const reason = mode === 'width'
+    ? '幅が数値以外（変数・計算・空欄）のため、3Dからは編集できません'
+    : 'X / Y / Z のどれかに数値以外（変数・計算・空欄）があるため、3Dからは編集できません';
   return editable
-    ? { blockId: block.id, mode, label, values, editable }
-    : { blockId: block.id, mode, label, values, editable, reason: 'X / Y / Z のどれかに数値以外（変数・計算・空欄）があるため、3Dからは編集できません' };
+    ? { blockId: block.id, mode, label, values, editable, axis }
+    : { blockId: block.id, mode, label, values, editable, axis, reason };
 }
 
 /** Writes x/y/z into the block's connected number literals as one undo step. */
@@ -68,13 +82,14 @@ export function applyEdit(workspace: Blockly.Workspace, blockId: string, values:
   const target = block ? getEditTarget(block) : null;
   if (!block || !target || target.blockId !== blockId || !target.editable) return false;
 
-  const digits = target.mode === 'rotation' ? 1 : 2;
+  const digits = target.mode === 'rotation' || target.mode === 'turn' ? 1 : 2;
   Blockly.Events.setGroup(true);
   try {
-    for (const [key, input] of AXES) {
+    for (const [key, input] of inputsFor(target.mode)) {
       const numberBlock = block.getInputTargetBlock(input);
       if (numberBlock && numberBlock.type === 'math_number') {
-        numberBlock.setFieldValue(String(round(values[key], digits)), 'NUM');
+        const value = target.mode === 'width' ? Math.abs(values[key]) : values[key];
+        numberBlock.setFieldValue(String(round(value, digits)), 'NUM');
       }
     }
   } finally {

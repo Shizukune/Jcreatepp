@@ -14,6 +14,7 @@ import { createRunner, type Runner } from '../sim/runner';
 import type { LogEntry } from '../sim/clusterMock';
 import { fromThreePosition, fromThreeQuaternion, toThreePosition, toThreeQuaternion } from './coords';
 import { nearestEuler, type EditTarget, type Xyz } from './blockEdit';
+import { safeId } from '../codegen/shared';
 
 export type Preview = {
   /** New generated code (trace build) or null when the workspace has errors / is empty. */
@@ -146,6 +147,8 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   let dragCancelled = false;
   // Item position right before each block last ran ("run" trace), used as the basis for moves.
   const runBasis = new Map<string, Vector3>();
+  const runBasisRot = new Map<string, Quaternion>();
+  let dragBasisRot = new Quaternion();
   let trailCount = 0;
 
   // ── simulation ──
@@ -161,11 +164,14 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     dragging = !!e.value;
     controls.enabled = !dragging;
     if (dragging) {
-      // Edit against a fixed basis: stop the simulation and freeze the current position.
+      // Edit against a fixed basis: stop the simulation and freeze where the block starts from.
       playing = false;
       playBtn.textContent = '▶ 再生';
       dragCancelled = false;
-      dragBasis = editTarget ? basisFor(editTarget) : currentPosition();
+      if (editTarget) {
+        dragBasis = basisFor(editTarget);
+        dragBasisRot = rotationBasisFor(editTarget);
+      }
     } else {
       commitEdit();
     }
@@ -173,7 +179,30 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
 
   /** Where the target block starts from: its last pre-execution position, else the current one. */
   function basisFor(t: EditTarget): Vector3 {
+    if (t.mode === 'width') return oscillationOrigin(t);
     return runBasis.get(t.blockId)?.clone() ?? currentPosition();
+  }
+
+  /** The rotation the target block starts from (for relative turns). */
+  function rotationBasisFor(t: EditTarget): Quaternion {
+    return runBasisRot.get(t.blockId)?.clone() ?? (runner ? runner.item.rotation.clone() : new Quaternion());
+  }
+
+  /** "往復する" swings around the position stored when it first ran. */
+  function oscillationOrigin(t: EditTarget): Vector3 {
+    const stored = runner?.$.state[`__jpp_osc_init_pos_${safeId(t.blockId)}`];
+    return stored instanceof Vector3 ? stored.clone() : currentPosition();
+  }
+
+  /** Relative modes need the block to have run once to know their real starting point. */
+  function hasRunBasis(t: EditTarget): boolean {
+    if (t.mode === 'width') return runner?.$.state[`__jpp_osc_init_pos_${safeId(t.blockId)}`] instanceof Vector3;
+    if (t.mode === 'move' || t.mode === 'turn') return runBasis.has(t.blockId);
+    return true;
+  }
+
+  function axisVector(axis: 'X' | 'Y' | 'Z' | undefined): Vector3 {
+    return axis === 'Y' ? new Vector3(0, 1, 0) : axis === 'Z' ? new Vector3(0, 0, 1) : new Vector3(1, 0, 0);
   }
 
   function currentPosition(): Vector3 {
@@ -183,17 +212,23 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   function updateGhost() {
     const t = editTarget;
     ghost.visible = !!t;
-    moveLine.visible = !!t && t.mode === 'move';
+    moveLine.visible = !!t && (t.mode === 'move' || t.mode === 'width');
     editEl.hidden = !t;
     if (!t) {
       gizmo.detach();
       return;
     }
-    editEl.textContent = t.editable
-      ? `3D編集: 「${t.label}」 — 緑の箱を${t.mode === 'rotation' ? '回転' : 'ドラッグ'}すると数値が変わります`
-      : `3D編集: 「${t.label}」 — ${t.reason}`;
+    const rotating = t.mode === 'rotation' || t.mode === 'turn';
+    editEl.textContent = (t.editable
+      ? `3D編集: 「${t.label}」 — 緑の箱を${rotating ? '回転' : 'ドラッグ'}すると数値が変わります`
+      : `3D編集: 「${t.label}」 — ${t.reason}`) +
+      (hasRunBasis(t) ? '' : '\n※まだ実行されていないため、今の位置・向きを仮の起点として表示しています（再生すると実際の起点になります）');
     if (dragging) {
-      if (t.mode === 'move') setMoveLine(dragBasis);
+      if (t.mode === 'move') setLine(dragBasis, fromThreePosition(ghost.position));
+      if (t.mode === 'width') {
+        const half = fromThreePosition(ghost.position).sub(dragBasis);
+        setLine(dragBasis.clone().sub(half), dragBasis.clone().add(half));
+      }
       return;
     }
     const v = new Vector3(t.values.x, t.values.y, t.values.z);
@@ -202,28 +237,55 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       ghost.quaternion.copy(item.quaternion);
     } else if (t.mode === 'move') {
       const basis = basisFor(t);
-      ghost.position.copy(toThreePosition(basis.clone().add(v)));
+      const end = basis.clone().add(v);
+      ghost.position.copy(toThreePosition(end));
       ghost.quaternion.copy(item.quaternion);
-      setMoveLine(basis);
-    } else {
+      setLine(basis, end);
+    } else if (t.mode === 'rotation') {
       ghost.position.copy(item.position);
       ghost.quaternion.copy(toThreeQuaternion(new Quaternion().setFromEulerAngles(v)));
+    } else if (t.mode === 'turn') {
+      // Same as the generated code: start rotation * euler(delta).
+      ghost.position.copy(item.position);
+      ghost.quaternion.copy(toThreeQuaternion(rotationBasisFor(t).multiply(new Quaternion().setFromEulerAngles(v))));
+    } else {
+      // Width: ghost at one end of the swing, line across the whole swing.
+      const origin = oscillationOrigin(t);
+      const half = axisVector(t.axis).multiplyScalar(t.values.x);
+      ghost.position.copy(toThreePosition(origin.clone().add(half)));
+      ghost.quaternion.copy(item.quaternion);
+      setLine(origin.clone().sub(half), origin.clone().add(half));
     }
     if (t.editable) {
       if (gizmo.object !== ghost) gizmo.attach(ghost);
-      gizmo.setMode(t.mode === 'rotation' ? 'rotate' : 'translate');
+      gizmo.setMode(rotating ? 'rotate' : 'translate');
+      // Width is a single number: only offer the oscillation axis.
+      gizmo.showX = t.mode !== 'width' || t.axis === 'X';
+      gizmo.showY = t.mode !== 'width' || t.axis === 'Y';
+      gizmo.showZ = t.mode !== 'width' || t.axis === 'Z';
     } else {
       gizmo.detach();
     }
   }
 
-  function setMoveLine(basis: Vector3) {
+  function setLine(from: Vector3, to: Vector3) {
     const attr = moveLine.geometry.attributes.position as THREE.BufferAttribute;
-    const from = toThreePosition(basis);
-    attr.setXYZ(0, from.x, from.y, from.z);
-    attr.setXYZ(1, ghost.position.x, ghost.position.y, ghost.position.z);
+    const a = toThreePosition(from);
+    const b = toThreePosition(to);
+    attr.setXYZ(0, a.x, a.y, a.z);
+    attr.setXYZ(1, b.x, b.y, b.z);
     attr.needsUpdate = true;
     moveLine.computeLineDistances();
+  }
+
+  /**
+   * Euler angles for q near the old values. If the rotation did not really change, keep the old
+   * values exactly: an equivalent triple would end at the same pose but animate differently.
+   */
+  function keepIfSameRotation(q: Quaternion, old: Xyz): Xyz {
+    if (q.equals(new Quaternion().setFromEulerAngles(new Vector3(old.x, old.y, old.z)), 1e-5)) return old;
+    const e = q.createEulerAngles();
+    return nearestEuler({ x: e.x, y: e.y, z: e.z }, old);
   }
 
   function commitEdit() {
@@ -236,9 +298,14 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     } else if (t.mode === 'move') {
       const d = fromThreePosition(ghost.position).sub(dragBasis);
       values = { x: d.x, y: d.y, z: d.z };
+    } else if (t.mode === 'rotation') {
+      values = keepIfSameRotation(fromThreeQuaternion(ghost.quaternion), t.values);
+    } else if (t.mode === 'turn') {
+      // delta = start^-1 * result, as Euler angles near the old values.
+      values = keepIfSameRotation(dragBasisRot.clone().invert().multiply(fromThreeQuaternion(ghost.quaternion)), t.values);
     } else {
-      const e = fromThreeQuaternion(ghost.quaternion).createEulerAngles();
-      values = nearestEuler({ x: e.x, y: e.y, z: e.z }, t.values);
+      const offset = fromThreePosition(ghost.position).sub(dragBasis);
+      values = { x: Math.abs(offset.dot(axisVector(t.axis))), y: 0, z: 0 };
     }
     options.onEdit(t.blockId, values);
   }
@@ -250,6 +317,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   function reset() {
     traceTimes.clear();
     runBasis.clear();
+    runBasisRot.clear();
     trailCount = 0;
     trailGeometry.setDrawRange(0, 0);
     item.position.set(0, 0, 0);
@@ -270,7 +338,10 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
           if (!runner) return;
           traceTimes.set(id, runner.time);
           // The trace call precedes the statement, so this is the position before it runs.
-          if (phase === 'run') runBasis.set(id, runner.item.position.clone());
+          if (phase === 'run') {
+            runBasis.set(id, runner.item.position.clone());
+            runBasisRot.set(id, runner.item.rotation.clone());
+          }
         },
       });
       syncVirtualPlayer();
