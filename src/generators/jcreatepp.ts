@@ -59,7 +59,6 @@ export function workspaceToProgram(
   let chaseTemplateCount = 0;
 
   const topBlocks = workspace.getTopBlocks(true);
-  console.log('topBlocks:', topBlocks.map(b => b.type + '(' + b.id + ')'));
 
   for (const block of topBlocks) {
     const type = block.type;

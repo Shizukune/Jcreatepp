@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "tsc -p tsconfig.test.json && node --test .test-build/test/blocks.test.js .test-build/test/snapshot.test.js .test-build/test/sim.test.js .test-build/test/blockEdit.test.js .test-build/test/placement.test.js .test-build/test/variables.test.js .test-build/test/steerInput.test.js .test-build/test/realdevice.test.js .test-build/test/behavior.test.js .test-build/test/format.test.js .test-build/test/unitySetup.test.js",
+    "test": "tsc -p tsconfig.test.json && node --test .test-build/test/blocks.test.js .test-build/test/snapshot.test.js .test-build/test/sim.test.js .test-build/test/blockEdit.test.js .test-build/test/placement.test.js .test-build/test/variables.test.js .test-build/test/steerInput.test.js .test-build/test/realdevice.test.js .test-build/test/behavior.test.js .test-build/test/format.test.js .test-build/test/unitySetup.test.js .test-build/test/demos.test.js .test-build/test/parts.test.js",
     "realdevice:export": "tsc -p tsconfig.test.json && node .test-build/test/realdevice/export.js",
     "test:update": "tsc -p tsconfig.test.json && node .test-build/test/snapshot.test.js --update-snapshots && node .test-build/test/behavior.test.js --update-snapshots",
     "build": "webpack --mode production",

@@ -314,6 +314,93 @@ body {
   font-family: 'Segoe UI', 'Meiryo', sans-serif;
 }
 
+/* 部品パレット（3Dプレビューの上） */
+#partsPanel[hidden] {
+  display: none;
+}
+
+.partsBox {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: #c8d6e5;
+  background: #10202f;
+  border-bottom: 1px solid #1f3348;
+}
+
+.partsBox summary {
+  cursor: pointer;
+  color: #a3d8f4;
+  font-weight: 600;
+}
+
+.partsRow,
+.partsParams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.partsParams input {
+  width: 64px;
+}
+
+.partsDesc {
+  margin-top: 4px;
+  color: #8fa8c0;
+}
+
+.partsMsg:empty {
+  display: none;
+}
+
+.partsMsg {
+  margin-top: 4px;
+  color: #7ee0a0;
+}
+
+.partsMsg.partsWarn {
+  color: #ffd166;
+}
+
+/* ブロックの動きデモ（ツールチップ内） */
+.demoFrame {
+  position: relative;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0d1b2a;
+}
+
+.demoFrame canvas {
+  display: block;
+}
+
+.demoFrame.demoUnavailable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8fa8c0;
+  font-size: 12px;
+}
+
+.demoClick {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #0d1b2a;
+  background: #ffd166;
+}
+
+.demoCaption {
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
 #scriptSize {
   padding: 4px 14px;
   font-size: 12px;

@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Vector3 } from '../sim/math';
 import { toThreePosition } from './coords';
+import { createItemShape } from './itemShape';
 
 const TRAIL_POINTS = 300;
 
@@ -52,12 +53,7 @@ export function createScene(view: HTMLElement): PreviewScene {
   axis(new Vector3(0, 0, 1), 0x5599ff);
   scene.add(axes);
 
-  const item = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xe94560 }));
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 16), new THREE.MeshStandardMaterial({ color: 0xffd166 }));
-  nose.position.copy(toThreePosition(new Vector3(0, 0, 0.72)));
-  nose.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), toThreePosition(new Vector3(0, 0, 1)));
-  item.add(box, nose);
+  const { group: item, box, nose } = createItemShape();
   scene.add(item);
 
   const virtualPlayer = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 1, 4, 12), new THREE.MeshStandardMaterial({ color: 0x55c2ff }));

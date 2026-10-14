@@ -9,7 +9,9 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
   - 生成コードは読む人（学習者）向け: 各文の前に `describe.ts` の日本語コメント、括弧は `format.ts` の `group()` / `bare()` で必要な所だけ、補助関数は `helpers.ts` で使うときだけ先頭に定義
   - 利用者の文字列をコメントに入れるときは必ず `commentText()`、文字列リテラルは `jsString()`（U+2028/2029 で注釈やリテラルを抜けられないように）
   - 生成コードの見た目を変える変更では `test/__behavior__`（動作スナップショット）が1バイトも変わらないことを確認する
-- `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内
+- `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内。`src/unitySetup.ts` は同じ内容の機械可読版（将来の Unity 拡張用）
+- `src/demos/` ブロックの動き見本（ツールチップ）。`playback.ts` はブロック JSON → IR → コード → sim を DOM なしで再生する共通の土台。`demoRenderer.ts` は three.js を使うので必ず動的 import
+- `src/parts/` 部品（ブロックのかたまりを自動で追加）。部品は IR ではなく保存形式のブロック JSON に展開し、追加前にコピーで変換エラーを確認、本番には 1 回の Undo で消せる形で入れる。位置・角度を動かすブロックの表（`insert.ts` の `WRITERS`）は新しい動作ブロックを足したら更新する
 - `src/index.ts` UI（DOM）。テストからは読み込まない
 - `src/variables.ts` 変数の正本: 種類・`$.state` キー規則（codegen はここを使う）・IR からの変数一覧（`Program.variables`）。ブロック側の読み書き表は `src/blocks/variableBlocks.ts`（両者の一致は `test/variables.test.ts`）
 - `src/sim/` Cluster Script 互換の `$` モックと実行器（DOM 非依存。テストと 3D プレビューで共用）

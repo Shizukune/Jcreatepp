@@ -23,6 +23,7 @@ import { describeScriptSize, scriptByteLength } from './unitySetup';
 import { validateWorkspace } from './validator';
 import { save, load, saveToFile, loadFromFile } from './serialization';
 import { toolbox } from './toolbox';
+import { installDemoTooltips } from './demos/tooltip';
 import type { Program } from './ir';
 import type { Preview } from './preview/previewApp';
 import './index.css';
@@ -50,6 +51,9 @@ Object.keys(blocks).forEach(type => {
     javascriptGenerator.forBlock[type] = dummyGen;
   }
 });
+
+// ツールボックスのブロックに動きのデモを出すツールチップ
+installDemoTooltips();
 
 // DOM 要素の取得
 const blocklyDiv = document.getElementById('blocklyDiv');
@@ -103,6 +107,7 @@ let previewLoading = false;
 const codePane = document.getElementById('codePane');
 const codeView = document.getElementById('codeView');
 const previewView = document.getElementById('previewView');
+const partsPanel = document.getElementById('partsPanel');
 const tabCode = document.getElementById('tabCode');
 const tabPreview = document.getElementById('tabPreview');
 
@@ -154,6 +159,7 @@ async function showTab(tab: 'code' | 'preview') {
   const isPreview = tab === 'preview';
   if (codeView) codeView.hidden = isPreview;
   if (previewView) previewView.hidden = !isPreview;
+  if (partsPanel) partsPanel.hidden = !isPreview;
   tabCode?.setAttribute('aria-selected', String(!isPreview));
   tabPreview?.setAttribute('aria-selected', String(isPreview));
   codePane?.classList.toggle('previewMode', isPreview);
@@ -171,6 +177,10 @@ async function showTab(tab: 'code' | 'preview') {
         },
       });
       blockEdit = await import('./preview/blockEdit');
+      if (partsPanel) {
+        const { createPartsPanel } = await import('./parts/panel');
+        createPartsPanel(partsPanel, ws);
+      }
       updateEditTarget();
       // After a page load nothing has been generated yet; generate so the preview has a program.
       generateCode();
