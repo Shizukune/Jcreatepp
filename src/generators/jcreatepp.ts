@@ -27,6 +27,7 @@ import {
   type EventContext,
 } from '../blocks/context';
 import { findEventContext } from '../validator';
+import { blockLabel, placementError, valueInSequenceError } from '../blocks/placement';
 
 // ── 変換結果 ──
 
@@ -154,6 +155,12 @@ function blockToStmt(
   inIf: boolean = false,
   inContinuousBody: boolean = false,
 ): Stmt | null {
+  // Where may this block go? Shared with the editor warnings (src/blocks/placement.ts).
+  const placement = placementError(block.type, { event: eventType, inSequence, inIf, inRunFor: inContinuousBody });
+  if (placement) {
+    errors.push(placement);
+    return null;
+  }
   const stmt = blockToStmtCore(block, eventType, generator, errors, inSequence, inIf, inContinuousBody);
   // Record the source block so the 3D preview can trace / edit it (not used by normal codegen).
   if (stmt) stmt.src = { blockId: block.id };
@@ -185,14 +192,6 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_smooth_move_by': {
-      if (eventType === 'jcreatepp_on_update') {
-        errors.push('「位置を～だけ～秒かけて動かす」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
-        return null;
-      }
-      if (inSequence) {
-        errors.push('「位置を～だけ～秒かけて動かす」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
-        return null;
-      }
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
       const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
       const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
@@ -209,14 +208,6 @@ function blockToStmtCore(
 
     case 'jcreatepp_smooth_move_local': {
       // Same placement rules as the world-space smooth move (it shares the same per-frame updater).
-      if (eventType === 'jcreatepp_on_update') {
-        errors.push('「向いている方向に～秒かけて進む」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
-        return null;
-      }
-      if (inSequence) {
-        errors.push('「向いている方向に～秒かけて進む」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
-        return null;
-      }
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
       const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
       const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
@@ -239,14 +230,6 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_smooth_rotate_by': {
-      if (eventType === 'jcreatepp_on_update') {
-        errors.push('「角度を～だけ～秒かけて回す」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
-        return null;
-      }
-      if (inSequence) {
-        errors.push('「角度を～だけ～秒かけて回す」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
-        return null;
-      }
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
       const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
       const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
@@ -277,30 +260,18 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_continuous_rotation': {
-      if (eventType !== 'jcreatepp_on_update') {
-        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
-        return null;
-      }
       const axis = block.getFieldValue('AXIS') as 'X' | 'Y' | 'Z';
       const speed = resolveValueExpr(block, 'SPEED', eventType, generator, errors, inSequence);
       return { kind: 'continuous_rotation', axis, speed };
     }
 
     case 'jcreatepp_timed_random_warp': {
-      if (eventType !== 'jcreatepp_on_update') {
-        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
-        return null;
-      }
       const interval = resolveValueExpr(block, 'INTERVAL', eventType, generator, errors, inSequence);
       const range = resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence);
       return { kind: 'timed_random_warp', interval, range, blockId: block.id };
     }
 
     case 'jcreatepp_timed_move_return': {
-      if (eventType !== 'jcreatepp_on_update') {
-        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
-        return null;
-      }
       const dirX = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
       const dirY = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
       const dirZ = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
@@ -310,27 +281,11 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_set_move_speed': {
-      if (!isPlayerEventContext(eventType)) {
-        errors.push(`「${blockLabel(block.type)}」は「インタラクト時」「持ったとき」「離したとき」の中でしか使えません。`);
-        return null;
-      }
-      if (inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作」の中では使えません。プレイヤーがあるイベント直下で使ってください。`);
-        return null;
-      }
       const rate = resolveValueExpr(block, 'RATE', eventType, generator, errors, inSequence);
       return { kind: 'set_move_speed', rate };
     }
 
     case 'jcreatepp_set_jump_speed': {
-      if (!isPlayerEventContext(eventType)) {
-        errors.push(`「${blockLabel(block.type)}」は「インタラクト時」「持ったとき」「離したとき」の中でしか使えません。`);
-        return null;
-      }
-      if (inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作」の中では使えません。プレイヤーがあるイベント直下で使ってください。`);
-        return null;
-      }
       const rate = resolveValueExpr(block, 'RATE', eventType, generator, errors, inSequence);
       return { kind: 'set_jump_speed', rate };
     }
@@ -442,10 +397,6 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_oscillate': {
-      if (eventType !== 'jcreatepp_on_update') {
-        errors.push(`「${blockLabel(block.type)}」は「毎フレーム」の中でしか使えません。`);
-        return null;
-      }
       const axis = block.getFieldValue('AXIS') as 'X' | 'Y' | 'Z';
       const width = resolveValueExpr(block, 'WIDTH', eventType, generator, errors, inSequence);
       const speed = resolveValueExpr(block, 'SPEED', eventType, generator, errors, inSequence);
@@ -497,14 +448,6 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_sequence': {
-      if (eventType === 'jcreatepp_on_update') {
-        errors.push(`「${blockLabel(block.type)}」ブロックは「毎フレーム」の中には置けません。「開始時」または「インタラクト時」で使用してください。`);
-        return null;
-      }
-      if (inSequence) {
-        errors.push(`「${blockLabel(block.type)}」ブロックの中に、さらに「一連の動作」を入れることはできません（ネスト禁止）。`);
-        return null;
-      }
       const body: Stmt[] = [];
       let stmtBlock = block.getInputTargetBlock('DO');
       while (stmtBlock) {
@@ -519,27 +462,11 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_wait_seconds': {
-      if (!inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作を始める」ブロックの中でしか使えません。`);
-        return null;
-      }
-      if (inIf) {
-        errors.push(`「${blockLabel(block.type)}」は「もし〜なら」などの条件分岐の中には置けません。`);
-        return null;
-      }
       const seconds = resolveValueExpr(block, 'SECONDS', eventType, generator, errors, inSequence);
       return { kind: 'wait_seconds', seconds };
     }
 
     case 'jcreatepp_wait_until': {
-      if (!inSequence) {
-        errors.push(`「${blockLabel(block.type)}」は「一連の動作を始める」ブロックの中でしか使えません。`);
-        return null;
-      }
-      if (inIf) {
-        errors.push(`「${blockLabel(block.type)}」は「もし〜なら」などの条件分岐の中には置けません。`);
-        return null;
-      }
       const conditionBlock = block.getInputTargetBlock('CONDITION');
       let condition: BoolExpr;
       if (conditionBlock) {
@@ -552,19 +479,11 @@ function blockToStmtCore(
     }
 
     case 'jcreatepp_run_for_seconds': {
-      if (!inSequence) {
-        errors.push('「N秒間、毎フレーム実行する」は「一連の動作」の中でしか使えません。');
-        return null;
-      }
-      if (inIf) {
-        errors.push('「N秒間、毎フレーム実行する」は「もし」などの条件分岐の中には置けません。');
-        return null;
-      }
       const seconds = resolveValueExpr(block, 'SECONDS', eventType, generator, errors, inSequence);
       const body: Stmt[] = [];
       let stmtBlock = block.getInputTargetBlock('DO');
       while (stmtBlock) {
-        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, true, true);
+        const stmt = blockToStmt(stmtBlock, eventType, generator, errors, true, false, true);
         if (stmt) body.push(stmt);
         stmtBlock = stmtBlock.getNextBlock();
       }
@@ -627,14 +546,6 @@ function blockToStmtCore(
 
     case 'jcreatepp_reply_message_once': {
       const message = block.getFieldValue('MESSAGE') || '';
-      if (eventType !== 'jcreatepp_on_receive') {
-        errors.push('「送ってきた相手に返す」は「メッセージを受け取ったとき」の中でのみ使えます。');
-        return null;
-      }
-      if (inSequence) {
-        errors.push('「送ってきた相手に返す」は「一連の動作」の中では使えません。受信した瞬間の処理として置いてください。');
-        return null;
-      }
       if (!message.trim()) {
         errors.push('返信するメッセージ名を入力してください。');
         return null;
@@ -645,14 +556,6 @@ function blockToStmtCore(
 
     case 'jcreatepp_reply_message_value_once': {
       const message = block.getFieldValue('MESSAGE') || '';
-      if (eventType !== 'jcreatepp_on_receive') {
-        errors.push('「送ってきた相手に返す」は「メッセージを受け取ったとき」の中でのみ使えます。');
-        return null;
-      }
-      if (inSequence) {
-        errors.push('「送ってきた相手に返す」は一連の動作の中では使えません。受信した瞬間の処理として置いてください。');
-        return null;
-      }
       if (!message.trim()) {
         errors.push('返信するメッセージ名を入力してください。');
         return null;
@@ -664,22 +567,20 @@ function blockToStmtCore(
 
     case 'jcreatepp_send_message_to_collision_once': {
       const message = block.getFieldValue('MESSAGE') || '';
-      if (!ensureCollideContext(eventType, errors) || !message.trim()) {
-        if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
-      if (!ensureNotInSequenceForCollision(inSequence, errors)) return null;
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, undefined, shouldLatchMessage(eventType, inContinuousBody));
     }
 
     case 'jcreatepp_send_message_value_to_collision_once': {
       const message = block.getFieldValue('MESSAGE') || '';
-      if (!ensureCollideContext(eventType, errors) || !message.trim()) {
-        if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
-      if (!ensureNotInSequenceForCollision(inSequence, errors)) return null;
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
       return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, value, shouldLatchMessage(eventType, inContinuousBody));
@@ -1078,27 +979,9 @@ function validateValueBlockContext(
     }
   }
 
-  // Sequence 内での衝突相手の使用禁止（送信値などあらゆる経路）
-  if (block.type === 'jcreatepp_collision_target' && inSequence) {
-    ensureNotInSequenceForCollision(inSequence, errors);
-  }
-
-  // Sequence 内での player 使用禁止
-  if (block.type === 'jcreatepp_player' && inSequence) {
-    errors.push(`「プレイヤー」は Sequence（一連の動作）の中では使えません。プレイヤー値はインタラクト直下の即時処理でのみ使用できます。`);
-  }
-
-  // 再帰: このブロックの value input に接続された子ブロックもチェック
-  if (
-    inSequence &&
-    (
-      block.type === 'jcreatepp_message_value_number' ||
-      block.type === 'jcreatepp_message_value_string' ||
-      block.type === 'jcreatepp_message_value_boolean'
-    )
-  ) {
-    errors.push('受け取った値は一連の動作の中では使えません。受信した瞬間の処理として使ってください。');
-  }
+  // Player / received values / collision target cannot be read inside a sequence (shared rule)
+  const inSequenceError = valueInSequenceError(block.type, inSequence);
+  if (inSequenceError) errors.push(inSequenceError);
 
   for (const input of block.inputList) {
     if (input.connection && input.connection.targetBlock()) {
@@ -1135,10 +1018,6 @@ function assignHandler(program: Program, type: EventContext, handler: Handler): 
   }
 }
 
-function isPlayerEventContext(type: EventContext): boolean {
-  return type === 'jcreatepp_on_interact' || type === 'jcreatepp_on_grab_start' || type === 'jcreatepp_on_grab_end';
-}
-
 function isReservedNumberVarName(name: string): boolean {
   return name.startsWith('__jpp_') || name.startsWith('jpp.');
 }
@@ -1163,15 +1042,6 @@ function isLiteralFlagName(name: string): boolean {
   return name.trim() === 'true' || name.trim() === 'false';
 }
 
-/** Sequence steps run later in onUpdate, where the collision of the event no longer exists. */
-function ensureNotInSequenceForCollision(inSequence: boolean, errors: string[]): boolean {
-  if (inSequence) {
-    errors.push('「衝突相手」は「一連の動作」の中では使えません。衝突した瞬間の処理として置いてください。');
-    return false;
-  }
-  return true;
-}
-
 function ensureCollideContext(eventType: EventContext, errors: string[]): boolean {
   if (eventType !== 'jcreatepp_on_collide') {
     errors.push('衝突相手は「衝突したとき」の中でのみ使えます。');
@@ -1180,41 +1050,3 @@ function ensureCollideContext(eventType: EventContext, errors: string[]): boolea
   return true;
 }
 
-/** ブロック type → 日本語ラベル */
-function blockLabel(type: string): string {
-  switch (type) {
-    case 'jcreatepp_on_start': return '開始時';
-    case 'jcreatepp_on_update': return '毎フレーム';
-    case 'jcreatepp_on_interact': return 'インタラクト時';
-    case 'jcreatepp_on_collide': return '衝突したとき';
-    case 'jcreatepp_on_grab_start': return '持ったとき';
-    case 'jcreatepp_on_grab_end': return '離したとき';
-    case 'jcreatepp_on_receive': return 'メッセージを受け取ったとき';
-    case 'jcreatepp_set_position': return '位置を〜にする';
-    case 'jcreatepp_add_position': return '位置を〜ずつ変える';
-    case 'jcreatepp_smooth_move_by': return '位置を〜だけ〜秒かけて動かす';
-    case 'jcreatepp_move_local': return '向いている方向に進む';
-    case 'jcreatepp_smooth_move_local': return '向いている方向に〜秒かけて進む';
-    case 'jcreatepp_set_rotation': return '角度を〜にする';
-    case 'jcreatepp_add_rotation': return '角度を〜ずつ変える';
-    case 'jcreatepp_smooth_rotate_by': return '角度を〜だけ〜秒かけて回す';
-    case 'jcreatepp_continuous_rotation': return '回転し続ける';
-    case 'jcreatepp_timed_random_warp': return '一定間隔でランダムワープ';
-    case 'jcreatepp_timed_move_return': return '一定時間移動して戻る';
-    case 'jcreatepp_set_move_speed': return 'プレイヤーの移動速度倍率を変える';
-    case 'jcreatepp_set_jump_speed': return 'プレイヤーのジャンプ速度倍率を変える';
-    case 'jcreatepp_if': return 'もし〜なら';
-    case 'jcreatepp_if_else': return 'もし〜なら、でなければ';
-    case 'jcreatepp_sequence': return '一連の動作を始める';
-    case 'jcreatepp_wait_seconds': return '〜秒待つ';
-    case 'jcreatepp_wait_until': return '〜まで待つ';
-    case 'jcreatepp_run_for_seconds': return 'N秒間、毎フレーム実行する';
-    case 'jcreatepp_compare': return '比較条件';
-    case 'jcreatepp_not': return '〜ではない';
-    case 'jcreatepp_and': return 'かつ';
-    case 'jcreatepp_or': return 'または';
-    case 'jcreatepp_delta_time': return '経過時間';
-    case 'jcreatepp_player': return 'プレイヤー';
-    default: return type;
-  }
-}

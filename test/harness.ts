@@ -49,6 +49,11 @@ function convert(ws: Blockly.Workspace) {
   }
 }
 
+/** Conversion errors for a workspace state (empty when it converts cleanly). */
+export function conversionErrors(state: object): string[] {
+  return convert(loadWorkspace(state)).errors;
+}
+
 /** Blockly workspace state -> generated code. Throws if conversion reports errors. */
 export function generateCode(state: object, options: { trace?: boolean } = {}): string {
   const result = convert(loadWorkspace(state));

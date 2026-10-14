@@ -3,7 +3,7 @@
 Blockly で組んだブロックから Cluster Script（JavaScript）を生成するエディタ。
 
 ## 構成
-- `src/blocks/` ブロック定義・イベント文脈ルール（`context.ts` が正本）
+- `src/blocks/` ブロック定義・イベント文脈ルール（値ブロックのイベント文脈は `context.ts`、文ブロックの置き場所と「一連の動作」まわりは `placement.ts` が正本。変換エラーとエディタ警告の両方がここを使う。置き場所ルールを足すときは `placement.ts` だけを変え、`test/placement.test.ts` の固定ケースも足す）
 - `src/generators/jcreatepp.ts` Blockly ワークスペース → IR（`src/ir.ts`）変換とエラー検出
 - `src/codegen/` IR → Cluster Script 生成（Cluster Script の構文はここだけが持つ）
 - `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内

@@ -12,12 +12,7 @@ import {
   valueBlockLabel,
   type EventContext,
 } from './blocks/context';
-
-const WAIT_BLOCK_TYPES = [
-  'jcreatepp_wait_seconds',
-  'jcreatepp_wait_until',
-  'jcreatepp_run_for_seconds',
-];
+import { placementError, valueInSequenceError } from './blocks/placement';
 
 const MESSAGE_TYPE_MAX_BYTES = 100;
 
@@ -36,6 +31,13 @@ function validateMessageType(message: string, label: string = 'メッセージ�
 }
 
 export function validateWorkspace(workspace: Blockly.Workspace): void {
+  for (const [block, message] of collectWarnings(workspace)) {
+    block.setWarningText(message);
+  }
+}
+
+/** Warning text per block (null = no warning). Does not touch the UI. */
+export function collectWarnings(workspace: Blockly.Workspace): Map<Blockly.Block, string | null> {
   const allBlocks = workspace.getAllBlocks(false);
   const warnings = new Map<Blockly.Block, string | null>();
 
@@ -95,46 +97,32 @@ export function validateWorkspace(workspace: Blockly.Workspace): void {
       } else if (!isContextAllowed(block.type, ctx)) {
         const allowedNames = rules.map((r) => eventLabel(r)).join(' / ');
         warn(block, `${valueBlockLabel(block.type)}は${allowedNames}の中でのみ使えます。`);
-      } else if (block.type === 'jcreatepp_player' && isInsideSequence(block)) {
-        warn(block, 'プレイヤーは一連の動作の中では使えません。プレイヤーがあるイベント直下で使ってください。');
       }
     }
 
-    if (
-      (block.type === 'jcreatepp_message_value_number' ||
-        block.type === 'jcreatepp_message_value_string' ||
-        block.type === 'jcreatepp_message_value_boolean') &&
-      isInsideSequence(block)
-    ) {
-      warn(block, '受け取った値は一連の動作の中では使えません。受信直後に変数へ保存してから使ってください。');
+    const valueError = valueInSequenceError(block.type, isInsideSequence(block));
+    if (valueError) {
+      warn(block, valueError);
     }
 
-    if (WAIT_BLOCK_TYPES.includes(block.type)) {
-      if (!isInsideSequence(block)) {
-        warn(block, '待機ブロックは「一連の動作」の中でのみ使えます。');
-      } else if (isInsideIfWithinCurrentSequence(block)) {
-        warn(block, '待機ブロックは一連の動作内の条件分岐の中には置けません。');
-      } else if (block.type === 'jcreatepp_run_for_seconds' && isInsideRunForSeconds(block)) {
-        warn(block, '「N秒間、毎フレーム実行する」はネストできません。');
-      }
-    }
-
-    if (block.type === 'jcreatepp_sequence') {
-      if (ctx === 'jcreatepp_on_update') {
-        warn(block, '一連の動作は毎フレームの中には置けません。開始時やインタラクト時などで使ってください。');
-      } else if (isInsideSequence(block)) {
-        warn(block, '一連の動作の中に、さらに一連の動作を入れることはできません。');
+    // Statement placement (shared with conversion errors: src/blocks/placement.ts)
+    if (ctx && isStatementBlock(block)) {
+      const placement = placementError(block.type, {
+        event: ctx,
+        inSequence: isInsideSequence(block),
+        inIf: isInsideIfWithinCurrentSequence(block),
+        inRunFor: isInsideRunForSeconds(block),
+      });
+      if (placement) {
+        warn(block, placement);
       }
     }
 
     validateNames(block, warn);
-    validateContextSpecificStatement(block, ctx, warn);
-    validateMessageBlock(block, ctx, warn);
+    validateMessageBlock(block, warn);
   }
 
-  for (const block of allBlocks) {
-    block.setWarningText(warnings.get(block) ?? null);
-  }
+  return warnings;
 }
 
 function validateNames(block: Blockly.Block, warn: (block: Blockly.Block, message: string | null) => void): void {
@@ -194,52 +182,8 @@ function validateNames(block: Blockly.Block, warn: (block: Blockly.Block, messag
   }
 }
 
-function validateContextSpecificStatement(
-  block: Blockly.Block,
-  ctx: EventContext | null,
-  warn: (block: Blockly.Block, message: string | null) => void,
-): void {
-  if (block.type === 'jcreatepp_oscillate' && ctx !== 'jcreatepp_on_update') {
-    warn(block, '往復するブロックは毎フレームの中でのみ使えます。');
-  }
-
-  if (
-    (block.type === 'jcreatepp_continuous_rotation' ||
-      block.type === 'jcreatepp_timed_random_warp' ||
-      block.type === 'jcreatepp_timed_move_return') &&
-    ctx !== 'jcreatepp_on_update'
-  ) {
-    warn(block, 'このブロックは毎フレームの中でのみ使えます。');
-  }
-
-  if (block.type === 'jcreatepp_smooth_move_by' || block.type === 'jcreatepp_smooth_move_local') {
-    if (ctx === 'jcreatepp_on_update') {
-      warn(block, '滑らか移動は毎フレームの中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングで使ってください。');
-    } else if (isInsideSequence(block)) {
-      warn(block, '滑らか移動は一連の動作の中ではなく、インタラクト時やメッセージ受信時などの中に直接置いてください。');
-    }
-  }
-
-  if (block.type === 'jcreatepp_smooth_rotate_by') {
-    if (ctx === 'jcreatepp_on_update') {
-      warn(block, '滑らか回転は毎フレームの中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングで使ってください。');
-    } else if (isInsideSequence(block)) {
-      warn(block, '滑らか回転は一連の動作の中ではなく、インタラクト時やメッセージ受信時などの中に直接置いてください。');
-    }
-  }
-
-  if (block.type === 'jcreatepp_set_move_speed' || block.type === 'jcreatepp_set_jump_speed') {
-    if (!isPlayerEventContext(ctx)) {
-      warn(block, 'このブロックはインタラクト時、持ったとき、離したときの中でのみ使えます。');
-    } else if (isInsideSequence(block)) {
-      warn(block, 'このブロックは一連の動作の中では使えません。プレイヤーがあるイベント直下で使ってください。');
-    }
-  }
-}
-
 function validateMessageBlock(
   block: Blockly.Block,
-  ctx: EventContext | null,
   warn: (block: Blockly.Block, message: string | null) => void,
 ): void {
   const sendMessageTypes = new Set([
@@ -279,17 +223,7 @@ function validateMessageBlock(
     }
   }
 
-  if (block.type.startsWith('jcreatepp_reply')) {
-    if (ctx !== 'jcreatepp_on_receive') {
-      warn(block, '返信ブロックは「メッセージを受け取ったとき」の中でのみ使えます。');
-    } else if (isInsideSequence(block)) {
-      warn(block, '返信ブロックは一連の動作の中では使えません。受信直後の処理として置いてください。');
-    }
-  }
 
-  if (block.type.includes('_collision_') && ctx !== 'jcreatepp_on_collide') {
-    warn(block, '衝突相手への送信は「衝突したとき」の中でのみ使えます。');
-  }
 }
 
 export function findEventContext(block: Blockly.Block): EventContext | null {
@@ -316,17 +250,6 @@ export function isInsideSequence(block: Blockly.Block): boolean {
   let current: Blockly.Block | null = block.getSurroundParent();
   while (current) {
     if (current.type === 'jcreatepp_sequence') {
-      return true;
-    }
-    current = current.getSurroundParent();
-  }
-  return false;
-}
-
-export function isInsideIf(block: Blockly.Block): boolean {
-  let current: Blockly.Block | null = block.getSurroundParent();
-  while (current) {
-    if (current.type === 'jcreatepp_if' || current.type === 'jcreatepp_if_else' || current.type === 'jcreatepp_if_edge') {
       return true;
     }
     current = current.getSurroundParent();
@@ -364,8 +287,4 @@ export function isInsideRunForSeconds(block: Blockly.Block): boolean {
 
 function isStatementBlock(block: Blockly.Block): boolean {
   return !!(block.previousConnection || block.nextConnection);
-}
-
-function isPlayerEventContext(type: EventContext | null): boolean {
-  return type === 'jcreatepp_on_interact' || type === 'jcreatepp_on_grab_start' || type === 'jcreatepp_on_grab_end';
 }
