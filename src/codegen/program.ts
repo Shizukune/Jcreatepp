@@ -90,7 +90,7 @@ function programToJSCore(program: Program): string {
   return parts.join('\n');
 }
 
-type SmoothMoveStmt = Extract<Stmt, { kind: 'smooth_move_by' }>;
+type SmoothMoveStmt = Extract<Stmt, { kind: 'smooth_move_by' | 'smooth_move_local' }>;
 type SmoothRotateStmt = Extract<Stmt, { kind: 'smooth_rotate_by' }>;
 
 function smoothMoveUpdateToJS(stmts: SmoothMoveStmt[]): string {
@@ -132,6 +132,7 @@ function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
   const visitStmt = (stmt: Stmt) => {
     switch (stmt.kind) {
       case 'smooth_move_by':
+      case 'smooth_move_local':
         stmts.push(stmt);
         break;
       case 'if':

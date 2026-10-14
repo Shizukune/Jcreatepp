@@ -18,6 +18,16 @@ function stmtToJSCore(stmt: Stmt): string {
     case 'smooth_move_by':
       return smoothMoveByStarterToJS(stmt);
 
+    case 'move_local':
+      return `{
+  const __jpp_rot = $.getRotation() || new Quaternion();
+  const __jpp_pos = $.getPosition() || new Vector3(0, 0, 0);
+  $.setPosition(__jpp_pos.add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}).applyQuaternion(__jpp_rot)));
+}`;
+
+    case 'smooth_move_local':
+      return smoothMoveByStarterToJS(stmt);
+
     case 'set_rotation':
       return `$.setRotation(new Quaternion().setFromEulerAngles(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})));`;
 
@@ -116,12 +126,14 @@ function stmtToJSCore(stmt: Stmt): string {
   }
 }
 
-function smoothMoveByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' }>): string {
+function smoothMoveByStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' | 'smooth_move_local' }>): string {
   const id = safeId(stmt.blockId);
   const keys = smoothTransitionKeys('move', id);
+  // Local moves are converted to world space once, with the facing at the start of the move.
+  const facing = stmt.kind === 'smooth_move_local' ? '.applyQuaternion($.getRotation() || new Quaternion())' : '';
   return `{
   const from = $.getPosition() || new Vector3(0, 0, 0);
-  const to = from.clone().add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)}));
+  const to = from.clone().add(new Vector3(${exprToJS(stmt.x)}, ${exprToJS(stmt.y)}, ${exprToJS(stmt.z)})${facing});
   $.state[${keys.active}] = true;
   $.state[${keys.elapsed}] = 0;
   $.state[${keys.duration}] = Math.max(0.001, (${exprToJS(stmt.duration)}));

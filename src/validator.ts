@@ -212,7 +212,7 @@ function validateContextSpecificStatement(
     warn(block, 'このブロックは毎フレームの中でのみ使えます。');
   }
 
-  if (block.type === 'jcreatepp_smooth_move_by') {
+  if (block.type === 'jcreatepp_smooth_move_by' || block.type === 'jcreatepp_smooth_move_local') {
     if (ctx === 'jcreatepp_on_update') {
       warn(block, '滑らか移動は毎フレームの中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングで使ってください。');
     } else if (isInsideSequence(block)) {

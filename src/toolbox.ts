@@ -117,6 +117,25 @@ export const toolbox = {
         },
         {
           kind: 'block',
+          type: 'jcreatepp_move_local',
+          inputs: {
+            X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Y: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Z: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'block',
+          type: 'jcreatepp_smooth_move_local',
+          inputs: {
+            X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Y: { shadow: { type: 'math_number', fields: { NUM: 0 } } },
+            Z: { shadow: { type: 'math_number', fields: { NUM: 2 } } },
+            DURATION: { shadow: { type: 'math_number', fields: { NUM: 1 } } },
+          },
+        },
+        {
+          kind: 'block',
           type: 'jcreatepp_add_rotation',
           inputs: {
             X: { shadow: { type: 'math_number', fields: { NUM: 0 } } },

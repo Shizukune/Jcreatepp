@@ -152,6 +152,73 @@ test('3D turn basis: rotation before the block * euler(delta) equals the actual 
   assert.ok(new Quaternion().setFromEulerAngles(delta).equals(new Quaternion().setFromEulerAngles(new Vector3(10, 30, 5))));
 });
 
+// ── P3: movement relative to the item's facing ──
+
+test('move_local: forward follows the facing (Y 90 -> forward is +X), right is +X rotated', () => {
+  const r = createRunner(generateCode(workspace(
+    onEvent('jcreatepp_on_start', [b('jcreatepp_set_rotation', { inputs: xyz(0, 90, 0) })]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_move_local', { inputs: xyz(0, 0, 2) })]),
+    onEvent('jcreatepp_on_grab_start', [b('jcreatepp_move_local', { inputs: xyz(1, 0, 0) })]),
+  )));
+  r.start();
+  r.interact();
+  assert.ok(r.item.position.equals(new Vector3(2, 0, 0)), JSON.stringify(r.item.position));
+  r.grab(true);
+  // Facing +X, so "right" is -Z (left-handed, like Unity).
+  assert.ok(r.item.position.equals(new Vector3(2, 0, -1)), JSON.stringify(r.item.position));
+});
+
+test('smooth_move_local keeps the direction it had when it started, even if the item turns', () => {
+  const r = createRunner(generateCode(workspace(
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_move_local', { inputs: { ...xyz(0, 0, 2), DURATION: num(1) } })]),
+    onEvent('jcreatepp_on_grab_start', [b('jcreatepp_set_rotation', { inputs: xyz(0, 90, 0) })]),
+  )));
+  r.interact();
+  r.advance(0.5);
+  r.grab(true); // turn mid-move
+  r.advance(1);
+  assert.ok(r.item.position.equals(new Vector3(0, 0, 2)), JSON.stringify(r.item.position));
+});
+
+test('smooth_move_local has the same placement rules as the world-space smooth move', () => {
+  assert.throws(() => generateCode(workspace(onEvent('jcreatepp_on_update', [
+    b('jcreatepp_smooth_move_local', { inputs: { ...xyz(0, 0, 1), DURATION: num(1) } }),
+  ]))), /「毎フレーム」の中には置けません/);
+});
+
+test('3D local basis: pre-run position + offset turned by pre-run facing equals the result, and inverts back', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_start', [
+    b('jcreatepp_set_rotation', { inputs: xyz(10, 60, 0) }),
+    b('jcreatepp_move_local', { id: 'local', inputs: xyz(1, 2, 3) }),
+  ])), { trace: true });
+  let pos: Vector3 | null = null;
+  let rot: Quaternion | null = null;
+  const r: ReturnType<typeof createRunner> = createRunner(code, {
+    onTrace: (id, phase) => {
+      if (id === 'local' && phase === 'run') {
+        pos = r.item.position.clone();
+        rot = r.item.rotation.clone();
+      }
+    },
+  });
+  r.start();
+  assert.ok(pos!.clone().add(new Vector3(1, 2, 3).applyQuaternion(rot!)).equals(r.item.position));
+  const back = r.item.position.clone().sub(pos!).applyQuaternion(rot!.clone().invert());
+  assert.ok(back.equals(new Vector3(1, 2, 3)), JSON.stringify(back));
+});
+
+test('block ids that differ only in symbols keep separate state (smooth moves run independently)', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_smooth_move_by', { id: 'a-b', inputs: { ...xyz(1, 0, 0), DURATION: num(1) } }),
+    b('jcreatepp_smooth_move_local', { id: 'a+b', inputs: { ...xyz(0, 1, 0), DURATION: num(1) } }),
+  ]))));
+  r.interact();
+  r.advance(2);
+  assert.ok(r.item.position.equals(new Vector3(1, 1, 0)) || r.item.position.equals(new Vector3(0, 1, 0)) || r.item.position.equals(new Vector3(1, 0, 0)));
+  const keys = Object.keys(r.$.state).filter((k) => k.endsWith('_active'));
+  assert.equal(keys.length, 2, `separate state keys: ${keys.join(', ')}`);
+});
+
 // ── state values are not aliased by later movement ──
 
 test('save position -> move -> load position restores the saved point', () => {

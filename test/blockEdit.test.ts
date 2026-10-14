@@ -92,6 +92,15 @@ test('turn and width modes: targets and write-back', () => {
   assert.deepEqual(getEditTarget(ws.getBlockById('turn'))?.values, { x: 0, y: 92.3, z: 0 });
 });
 
+test('local move blocks are editable in "local" mode', () => {
+  const ws = loadWorkspace(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_move_local', { id: 'l1', inputs: xyz(0, 0, 2) }),
+    b('jcreatepp_smooth_move_local', { id: 'l2', inputs: { ...xyz(1, 0, 0), DURATION: num(1) } }),
+  ])));
+  assert.equal(getEditTarget(ws.getBlockById('l1'))?.mode, 'local');
+  assert.deepEqual(getEditTarget(ws.getBlockById('l2'))?.values, { x: 1, y: 0, z: 0 });
+});
+
 test('getEditTarget does not climb from a following statement to the previous move block', () => {
   const ws = loadWorkspace(workspace(onEvent('jcreatepp_on_start', [
     b('jcreatepp_add_position', { id: 'move', inputs: xyz(1, 0, 0) }),

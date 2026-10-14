@@ -1,0 +1,57 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "b1",
+        "x": 0,
+        "y": 0,
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_rotation",
+              "id": "b2",
+              "inputs": {
+                "X": { "block": { "type": "math_number", "id": "b3", "fields": { "NUM": 0 } } },
+                "Y": { "block": { "type": "math_number", "id": "b4", "fields": { "NUM": 90 } } },
+                "Z": { "block": { "type": "math_number", "id": "b5", "fields": { "NUM": 0 } } }
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "b6",
+        "x": 0,
+        "y": 200,
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_move_local",
+              "id": "b7",
+              "inputs": {
+                "X": { "block": { "type": "math_number", "id": "b8", "fields": { "NUM": 0 } } },
+                "Y": { "block": { "type": "math_number", "id": "b9", "fields": { "NUM": 0 } } },
+                "Z": { "block": { "type": "math_number", "id": "b10", "fields": { "NUM": 2 } } }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_smooth_move_local",
+                  "id": "b11",
+                  "inputs": {
+                    "X": { "block": { "type": "math_number", "id": "b12", "fields": { "NUM": 1 } } },
+                    "Y": { "block": { "type": "math_number", "id": "b13", "fields": { "NUM": 0 } } },
+                    "Z": { "block": { "type": "math_number", "id": "b14", "fields": { "NUM": 0 } } },
+                    "DURATION": { "block": { "type": "math_number", "id": "b15", "fields": { "NUM": 1 } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -10,8 +10,13 @@ export function stateKey(prefix: string, name: string): string {
   return jsString(prefix + name);
 }
 
+/**
+ * Block id -> identifier-safe text for state keys and JS names. Injective: every character other
+ * than [a-zA-Z0-9] (including "_") becomes "_<hex code>_", so "a-b" and "a+b" never collide.
+ * Alphanumeric ids are unchanged.
+ */
 export function safeId(value: string): string {
-  return value.replace(/[^a-zA-Z0-9]/g, '_');
+  return value.replace(/[^a-zA-Z0-9]/g, (c) => `_${c.charCodeAt(0).toString(16)}_`);
 }
 
 export function smoothTransitionKeys(kind: 'move' | 'rotate', id: string): Record<

@@ -145,6 +145,39 @@ const smoothMoveByBlock = {
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
 };
 
+const moveLocalBlock = {
+  type: 'jcreatepp_move_local',
+  message0: '向いている方向に 右:%1 上:%2 前:%3 進む',
+  args0: [
+    { type: 'input_value', name: 'X', check: 'Number' },
+    { type: 'input_value', name: 'Y', check: 'Number' },
+    { type: 'input_value', name: 'Z', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: 'アイテムが向いている方向を基準に移動します。前は前方レイキャストと同じ向きです。後ろ・左・下へはマイナスの値を使います。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
+};
+
+const smoothMoveLocalBlock = {
+  type: 'jcreatepp_smooth_move_local',
+  message0: '向いている方向に 右:%1 上:%2 前:%3 を %4 秒かけて進む',
+  args0: [
+    { type: 'input_value', name: 'X', check: 'Number' },
+    { type: 'input_value', name: 'Y', check: 'Number' },
+    { type: 'input_value', name: 'Z', check: 'Number' },
+    { type: 'input_value', name: 'DURATION', check: 'Number' },
+  ],
+  inputsInline: true,
+  previousStatement: null,
+  nextStatement: null,
+  colour: 210,
+  tooltip: '動き始めたときに向いている方向を基準に、指定秒数をかけて滑らかに移動します。移動中に回転しても進む向きは変わりません。インタラクト時や受信時の中で直接使えます。',
+  helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
+};
+
 const setRotationBlock = {
   type: 'jcreatepp_set_rotation',
   message0: '角度を x:%1 y:%2 z:%3 にする',
@@ -1060,6 +1093,8 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   setPositionBlock,
   addPositionBlock,
   smoothMoveByBlock,
+  moveLocalBlock,
+  smoothMoveLocalBlock,
   setRotationBlock,
   addRotationBlock,
   smoothRotateByBlock,

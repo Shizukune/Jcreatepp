@@ -98,6 +98,8 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
       case 'set_position':
       case 'move_by':
       case 'smooth_move_by':
+      case 'move_local':
+      case 'smooth_move_local':
       case 'set_rotation':
       case 'rotate_by':
       case 'smooth_rotate_by':

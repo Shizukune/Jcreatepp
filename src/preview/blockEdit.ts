@@ -9,7 +9,7 @@
 
 import * as Blockly from 'blockly/core';
 
-export type EditMode = 'position' | 'move' | 'rotation' | 'turn' | 'width';
+export type EditMode = 'position' | 'move' | 'local' | 'rotation' | 'turn' | 'width';
 
 export type Xyz = { x: number; y: number; z: number };
 
@@ -28,6 +28,8 @@ const SUPPORTED: Record<string, { mode: EditMode; label: string }> = {
   jcreatepp_set_position: { mode: 'position', label: '位置を〜にする' },
   jcreatepp_add_position: { mode: 'move', label: '位置を〜ずつ変える' },
   jcreatepp_smooth_move_by: { mode: 'move', label: '位置を〜だけ〜秒かけて動かす' },
+  jcreatepp_move_local: { mode: 'local', label: '向いている方向に進む' },
+  jcreatepp_smooth_move_local: { mode: 'local', label: '向いている方向に〜秒かけて進む' },
   jcreatepp_set_rotation: { mode: 'rotation', label: '角度を〜にする' },
   jcreatepp_add_rotation: { mode: 'turn', label: '角度を〜ずつ変える' },
   jcreatepp_smooth_rotate_by: { mode: 'turn', label: '角度を〜だけ〜秒かけて回す' },

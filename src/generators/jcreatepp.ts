@@ -200,6 +200,30 @@ function blockToStmtCore(
       return { kind: 'smooth_move_by', x, y, z, duration, blockId: block.id };
     }
 
+    case 'jcreatepp_move_local': {
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      return { kind: 'move_local', x, y, z };
+    }
+
+    case 'jcreatepp_smooth_move_local': {
+      // Same placement rules as the world-space smooth move (it shares the same per-frame updater).
+      if (eventType === 'jcreatepp_on_update') {
+        errors.push('「向いている方向に～秒かけて進む」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。');
+        return null;
+      }
+      if (inSequence) {
+        errors.push('「向いている方向に～秒かけて進む」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。');
+        return null;
+      }
+      const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
+      const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
+      const z = resolveValueExpr(block, 'Z', eventType, generator, errors, inSequence);
+      const duration = resolveValueExpr(block, 'DURATION', eventType, generator, errors, inSequence);
+      return { kind: 'smooth_move_local', x, y, z, duration, blockId: block.id };
+    }
+
     case 'jcreatepp_set_rotation': {
       const x = resolveValueExpr(block, 'X', eventType, generator, errors, inSequence);
       const y = resolveValueExpr(block, 'Y', eventType, generator, errors, inSequence);
@@ -1169,6 +1193,8 @@ function blockLabel(type: string): string {
     case 'jcreatepp_set_position': return '位置を〜にする';
     case 'jcreatepp_add_position': return '位置を〜ずつ変える';
     case 'jcreatepp_smooth_move_by': return '位置を〜だけ〜秒かけて動かす';
+    case 'jcreatepp_move_local': return '向いている方向に進む';
+    case 'jcreatepp_smooth_move_local': return '向いている方向に〜秒かけて進む';
     case 'jcreatepp_set_rotation': return '角度を〜にする';
     case 'jcreatepp_add_rotation': return '角度を〜ずつ変える';
     case 'jcreatepp_smooth_rotate_by': return '角度を〜だけ〜秒かけて回す';

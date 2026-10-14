@@ -45,6 +45,9 @@ type StmtBody =
   | { kind: 'set_position'; x: Expr; y: Expr; z: Expr }
   | { kind: 'move_by'; x: Expr; y: Expr; z: Expr }
   | { kind: 'smooth_move_by'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }
+  // Relative to the item's facing: x = right, y = up, z = forward (local +Z, same as forward raycast)
+  | { kind: 'move_local'; x: Expr; y: Expr; z: Expr }
+  | { kind: 'smooth_move_local'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }
   | { kind: 'set_rotation'; x: Expr; y: Expr; z: Expr }
   | { kind: 'rotate_by'; x: Expr; y: Expr; z: Expr }
   | { kind: 'smooth_rotate_by'; x: Expr; y: Expr; z: Expr; duration: Expr; blockId: string }

@@ -197,7 +197,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   /** Relative modes need the block to have run once to know their real starting point. */
   function hasRunBasis(t: EditTarget): boolean {
     if (t.mode === 'width') return runner?.$.state[`__jpp_osc_init_pos_${safeId(t.blockId)}`] instanceof Vector3;
-    if (t.mode === 'move' || t.mode === 'turn') return runBasis.has(t.blockId);
+    if (t.mode === 'move' || t.mode === 'local' || t.mode === 'turn') return runBasis.has(t.blockId);
     return true;
   }
 
@@ -212,7 +212,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
   function updateGhost() {
     const t = editTarget;
     ghost.visible = !!t;
-    moveLine.visible = !!t && (t.mode === 'move' || t.mode === 'width');
+    moveLine.visible = !!t && (t.mode === 'move' || t.mode === 'local' || t.mode === 'width');
     editEl.hidden = !t;
     if (!t) {
       gizmo.detach();
@@ -224,7 +224,7 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       : `3D編集: 「${t.label}」 — ${t.reason}`) +
       (hasRunBasis(t) ? '' : '\n※まだ実行されていないため、今の位置・向きを仮の起点として表示しています（再生すると実際の起点になります）');
     if (dragging) {
-      if (t.mode === 'move') setLine(dragBasis, fromThreePosition(ghost.position));
+      if (t.mode === 'move' || t.mode === 'local') setLine(dragBasis, fromThreePosition(ghost.position));
       if (t.mode === 'width') {
         const half = fromThreePosition(ghost.position).sub(dragBasis);
         setLine(dragBasis.clone().sub(half), dragBasis.clone().add(half));
@@ -238,6 +238,13 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     } else if (t.mode === 'move') {
       const basis = basisFor(t);
       const end = basis.clone().add(v);
+      ghost.position.copy(toThreePosition(end));
+      ghost.quaternion.copy(item.quaternion);
+      setLine(basis, end);
+    } else if (t.mode === 'local') {
+      // Same as the generated code: the offset is turned by the facing before the move.
+      const basis = basisFor(t);
+      const end = basis.clone().add(v.clone().applyQuaternion(rotationBasisFor(t)));
       ghost.position.copy(toThreePosition(end));
       ghost.quaternion.copy(item.quaternion);
       setLine(basis, end);
@@ -297,6 +304,10 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
       values = { x: p.x, y: p.y, z: p.z };
     } else if (t.mode === 'move') {
       const d = fromThreePosition(ghost.position).sub(dragBasis);
+      values = { x: d.x, y: d.y, z: d.z };
+    } else if (t.mode === 'local') {
+      // World offset back into the block's right / up / forward.
+      const d = fromThreePosition(ghost.position).sub(dragBasis).applyQuaternion(dragBasisRot.clone().invert());
       values = { x: d.x, y: d.y, z: d.z };
     } else if (t.mode === 'rotation') {
       values = keepIfSameRotation(fromThreeQuaternion(ghost.quaternion), t.values);
