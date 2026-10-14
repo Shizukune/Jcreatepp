@@ -172,17 +172,58 @@ test('smooth rotate keeps full turns (Y 360 passes through 180 halfway)', () => 
 
 // ── known issues (docs-internal/sequence-variable-review.md) ──
 
-test('S-1: collision target inside a sequence must not throw at runtime', { todo: 'known issue S-1' }, () => {
-  const code = generateCode(workspace(onEvent('jcreatepp_on_collide', [
-    b('jcreatepp_sequence', { stmts: { DO: [
-      b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(0.1) } }),
-      b('jcreatepp_send_message_to_collision_once', { fields: { MESSAGE: 'hit' }, inputs: { CONDITION: bool(true) } }),
-    ] } }),
-  ])));
-  const r = createRunner(code);
+test('S-1 (fixed): collision target inside a sequence is a conversion error, not a runtime crash', () => {
+  const inSequence = (step: object) => workspace(onEvent('jcreatepp_on_collide', [
+    b('jcreatepp_sequence', { stmts: { DO: [b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(0.1) } }), step as any] } }),
+  ]));
+  // send to the collision target
+  assert.throws(() => generateCode(inSequence(
+    b('jcreatepp_send_message_to_collision_once', { fields: { MESSAGE: 'hit' }, inputs: { CONDITION: bool(true) } }),
+  )), /衝突相手」は「一連の動作」/);
+  // collision target used as a sent value
+  assert.throws(() => generateCode(inSequence(
+    b('jcreatepp_send_message_value_to_item_once', { fields: { ITEM_NAME: 'door', MESSAGE: 'who', VALUE_TYPE: 'number' }, inputs: { CONDITION: bool(true), VALUE: b('jcreatepp_collision_target') } }),
+  )), /衝突相手」は「一連の動作」/);
+  // directly in the collide event it still works
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_collide', [
+    b('jcreatepp_send_message_to_collision_once', { fields: { MESSAGE: 'hit' }, inputs: { CONDITION: bool(true) } }),
+  ]))));
   r.collide();
-  r.advance(1);
   assert.deepEqual(r.errors(), []);
+  assert.equal(r.log.filter((l) => l.type === 'send').length, 1);
+});
+
+test('collision target sent as a number value is rejected (use handle)', () => {
+  assert.throws(() => generateCode(workspace(onEvent('jcreatepp_on_collide', [
+    b('jcreatepp_send_message_value_to_item_once', { fields: { ITEM_NAME: 'door', MESSAGE: 'who', VALUE_TYPE: 'number' }, inputs: { CONDITION: bool(true), VALUE: b('jcreatepp_collision_target') } }),
+  ]))), /数値として送れません/);
+});
+
+test('V-1 (fixed): number and arithmetic blocks can be shown as text', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_set_subnode_text', { fields: { SUBNODE_NAME: 'A', COMPONENT: 'TextMeshPro' }, inputs: { TEXT: num(5) } }),
+    b('jcreatepp_set_subnode_text', { fields: { SUBNODE_NAME: 'B', COMPONENT: 'TextMeshPro' }, inputs: { TEXT: b('jcreatepp_arithmetic', { fields: { OP: 'ADD' }, inputs: { A: num(1), B: num(2) } }) } }),
+  ]))));
+  r.interact();
+  assert.deepEqual(r.log.filter((l) => l.type === 'text').map((l) => (l as { text: string }).text), ['5', '3']);
+});
+
+test('string-mode message values are sent as text even from number blocks', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_send_message_value_to_item_once', { fields: { ITEM_NAME: 'board', MESSAGE: 'n', VALUE_TYPE: 'string' }, inputs: { CONDITION: bool(true), VALUE: num(3) } }),
+    b('jcreatepp_send_message_value_to_item_once', { fields: { ITEM_NAME: 'board', MESSAGE: 's', VALUE_TYPE: 'string' }, inputs: { CONDITION: bool(true), VALUE: b('jcreatepp_string_literal', { fields: { TEXT: 'hi' } }) } }),
+  ]))));
+  r.interact();
+  assert.deepEqual(r.log.filter((l) => l.type === 'send').map((l) => (l as { arg: unknown }).arg), ['3', 'hi']);
+});
+
+test('V-2 (fixed): flags named true / false and empty flag names are conversion errors', () => {
+  const setFlag = (name: string) => workspace(onEvent('jcreatepp_on_start', [b('jcreatepp_set_flag', { fields: { FLAG_NAME: name, OPERATION: 'true' } })]));
+  assert.throws(() => generateCode(setFlag('false')), /「true」「false」はフラグ名に使えません/);
+  assert.throws(() => generateCode(setFlag('true')), /「true」「false」はフラグ名に使えません/);
+  assert.throws(() => generateCode(setFlag('')), /フラグ名を入力してください/);
+  assert.throws(() => generateCode(setFlag('__jpp_x')), /フラグ名に jpp\. \/ __jpp_ から始まる名前は使えません/);
+  assert.doesNotThrow(() => generateCode(setFlag('door')));
 });
 
 test('S-4: three 1s waits finish at 3s regardless of frame time', { todo: 'known issue S-4' }, () => {

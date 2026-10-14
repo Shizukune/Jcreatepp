@@ -1,4 +1,4 @@
-import type { MessageTarget, Stmt } from '../ir';
+import type { Expr, MessageTarget, Stmt } from '../ir';
 import { boolExprToJS, exprToJS } from './expr';
 import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, stateKey } from './shared';
 import { traceLine } from './trace';
@@ -218,7 +218,16 @@ function messageSendValueToJS(value: Extract<Stmt, { kind: 'send_message' }>['va
     return boolExprToJS(value.value);
   }
 
+  // "string" mode may receive number blocks; send them as text. Text expressions stay as-is.
+  if (value.valueType === 'string' && !isTextExpr(value.value)) {
+    return `String(${exprToJS(value.value)})`;
+  }
+
   return exprToJS(value.value);
+}
+
+function isTextExpr(expr: Expr): boolean {
+  return expr.kind === 'string_literal' || expr.kind === 'string_var' || (expr.kind === 'message_value' && expr.valueType === 'string');
 }
 
 function playAudioToJS(stmt: Extract<Stmt, { kind: 'play_audio' }>): string {

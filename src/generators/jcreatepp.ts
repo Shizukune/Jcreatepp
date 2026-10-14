@@ -347,6 +347,12 @@ function blockToStmtCore(
 
     case 'jcreatepp_set_flag': {
       const name = block.getFieldValue('FLAG_NAME') || '';
+      if (!validateUserStateName(name, 'フラグ名', errors)) return null;
+      if (isLiteralFlagName(name)) {
+        // Reading a flag named true / false yields the literal, so writing one would never be observed.
+        errors.push('「true」「false」はフラグ名に使えません。別の名前にしてください。');
+        return null;
+      }
       const operation = block.getFieldValue('OPERATION') as 'true' | 'false' | 'toggle';
       return { kind: 'set_flag', name, operation };
     }
@@ -638,6 +644,7 @@ function blockToStmtCore(
         if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
+      if (!ensureNotInSequenceForCollision(inSequence, errors)) return null;
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, undefined, shouldLatchMessage(eventType, inContinuousBody));
     }
@@ -648,6 +655,7 @@ function blockToStmtCore(
         if (!message.trim()) errors.push('送信するメッセージ名を入力してください。');
         return null;
       }
+      if (!ensureNotInSequenceForCollision(inSequence, errors)) return null;
       const condition = conditionFromInput(block, eventType, generator, errors, inSequence);
       const value = messageSendValueFromBlock(block, eventType, generator, errors, inSequence);
       return sendMessageStmt({ kind: 'handle', handle: collisionHandle() }, message, block.id, condition, value, shouldLatchMessage(eventType, inContinuousBody));
@@ -850,6 +858,7 @@ function blockToBoolExpr(
       if (name.trim() === 'false') {
         return { kind: 'bool_literal', value: false };
       }
+      if (!validateUserStateName(name, 'フラグ名', errors)) return { kind: 'raw_bool', code: 'false' };
       return { kind: 'flag', name };
     }
 
@@ -962,6 +971,9 @@ function messageSendValueFromBlock(
 
   if (valueBlock) {
     validateValueBlockContext(valueBlock, eventType, errors, inSequence);
+    if (valueBlock.type === 'jcreatepp_collision_target') {
+      errors.push('「衝突相手」は数値として送れません。「衝突相手にメッセージと値を送る」ブロックで値の種類を「ハンドル」にして送ってください。');
+    }
   }
   return {
     valueType: 'number',
@@ -1008,12 +1020,12 @@ function blockToStringExpr(
     case 'jcreatepp_string_literal':
     case 'jcreatepp_message_value_string':
     case 'jcreatepp_string_var':
-    case 'jcreatepp_number_literal':
+    case 'math_number':
     case 'jcreatepp_message_value_number':
     case 'jcreatepp_number_var':
     case 'jcreatepp_random_number':
     case 'jcreatepp_cooldown_remaining':
-    case 'jcreatepp_binary':
+    case 'jcreatepp_arithmetic':
     case 'jcreatepp_players_near_count':
       return blockToExpr(block, eventType, generator, errors, inSequence);
     default:
@@ -1040,6 +1052,11 @@ function validateValueBlockContext(
         `「${valueBlockLabel(block.type)}」は${allowedNames}の中でのみ使えます。`
       );
     }
+  }
+
+  // Sequence 内での衝突相手の使用禁止（送信値などあらゆる経路）
+  if (block.type === 'jcreatepp_collision_target' && inSequence) {
+    ensureNotInSequenceForCollision(inSequence, errors);
   }
 
   // Sequence 内での player 使用禁止
@@ -1113,6 +1130,19 @@ function validateUserStateName(name: string, label: string, errors: string[]): b
   }
   if (isReservedSystemName(name)) {
     errors.push(`${label}に jpp. / __jpp_ から始まる名前は使えません。`);
+    return false;
+  }
+  return true;
+}
+
+function isLiteralFlagName(name: string): boolean {
+  return name.trim() === 'true' || name.trim() === 'false';
+}
+
+/** Sequence steps run later in onUpdate, where the collision of the event no longer exists. */
+function ensureNotInSequenceForCollision(inSequence: boolean, errors: string[]): boolean {
+  if (inSequence) {
+    errors.push('「衝突相手」は「一連の動作」の中では使えません。衝突した瞬間の処理として置いてください。');
     return false;
   }
   return true;
