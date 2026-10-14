@@ -103,6 +103,8 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
       case 'set_rotation':
       case 'rotate_by':
       case 'smooth_rotate_by':
+      case 'random_warp':
+      case 'load_position':
       case 'add_force':
       case 'continuous_rotation':
       case 'timed_random_warp':
@@ -126,6 +128,8 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
         if ('duration' in stmt) visitExpr(stmt.duration);
         if ('range' in stmt) visitExpr(stmt.range);
         if ('width' in stmt) visitExpr(stmt.width);
+        if ('rangeX' in stmt) visitExpr(stmt.rangeX);
+        if ('rangeZ' in stmt) visitExpr(stmt.rangeZ);
         break;
 
       case 'send_message':
