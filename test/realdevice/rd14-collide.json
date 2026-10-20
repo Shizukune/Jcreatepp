@@ -1,0 +1,56 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_collide",
+        "id": "t152",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_change_number_var",
+              "id": "t149",
+              "fields": {
+                "VAR_NAME": "hits"
+              },
+              "inputs": {
+                "DELTA": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t148",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_set_subnode_text",
+                  "id": "t151",
+                  "fields": {
+                    "SUBNODE_NAME": "Label",
+                    "COMPONENT": "TextView"
+                  },
+                  "inputs": {
+                    "TEXT": {
+                      "block": {
+                        "type": "jcreatepp_number_var",
+                        "id": "t150",
+                        "fields": {
+                          "VAR_NAME": "hits"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

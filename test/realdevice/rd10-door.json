@@ -1,0 +1,185 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t113",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_if",
+              "id": "t112",
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_not",
+                    "id": "t95",
+                    "inputs": {
+                      "BOOL": {
+                        "block": {
+                          "type": "jcreatepp_cooldown_active",
+                          "id": "t94",
+                          "fields": {
+                            "COOLDOWN_NAME": "ドアが動いている"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_start_cooldown",
+                    "id": "t97",
+                    "fields": {
+                      "COOLDOWN_NAME": "ドアが動いている"
+                    },
+                    "inputs": {
+                      "SECONDS": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t96",
+                          "fields": {
+                            "NUM": 1
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_if_else",
+                        "id": "t111",
+                        "inputs": {
+                          "CONDITION": {
+                            "block": {
+                              "type": "jcreatepp_flag",
+                              "id": "t98",
+                              "fields": {
+                                "FLAG_NAME": "ドアが開いている"
+                              }
+                            }
+                          },
+                          "DO": {
+                            "block": {
+                              "type": "jcreatepp_smooth_rotate_by",
+                              "id": "t103",
+                              "inputs": {
+                                "X": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t99",
+                                    "fields": {
+                                      "NUM": 0
+                                    }
+                                  }
+                                },
+                                "Y": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t100",
+                                    "fields": {
+                                      "NUM": -90
+                                    }
+                                  }
+                                },
+                                "Z": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t101",
+                                    "fields": {
+                                      "NUM": 0
+                                    }
+                                  }
+                                },
+                                "DURATION": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t102",
+                                    "fields": {
+                                      "NUM": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "next": {
+                                "block": {
+                                  "type": "jcreatepp_set_flag",
+                                  "id": "t104",
+                                  "fields": {
+                                    "FLAG_NAME": "ドアが開いている",
+                                    "OPERATION": "false"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "ELSE": {
+                            "block": {
+                              "type": "jcreatepp_smooth_rotate_by",
+                              "id": "t109",
+                              "inputs": {
+                                "X": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t105",
+                                    "fields": {
+                                      "NUM": 0
+                                    }
+                                  }
+                                },
+                                "Y": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t106",
+                                    "fields": {
+                                      "NUM": 90
+                                    }
+                                  }
+                                },
+                                "Z": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t107",
+                                    "fields": {
+                                      "NUM": 0
+                                    }
+                                  }
+                                },
+                                "DURATION": {
+                                  "block": {
+                                    "type": "math_number",
+                                    "id": "t108",
+                                    "fields": {
+                                      "NUM": 1
+                                    }
+                                  }
+                                }
+                              },
+                              "next": {
+                                "block": {
+                                  "type": "jcreatepp_set_flag",
+                                  "id": "t110",
+                                  "fields": {
+                                    "FLAG_NAME": "ドアが開いている",
+                                    "OPERATION": "true"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

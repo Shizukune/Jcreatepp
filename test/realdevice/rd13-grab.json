@@ -1,0 +1,65 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_grab_start",
+        "id": "t144",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_subnode_text",
+              "id": "t143",
+              "fields": {
+                "SUBNODE_NAME": "Label",
+                "COMPONENT": "TextView"
+              },
+              "inputs": {
+                "TEXT": {
+                  "block": {
+                    "type": "jcreatepp_string_literal",
+                    "id": "t142",
+                    "fields": {
+                      "TEXT": "持った"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_grab_end",
+        "id": "t147",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_subnode_text",
+              "id": "t146",
+              "fields": {
+                "SUBNODE_NAME": "Label",
+                "COMPONENT": "TextView"
+              },
+              "inputs": {
+                "TEXT": {
+                  "block": {
+                    "type": "jcreatepp_string_literal",
+                    "id": "t145",
+                    "fields": {
+                      "TEXT": "離した"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "t134",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_number_var",
+              "id": "t131",
+              "fields": {
+                "VAR_NAME": "count"
+              },
+              "inputs": {
+                "VALUE": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t130",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_set_subnode_text",
+                  "id": "t133",
+                  "fields": {
+                    "SUBNODE_NAME": "Label",
+                    "COMPONENT": "TextView"
+                  },
+                  "inputs": {
+                    "TEXT": {
+                      "block": {
+                        "type": "jcreatepp_number_var",
+                        "id": "t132",
+                        "fields": {
+                          "VAR_NAME": "count"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t141",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_change_number_var",
+              "id": "t136",
+              "fields": {
+                "VAR_NAME": "count"
+              },
+              "inputs": {
+                "DELTA": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t135",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_play_audio",
+                  "id": "t138",
+                  "fields": {
+                    "AUDIO_ID": "se"
+                  },
+                  "inputs": {
+                    "VOLUME": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t137",
+                        "fields": {
+                          "NUM": 1
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_set_subnode_text",
+                      "id": "t140",
+                      "fields": {
+                        "SUBNODE_NAME": "Label",
+                        "COMPONENT": "TextView"
+                      },
+                      "inputs": {
+                        "TEXT": {
+                          "block": {
+                            "type": "jcreatepp_number_var",
+                            "id": "t139",
+                            "fields": {
+                              "VAR_NAME": "count"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      }
+    ]
+  }
+}

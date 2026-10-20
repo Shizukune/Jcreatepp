@@ -33,6 +33,7 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
    - 新しいブロックや生成パターンを追加したら fixture も追加する
    - 生成コードのstateキーにはブロックIDが入るため、既存 fixture のIDは変えない
    - `test/sim.test.ts` は生成コードを `src/sim/`（Cluster Script 互換の `$` モック）で実際に動かす動作テスト。既知の不具合は `todo` テストに期待動作を書いてある（直したら `todo` を外す）
+   - 実機確認キット `test/realdevice/`: 正本は `scenarios.ts`。`npm run realdevice:export` で JSON・`scripts/*.js`（生成済み Cluster Script）・`CHECKLIST.md`（手順書）を作り直す。生成コードが変わったら必ず再実行（古いと `npm test` が失敗する）
    - `src/sim/` は DOM 非依存。将来の 3D プレビューでも同じモックを使う（設計: `docs-internal/3d-preview-design.md`、gitignore 対象）
 3. `npm run build`（本番ビルド。プッシュ前に必須）— GitHub Actions のデプロイはこのビルドで失敗する。`tsc` が通っても本番の圧縮（Terser）で落ちることがある（例: 引用符なしの日本語オブジェクトキーに「・」）
 4. Codex レビュー（読み取り専用）: `powershell -ExecutionPolicy Bypass -File ..\codex-review.ps1 -Uncommitted -Context "<目的・想定動作>" -Focus "<重点>"`

@@ -1,0 +1,64 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "t93",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_continuous_rotation",
+              "id": "t89",
+              "fields": {
+                "AXIS": "Y"
+              },
+              "inputs": {
+                "SPEED": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t88",
+                    "fields": {
+                      "NUM": 45
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_oscillate",
+                  "id": "t92",
+                  "fields": {
+                    "AXIS": "Y"
+                  },
+                  "inputs": {
+                    "WIDTH": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t90",
+                        "fields": {
+                          "NUM": 0.5
+                        }
+                      }
+                    },
+                    "SPEED": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t91",
+                        "fields": {
+                          "NUM": 2
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_receive",
+        "id": "t129",
+        "fields": {
+          "MESSAGE": "open"
+        },
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_smooth_move_by",
+              "id": "t126",
+              "inputs": {
+                "X": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t122",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "Y": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t123",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                },
+                "Z": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t124",
+                    "fields": {
+                      "NUM": 0
+                    }
+                  }
+                },
+                "DURATION": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t125",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_reply_message_once",
+                  "id": "t128",
+                  "fields": {
+                    "MESSAGE": "ack"
+                  },
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_bool_literal",
+                        "id": "t127",
+                        "fields": {
+                          "VALUE": "true"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

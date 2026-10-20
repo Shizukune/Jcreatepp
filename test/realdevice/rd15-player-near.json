@@ -1,0 +1,60 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "t158",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_if",
+              "id": "t157",
+              "inputs": {
+                "CONDITION": {
+                  "block": {
+                    "type": "jcreatepp_players_near",
+                    "id": "t154",
+                    "inputs": {
+                      "RANGE": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t153",
+                          "fields": {
+                            "NUM": 3
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_continuous_rotation",
+                    "id": "t156",
+                    "fields": {
+                      "AXIS": "Y"
+                    },
+                    "inputs": {
+                      "SPEED": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "t155",
+                          "fields": {
+                            "NUM": 90
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

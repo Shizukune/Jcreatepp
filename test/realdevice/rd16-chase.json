@@ -1,0 +1,42 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_chase_template",
+        "id": "t162",
+        "inputs": {
+          "MOVE_SPEED": {
+            "block": {
+              "type": "math_number",
+              "id": "t159",
+              "fields": {
+                "NUM": 2
+              }
+            }
+          },
+          "MAX_DISTANCE": {
+            "block": {
+              "type": "math_number",
+              "id": "t160",
+              "fields": {
+                "NUM": 10
+              }
+            }
+          },
+          "MIN_DISTANCE": {
+            "block": {
+              "type": "math_number",
+              "id": "t161",
+              "fields": {
+                "NUM": 1.5
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}
