@@ -7,6 +7,15 @@ export const toolbox = {
   contents: [
     {
       kind: 'category',
+      name: '部品｜自動でブロック',
+      colour: '20',
+      contents: [
+        { kind: 'label', text: 'できあがった動きを、ブロックのかたまりとして追加します' },
+        { kind: 'button', text: '部品を選ぶ（3Dプレビューで開く）', callbackKey: 'jppOpenParts' },
+      ],
+    },
+    {
+      kind: 'category',
       name: 'イベント｜開始/毎F/受信',
       colour: '45',
       contents: [

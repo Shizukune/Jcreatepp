@@ -8,6 +8,8 @@ import * as assert from 'node:assert/strict';
 import { PARTS, defaultValues, type Part } from '../src/parts/catalog';
 import { channelsWrittenBy, insertPart } from '../src/parts/insert';
 import { BLOCK_DEMOS } from '../src/demos/catalog';
+import { recordState } from '../src/demos/playback';
+import { partDemo } from '../src/parts/demo';
 import { createRunner } from '../src/sim/runner';
 import { b, num, onEvent, workspace } from './build';
 import { conversionErrors, generateCode, loadWorkspace, saveWorkspace } from './harness';
@@ -137,7 +139,7 @@ test('a part that repeats an existing conversion error is still refused', () => 
   assert.equal(conversionErrors(saveWorkspace(ws)).length, 1);
   const before = JSON.stringify(saveWorkspace(ws));
   const broken: Part = {
-    id: 'broken', label: '壊れた部品', description: '', size: 'single', params: [], writes: [], names: [],
+    id: 'broken', label: '壊れた部品', description: '', size: 'single', params: [], writes: [], names: [], demo: { seconds: 1 },
     expand: () => ({ events: [{ eventType: 'jcreatepp_on_start', body: [{ type: 'jcreatepp_wait_seconds', inputs: { SECONDS: { block: { type: 'math_number', fields: { NUM: 1 } } } } }] }] }),
   };
   const result = insertPart(ws, broken, {});
@@ -189,4 +191,17 @@ test('part touch_turn: a click while turning restarts from the current angle (as
   const code = generateCode(saveWorkspace(ws));
   // 90 deg in 1 s: after 0.5 s it is at 45 deg, the second click adds 90 deg from there.
   assert.ok(angleDiff(yaw(code, (r) => { r.interact(); r.advance(0.5); r.interact(); r.advance(1.5); }), 135) < 1);
+});
+
+test('every part card sample converts, runs cleanly and shows what the part writes', () => {
+  for (const p of PARTS) {
+    const demo = partDemo(p);
+    const track = recordState(demo.workspace, demo.seconds, demo.actions);
+    assert.deepEqual(track.errors, [], p.id);
+    const first = track.frames[0];
+    const moved = track.frames.some((f) => f.position.clone().sub(first.position).length() > 0.1);
+    const turned = track.frames.some((f) => Math.abs(f.rotation.x * first.rotation.x + f.rotation.y * first.rotation.y + f.rotation.z * first.rotation.z + f.rotation.w * first.rotation.w) < 0.9999);
+    if (p.writes.includes('position')) assert.ok(moved, `${p.id} moves`);
+    if (p.writes.includes('rotation')) assert.ok(turned, `${p.id} turns`);
+  }
 });

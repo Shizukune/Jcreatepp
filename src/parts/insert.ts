@@ -50,6 +50,18 @@ const UNIQUE_EVENTS = new Set<string>(UNIQUE_EVENT_BLOCK_TYPES);
 
 export type InsertResult = { ok: true; blockIds: string[] } | { ok: false; reason: string };
 
+/** The first channel (position / rotation) the part would fight over, or null. */
+export function conflictChannel(ws: Blockly.Workspace, part: Part): Channel | null {
+  for (const channel of part.writes) {
+    if (ws.getAllBlocks(false).some((b) => WRITERS[b.type]?.includes(channel))) return channel;
+  }
+  return null;
+}
+
+export function channelLabel(channel: Channel): string {
+  return CHANNEL_LABEL[channel];
+}
+
 /** Why the part cannot be added to this workspace (or null when it can). */
 export function partConflict(ws: Blockly.Workspace, part: Part): string | null {
   for (const channel of part.writes) {

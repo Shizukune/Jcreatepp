@@ -136,5 +136,8 @@ test('preview state rows: defaults before first set, notes, sequence progress', 
   assert.equal(byName.title.note, 'どこでも設定されていません');
   assert.equal(byName.door.group, '真偽値変数・フラグ');
   assert.equal(byName.tap.value, '残り 1.23 秒');
-  assert.deepEqual(byName.b9, { group: '一連の動作', name: 'b9', value: '実行中（ステップ 2）' });
+  // A sequence not in the program's list (no IR info passed) still shows, under its id.
+  assert.equal(byName.b9.group, '一連の動作');
+  assert.equal(byName.b9.value, '実行中（ステップ 2）');
+  assert.deepEqual(byName.b9.sequence, { status: 'running', step: 2, steps: 0, blockId: 'b9' });
 });

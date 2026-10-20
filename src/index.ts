@@ -26,6 +26,10 @@ import { toolbox } from './toolbox';
 import { installDemoTooltips } from './demos/tooltip';
 import type { Program } from './ir';
 import type { Preview } from './preview/previewApp';
+import type { StateSelection } from './preview/panel';
+import type { PartsPanel } from './parts/panel';
+import { previewProgramInfo } from './preview/programInfo';
+import { blockVariableAccess } from './blocks/variableBlocks';
 import './index.css';
 
 // 言語設定
@@ -107,7 +111,6 @@ let previewLoading = false;
 const codePane = document.getElementById('codePane');
 const codeView = document.getElementById('codeView');
 const previewView = document.getElementById('previewView');
-const partsPanel = document.getElementById('partsPanel');
 const tabCode = document.getElementById('tabCode');
 const tabPreview = document.getElementById('tabPreview');
 
@@ -115,7 +118,7 @@ function updatePreview() {
   if (!preview) return;
   // The preview runs a trace build; the code shown / downloaded above is never traced.
   preview.setCode(lastProgram ? programToJS(lastProgram, { trace: true }) : null, previewReason);
-  preview.setVariables(lastProgram?.variables ?? []);
+  preview.setProgramInfo(previewProgramInfo(lastProgram));
 }
 
 function highlightBlocks(ids: string[]) {
@@ -128,6 +131,63 @@ function highlightBlocks(ids: string[]) {
     console.error('highlightBlocks error:', err);
   }
 }
+
+// Blocks that use the state card selected in the preview (outline only; independent of the
+// "running" highlight above, so playback never clears it). Writers and readers look different.
+let usesSelection: StateSelection | null = null;
+const USE_CLASSES = ['jppWrites', 'jppReads'];
+
+function markStateUses() {
+  try {
+    for (const b of ws.getAllBlocks(false)) {
+      for (const c of USE_CLASSES) b.removeClass(c);
+    }
+    const sel = usesSelection;
+    if (!sel) return;
+    if (sel.kind === 'sequence') {
+      if (sel.blockId) (ws.getBlockById(sel.blockId) as Blockly.BlockSvg | null)?.addClass('jppWrites');
+      return;
+    }
+    for (const b of ws.getAllBlocks(false)) {
+      const access = blockVariableAccess(b.type, (name) => b.getFieldValue(name));
+      if (!access || access.kind !== sel.kind || access.name !== sel.name) continue;
+      b.addClass(access.write ? 'jppWrites' : 'jppReads');
+    }
+  } catch (err) {
+    console.error('markStateUses error:', err);
+  }
+}
+ws.addChangeListener((e: Blockly.Events.Abstract) => {
+  if (!e.isUiEvent && usesSelection) markStateUses();
+});
+
+/** Opens a toolbox category whose name starts with the given text. */
+function openToolboxCategory(prefix: string) {
+  const toolbox = ws.getToolbox() as Blockly.Toolbox | null;
+  const item = toolbox?.getToolboxItems().find((i) => (i as Blockly.ToolboxCategory).getName?.().startsWith(prefix));
+  if (toolbox && item) toolbox.setSelectedItem(item as Blockly.ISelectableToolboxItem);
+}
+
+// "3D を大きく": the preview pane takes the room of the block area (down to its minimum width).
+const BIG_KEY = 'jcreatepp-preview-big';
+function readBig(): boolean {
+  try {
+    return window.localStorage?.getItem(BIG_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function setBigPane(big: boolean) {
+  codePane?.classList.toggle('pvBigPane', big);
+  try {
+    window.localStorage?.setItem(BIG_KEY, big ? '1' : '0');
+  } catch {
+    // Not remembered; works for this page.
+  }
+  Blockly.svgResize(ws);
+}
+
+let partsPanel: PartsPanel | null = null;
 
 let currentTab: 'code' | 'preview' = 'code';
 let blockEdit: typeof import('./preview/blockEdit') | null = null;
@@ -159,14 +219,16 @@ async function showTab(tab: 'code' | 'preview') {
   const isPreview = tab === 'preview';
   if (codeView) codeView.hidden = isPreview;
   if (previewView) previewView.hidden = !isPreview;
-  if (partsPanel) partsPanel.hidden = !isPreview;
   tabCode?.setAttribute('aria-selected', String(!isPreview));
   tabPreview?.setAttribute('aria-selected', String(isPreview));
   codePane?.classList.toggle('previewMode', isPreview);
+  codePane?.classList.toggle('pvBigPane', isPreview && readBig());
   Blockly.svgResize(ws);
 
   if (isPreview && !preview && !previewLoading && previewView) {
     previewLoading = true;
+    // Skeleton while three.js loads: the shapes of the 3D view, events and tabs (no animation).
+    previewView.innerHTML = '<div class="pvSkeleton"><div class="pvSkelView"></div><div class="pvSkelRow"></div><div class="pvSkelRow"></div><div class="pvSkelPanel"></div></div>';
     try {
       const { createPreview } = await import('./preview/previewApp');
       preview = createPreview(previewView, {
@@ -175,18 +237,28 @@ async function showTab(tab: 'code' | 'preview') {
           // Writes the numbers as one undo step; the change listener then regenerates the preview.
           if (!blockEdit?.applyEdit(ws, blockId, values)) console.warn('3D edit was not applied:', blockId);
         },
+        onSelectState: (selection) => {
+          usesSelection = selection;
+          markStateUses();
+        },
+        onShowBlocks: (category) => openToolboxCategory(category === 'variables' ? '変数' : 'イベント'),
+        onBigChange: setBigPane,
+        big: readBig(),
       });
       blockEdit = await import('./preview/blockEdit');
-      if (partsPanel) {
-        const { createPartsPanel } = await import('./parts/panel');
-        createPartsPanel(partsPanel, ws);
-      }
+      const { createPartsPanel } = await import('./parts/panel');
+      const p = preview;
+      partsPanel = createPartsPanel(p.partsHost, ws, () => p.isPartsVisible());
       updateEditTarget();
       // After a page load nothing has been generated yet; generate so the preview has a program.
       generateCode();
       updatePreview();
     } catch (err) {
       console.error('preview load error:', err);
+      // Do not leave a half-built preview running on a replaced DOM; opening the tab again retries.
+      preview?.setVisible(false);
+      preview = null;
+      partsPanel = null;
       previewView.textContent = '3Dプレビューを読み込めませんでした: ' + (err as Error).message;
     } finally {
       previewLoading = false;
@@ -194,7 +266,16 @@ async function showTab(tab: 'code' | 'preview') {
   }
   // The tab may have changed while the preview module was loading.
   preview?.setVisible(currentTab === 'preview');
+  if (currentTab === 'preview') partsPanel?.shown();
 }
+
+/** The toolbox "部品" entry: open the preview's parts tab. */
+async function openParts() {
+  (ws.getToolbox() as Blockly.Toolbox | null)?.clearSelection();
+  await showTab('preview');
+  preview?.showTab('parts');
+}
+ws.registerButtonCallback('jppOpenParts', () => void openParts());
 
 tabCode?.addEventListener('click', () => void showTab('code'));
 tabPreview?.addEventListener('click', () => void showTab('preview'));

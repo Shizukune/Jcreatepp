@@ -36,6 +36,8 @@ export type Part = {
   /** Variables the part needs; the actual names are chosen to avoid names already in use. */
   names: { key: string; kind: VariableKind; base: string }[];
   expand(values: PartValues, names: Record<string, string>): PartExpansion;
+  /** Motion sample shown on the part card: loop length and when to click (interact). */
+  demo: { seconds: number; clicks?: number[] };
 };
 
 const n = (values: PartValues, key: string) => Number(values[key]);
@@ -52,6 +54,7 @@ export const PARTS: Part[] = [
       { key: 'speed', label: '速さ（度/秒）', kind: 'number', default: 90, min: -720, max: 720, step: 10 },
     ],
     writes: ['rotation'],
+    demo: { seconds: 4 },
     names: [],
     expand: (v) => ({
       events: [{ eventType: 'jcreatepp_on_update', body: [block('jcreatepp_continuous_rotation', { AXIS: axis(v, 'axis') }, { SPEED: num(n(v, 'speed')) })] }],
@@ -68,6 +71,7 @@ export const PARTS: Part[] = [
       { key: 'speed', label: '速さ', kind: 'number', default: 1, min: 0, max: 10, step: 0.5 },
     ],
     writes: ['position'],
+    demo: { seconds: 6.3 },
     names: [],
     expand: (v) => ({
       events: [{
@@ -86,6 +90,7 @@ export const PARTS: Part[] = [
       { key: 'seconds', label: '秒数', kind: 'number', default: 1, min: 0, max: 10, step: 0.5 },
     ],
     writes: ['rotation'],
+    demo: { seconds: 2.5, clicks: [0.5] },
     names: [],
     expand: (v) => ({
       events: [{
@@ -104,6 +109,7 @@ export const PARTS: Part[] = [
       { key: 'seconds', label: '秒数', kind: 'number', default: 1, min: 0.1, max: 10, step: 0.5 },
     ],
     writes: ['rotation'],
+    demo: { seconds: 5, clicks: [0.5, 2.8] },
     names: [
       { key: 'open', kind: 'bool', base: 'ドアが開いている' },
       { key: 'moving', kind: 'cooldown', base: 'ドアが動いている' },

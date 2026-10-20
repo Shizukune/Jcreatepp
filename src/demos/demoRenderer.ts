@@ -65,7 +65,13 @@ function trackOf(demo: BlockDemo): Track {
  * Plays `demo` inside `frame` until `alive()` returns false (tooltip hidden or replaced).
  * Stops the demo that was playing before, if any.
  */
-export function playDemo(frame: HTMLElement, demo: BlockDemo, alive: () => boolean): void {
+export function playDemo(
+  frame: HTMLElement,
+  demo: BlockDemo,
+  alive: () => boolean,
+  options: { forceMotion?: boolean; playButton?: boolean } = {},
+): void {
+  const { forceMotion = false, playButton = false } = options;
   stopCurrent?.();
   const { renderer, scene, camera, item } = getStage();
   const track = trackOf(demo);
@@ -76,6 +82,33 @@ export function playDemo(frame: HTMLElement, demo: BlockDemo, alive: () => boole
   badge.textContent = 'クリック';
   badge.hidden = true;
   frame.append(renderer.domElement, badge);
+
+  // "Reduce motion": no loop, one still picture of how the demo ends. Where the frame can be
+  // clicked (not in a tooltip, which closes when the pointer leaves the block), "▶ 見る" plays it.
+  const still = !forceMotion && typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) {
+    const f = track.frames[track.frames.length - 1];
+    item.position.copy(toThreePosition(f.position));
+    item.quaternion.copy(toThreeQuaternion(f.rotation));
+    renderer.render(scene, camera);
+    const play = playButton ? document.createElement('button') : null;
+    if (play) {
+      play.type = 'button';
+      play.className = 'demoPlay';
+      play.textContent = '▶ 見る';
+      play.addEventListener('click', () => {
+        play.remove();
+        if (alive()) playDemo(frame, demo, alive, { forceMotion: true, playButton });
+      });
+      frame.append(play);
+    }
+    stopCurrent = () => {
+      play?.remove();
+      badge.remove();
+      stopCurrent = null;
+    };
+    return;
+  }
 
   const start = performance.now();
   let frameId = 0;
