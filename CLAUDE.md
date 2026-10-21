@@ -12,6 +12,7 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
 - `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内。`src/unitySetup.ts` は同じ内容の機械可読版（将来の Unity 拡張用）
 - `src/demos/` ブロックの動き見本（ツールチップ）。`playback.ts` はブロック JSON → IR → コード → sim を DOM なしで再生する共通の土台。`demoRenderer.ts` は three.js を使うので必ず動的 import
 - `src/parts/` 部品（ブロックのかたまりを自動で追加）。部品は IR ではなく保存形式のブロック JSON に展開し、追加前にコピーで変換エラーを確認、本番には 1 回の Undo で消せる形で入れる。位置・角度を動かすブロックの表（`insert.ts` の `WRITERS`）は新しい動作ブロックを足したら更新する
+- `unity/Jcreatepp/` Unity エディタ拡張（試作。UPM パッケージ形式、Assets にコピーしても使える）。C# は Unity 2021.3 / CCK 3.4 向け、C# 5 相当の書き方で、ここでは Unity が無いのでスタブに対するコンパイル確認まで。スクリプトの読み取り（`ScriptAnalysis.cs`）は生成コードの書き方（`$.setPosition(` など）に依存するので、codegen の API 呼び出しを変えたらここも見直す
 - `src/index.ts` UI（DOM）。テストからは読み込まない
 - `src/variables.ts` 変数の正本: 種類・`$.state` キー規則（codegen はここを使う）・IR からの変数一覧（`Program.variables`）。ブロック側の読み書き表は `src/blocks/variableBlocks.ts`（両者の一致は `test/variables.test.ts`）
 - `src/sim/` Cluster Script 互換の `$` モックと実行器（DOM 非依存。テストと 3D プレビューで共用）
