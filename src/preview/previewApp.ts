@@ -17,6 +17,7 @@ import type { EditTarget, Xyz } from './blockEdit';
 import { toThreePosition, toThreeQuaternion } from './coords';
 import { createEditGizmo, type EditGizmo } from './editGizmo';
 import { createLogPanel, createStatePanel, previewProblems, type StateSelection } from './panel';
+import { parseReceiveValue } from './receiveValue';
 import { hasAnyEvent, NO_PROGRAM_INFO, type PreviewProgramInfo } from './programInfo';
 import { attachRideControls, type RideControls } from './rideControls';
 import { createScene, type PreviewScene } from './scene';
@@ -249,10 +250,8 @@ export function createPreview(root: HTMLElement, options: PreviewOptions = {}): 
     notice.hidden = !text;
   }
 
-  /** Same conversion as before: empty = no value, true / false, numbers, otherwise text. */
   function receiveValue(): unknown {
-    const raw = (eventsEl.querySelector('[data-recv="value"]') as HTMLInputElement | null)?.value.trim() ?? '';
-    return raw === '' ? null : raw === 'true' ? true : raw === 'false' ? false : isNaN(Number(raw)) ? raw : Number(raw);
+    return parseReceiveValue((eventsEl.querySelector('[data-recv="value"]') as HTMLInputElement | null)?.value ?? '');
   }
 
   /** Option values are indexes into the program's message names ("other" = typed name), so any name works. */

@@ -5,6 +5,7 @@
  */
 
 import type { LogEntry } from '../sim/clusterMock';
+import { formatLog } from './logText';
 import type { Runner } from '../sim/runner';
 import type { VariableKind } from '../variables';
 import type { PreviewProgramInfo } from './programInfo';
@@ -208,16 +209,4 @@ export function previewProblems(runner: Runner, lastError: string | null): strin
     ...[...runner.unsupported].map((name) => `プレビュー未対応: ${name}`),
     ...(lastError ? [`実行時エラー: ${lastError}`] : []),
   ];
-}
-
-function formatLog(l: LogEntry): string {
-  switch (l.type) {
-    case 'send': return `送信 → ${l.target}「${l.message}」${l.arg === null || l.arg === undefined ? '' : ` 値=${JSON.stringify(l.arg)}`}`;
-    case 'audio': return `音「${l.id}」音量 ${l.volume}`;
-    case 'text': return `文字 ${l.subNode}(${l.component}) = ${l.text}`;
-    case 'enabled': return `${l.subNode}(${l.component}) を ${l.enabled ? '有効' : '無効'}`;
-    case 'force': return `力を加える (${l.force.x.toFixed(1)}, ${l.force.y.toFixed(1)}, ${l.force.z.toFixed(1)}) ※物理は再現しません`;
-    case 'player': return `プレイヤー ${l.method}(${l.value})`;
-    case 'error': return `エラー[${l.event}] ${l.message}`;
-  }
 }

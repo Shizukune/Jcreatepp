@@ -1,0 +1,22 @@
+{
+    "name": "Jcreatepp.Editor.Preview",
+    "rootNamespace": "Jcreatepp.Editor.Preview",
+    "references": [
+        "ClusterVR.CreatorKit.Item.Implements"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Jint.dll",
+        "Acornima.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

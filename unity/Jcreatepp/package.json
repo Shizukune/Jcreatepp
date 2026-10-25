@@ -1,8 +1,8 @@
 {
   "name": "com.shizukune.jcreatepp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Jcreate++ for Cluster Creator Kit",
-  "description": "Jcreate++ で作ったスクリプト（.js）を、選んだオブジェクトに Item / Scriptable Item などと一緒に設定するエディタ拡張（試作）。",
+  "description": "Jcreate++ で作ったスクリプト（.js）を、オブジェクトに Item / Scriptable Item などと一緒に設定し、エディタのウィンドウの中でプレビューするエディタ拡張（試作）。",
   "unity": "2021.3",
   "author": {
     "name": "Shizukune"
