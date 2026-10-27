@@ -94,19 +94,23 @@ namespace Jcreatepp.Editor.Preview
                 options.LimitRecursion(RecursionLimit);
             });
             timeLimit.Limit = SetupTimeout;
+
+            var setupStep = "simulator execution";
             try
             {
-                engine.Execute(simulatorBundle);
-                var host = engine.GetValue("JcreateppHost").AsObject();
+                var hostValue = engine.Evaluate(simulatorBundle + "\n;JcreateppHost;");
+                setupStep = "JcreateppHost evaluation result";
+                var host = hostValue.AsObject();
+                setupStep = "host function lookup";
                 loadFn = host.Get("load");
                 stepFn = host.Get("step");
                 fireFn = host.Get("fire");
                 snapshotFn = host.Get("snapshot");
             }
-            catch
+            catch (Exception e)
             {
                 Dispose();
-                throw;
+                throw new InvalidOperationException("Preview initialization failed at " + setupStep + ": " + e.ToString(), e);
             }
         }
 

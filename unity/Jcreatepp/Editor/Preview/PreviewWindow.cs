@@ -122,11 +122,11 @@ namespace Jcreatepp.Editor.Preview
         /// <summary>The simulator bundle shipped with this extension (Sim/jcreatepp-sim.txt).</summary>
         string LoadBundle()
         {
-            if (simulatorBundle != null) return simulatorBundle;
+            if (!string.IsNullOrWhiteSpace(simulatorBundle) && simulatorBundle.Contains("var JcreateppHost;")) return simulatorBundle;
             foreach (var guid in AssetDatabase.FindAssets("jcreatepp-sim t:TextAsset"))
             {
                 var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(AssetDatabase.GUIDToAssetPath(guid));
-                if (asset != null) return simulatorBundle = asset.text;
+                if (asset != null && !string.IsNullOrWhiteSpace(asset.text) && asset.text.Contains("var JcreateppHost;")) return simulatorBundle = asset.text;
             }
             return null;
         }

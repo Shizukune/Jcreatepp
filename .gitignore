@@ -13,3 +13,4 @@ yarn-error.log*
 .env.*
 .DS_Store
 .unity-sim-build
+unity/dist/

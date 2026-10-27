@@ -46,6 +46,11 @@ test('unity bundle: up to date with its sources (npm run unity:sim)', () => {
   assert.equal(recorded, inputsHash(root), 'run `npm run unity:sim`');
 });
 
+test('unity bundle: has the marker PreviewWindow.LoadBundle looks for', () => {
+  // PreviewWindow only accepts a TextAsset containing this declaration (so a wrong asset with the same name is skipped).
+  assert.ok(fs.readFileSync(bundlePath, 'utf8').includes('var JcreateppHost;'));
+});
+
 test('unity bundle: every kit script moves like the simulator used directly', () => {
   const DT = 1 / 60;
   for (const s of SCENARIOS) {
