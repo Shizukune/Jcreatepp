@@ -15,12 +15,9 @@ import {
 import { placementError, valueInSequenceError } from './blocks/placement';
 import { blockVariableAccess, neverSetMessage } from './blocks/variableBlocks';
 import { variableStateKey } from './variables';
+import { utf8ByteLength } from './utf8';
 
 const MESSAGE_TYPE_MAX_BYTES = 100;
-
-function utf8ByteLength(value: string): number {
-  return new TextEncoder().encode(value).length;
-}
 
 function validateMessageType(message: string, label: string = 'メッセージ名'): string | null {
   if (!message.trim()) {

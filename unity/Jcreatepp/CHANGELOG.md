@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- ブロック処理の土台（`Editor/Core/`）。まだ画面からは使っていない
+  - Web 版と同じ Blockly・変換・置き場所の警告・コード生成・必要な設定・部品を、Jint で動かす（`CoreHost`）
+  - Blockly（Apache-2.0）を `jcreatepp-core.txt` に含めて同梱
+- EditMode テストに `CoreHostTests` を追加（この Unity での時間を Console に出す）
+
 ## 0.2.0 (2026-10-26)
 
 - プレビュー（メニュー「Jcreate++ > プレビュー」）

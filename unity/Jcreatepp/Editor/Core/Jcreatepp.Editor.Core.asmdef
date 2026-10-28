@@ -1,0 +1,20 @@
+{
+    "name": "Jcreatepp.Editor.Core",
+    "rootNamespace": "Jcreatepp.Editor.Core",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Jint.dll",
+        "Acornima.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

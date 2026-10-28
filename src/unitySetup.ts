@@ -8,6 +8,7 @@
 
 import type { Program } from './ir';
 import { collectUnityRequirements } from './unityRequirements';
+import { utf8ByteLength } from './utf8';
 
 /** CCK `Constants.CraftItemScriptableItemMaxSourceCodeByteCount` (UTF-8 bytes). World items have no such check in CCK. */
 export const CRAFT_ITEM_SCRIPT_MAX_BYTES = 20_000;
@@ -62,7 +63,7 @@ const COMPONENT_ORDER: ItemComponentName[] = [
 
 
 export function scriptByteLength(code: string): number {
-  return new TextEncoder().encode(code).length;
+  return utf8ByteLength(code);
 }
 
 export function buildUnitySetup(program: Program, code: string): UnitySetup {

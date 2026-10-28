@@ -3,6 +3,7 @@
     "rootNamespace": "Jcreatepp.Editor.Preview.Tests",
     "references": [
         "Jcreatepp.Editor.Preview",
+        "Jcreatepp.Editor.Core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

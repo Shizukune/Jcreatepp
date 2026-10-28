@@ -7,7 +7,7 @@
  */
 
 import * as Blockly from 'blockly/core';
-import { PARTS, defaultValues, type Part, type PartParam, type PartValues } from './catalog';
+import { PARTS, defaultValues, paramValue, type Part, type PartParam, type PartValues } from './catalog';
 import { partDemo } from './demo';
 import { channelLabel, conflictChannel, insertPart, partConflict } from './insert';
 
@@ -65,14 +65,8 @@ export function createPartsPanel(root: HTMLElement, ws: Blockly.WorkspaceSvg, is
     }
     input.value = String(values[param.key]);
     input.addEventListener('change', () => {
-      if (param.kind === 'axis') {
-        values[param.key] = input.value;
-        return;
-      }
-      const v = Number(input.value);
-      const clamped = Number.isFinite(v) ? Math.min(param.max, Math.max(param.min, v)) : param.default;
-      values[param.key] = clamped;
-      input.value = String(clamped);
+      values[param.key] = paramValue(param, input.value);
+      input.value = String(values[param.key]);
     });
     label.append(input);
     return label;

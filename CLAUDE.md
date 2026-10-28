@@ -14,7 +14,8 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
 - `src/parts/` 部品（ブロックのかたまりを自動で追加）。部品は IR ではなく保存形式のブロック JSON に展開し、追加前にコピーで変換エラーを確認、本番には 1 回の Undo で消せる形で入れる。位置・角度を動かすブロックの表（`insert.ts` の `WRITERS`）は新しい動作ブロックを足したら更新する
 - `unity/Jcreatepp/` Unity エディタ拡張（試作。UPM パッケージ形式、Assets にコピーしても使える）。C# は Unity 2021.3 / CCK 3.4 向け、C# 5 相当の書き方で、ここでは Unity が無いのでスタブに対するコンパイル確認まで。スクリプトの読み取り（`ScriptAnalysis.cs`）は生成コードの書き方（`$.setPosition(` など）に依存するので、codegen の API 呼び出しを変えたらここも見直す
   - プレビュー（`Editor/Preview/`）は `src/unityHost/host.ts` を `npm run unity:sim` でまとめた `Sim/jcreatepp-sim.txt` を Jint（同梱 DLL、`Plugins/`）で動かす。`src/sim`・host・それが import するものを変えたら必ず `npm run unity:sim`（古いと `npm test` が失敗する）
-  - Unity 無しの確認: `powershell -ExecutionPolicy Bypass -File unitycheckcheck.ps1 [-JintDir <net462 の DLL のフォルダ>]`（スタブでのコンパイルと、本物の Jint で SimHost を動かす確認）
+  - ブロック処理（`Editor/Core/`）は `src/unityHost/core.ts`（画面なしの Blockly＋変換＋警告＋コード生成＋設定＋部品）を同じ `npm run unity:sim` で `Core/jcreatepp-core.txt` にまとめ、`CoreHost.cs` が Jint で動かす。Web 版と結果が 1 バイトも違わないことを `test/unityCore.test.ts` と `unity/check` で確認する。変換・生成・部品まわりを変えたら `npm run unity:sim`（Blockly の版は package-lock.json で追う）。これらのコードではブラウザ専用 API（`TextEncoder`・DOM など）を使わない（Jint に無い。UTF-8 のバイト数は `src/utf8.ts`）
+  - Unity 無しの確認: `powershell -ExecutionPolicy Bypass -File unitycheckcheck.ps1 [-JintDir <net462 の DLL のフォルダ>]`（スタブでのコンパイルと、本物の Jint で SimHost・CoreHost を動かす確認）
 - `src/index.ts` UI（DOM）。テストからは読み込まない
 - `src/variables.ts` 変数の正本: 種類・`$.state` キー規則（codegen はここを使う）・IR からの変数一覧（`Program.variables`）。ブロック側の読み書き表は `src/blocks/variableBlocks.ts`（両者の一致は `test/variables.test.ts`）
 - `src/sim/` Cluster Script 互換の `$` モックと実行器（DOM 非依存。テストと 3D プレビューで共用）

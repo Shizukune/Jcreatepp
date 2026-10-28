@@ -88,7 +88,7 @@ Jcreate++ の「JS保存」で保存した `.js` を、Unity で**プレビュ�
   - プロジェクトのほかの場所に、同じ名前の DLL（特に `System.Runtime.CompilerServices.Unsafe.dll`）があります
   - `Jcreatepp/Editor/Preview/Plugins/` の同じ名前の DLL を消してみてください（消したら、その旨を教えてください。バージョンの組み合わせを調べます）
 - **プレビューの 3D が真っ黒・真っ白**: 描画の方式（Built-in 以外）の違いかもしれません。Console の内容と一緒に教えてください
-- **テスト**: `Window > General > Test Runner` の EditMode で `Jcreatepp.Editor.Preview.Tests` を実行すると、同梱の Jint とシミュレーターがこの Unity で動くかを確かめられます
+- **テスト**: `Window > General > Test Runner` の EditMode で `Jcreatepp.Editor.Preview.Tests` を実行すると、同梱の Jint とシミュレーター・ブロック処理がこの Unity で動くかを確かめられます。`CoreHostTests.TimesInThisUnity` は、ブロック処理の時間を Console に出します（結果を教えてください）
 
 ## 同梱しているライブラリ
 
@@ -97,6 +97,10 @@ Jcreate++ の「JS保存」で保存した `.js` を、Unity で**プレビュ�
 - Jint 4.17.0（BSD-2-Clause）
 - Acornima 1.7.0（BSD-3-Clause）
 - System.Runtime.CompilerServices.Unsafe 6.0.0（MIT）
+
+ブロック処理（`Editor/Core/jcreatepp-core.txt`）には、Jcreate++ の Web 版が使っている Blockly を含めています。ライセンス全文は `Editor/Core/THIRD-PARTY-NOTICES.md` にあります。
+
+- Blockly 12.5.1（Apache-2.0、Copyright Google LLC）
 
 ## ファイル
 
@@ -113,4 +117,9 @@ Jcreate++ の「JS保存」で保存した `.js` を、Unity で**プレビュ�
 | `Editor/Preview/SimHost.cs` | Jint でシミュレーターを動かす |
 | `Editor/Preview/Sim/jcreatepp-sim.txt` | シミュレーター本体（Jcreate++ の `npm run unity:sim` で作る。拡張子が .txt なのは、.js だと CCK にアイテム用スクリプトとして読み込まれるため） |
 | `Editor/Preview/Plugins/` | 同梱ライブラリと、そのライセンス |
+| `Editor/Core/Jcreatepp.Editor.Core.asmdef` | ブロック処理用のアセンブリ（同梱 DLL だけを明示的に参照） |
+| `Editor/Core/CoreHost.cs` | Jint でブロック処理を動かす（保存したブロックの `.json` → 変換エラー・警告・コード・必要な設定・部品）。まだ画面からは使っていない（次の版で使う） |
+| `Editor/Core/CoreBundle.cs` | プロジェクトの中からブロック処理本体を探す |
+| `Editor/Core/jcreatepp-core.txt` | ブロック処理本体（Web 版と同じ Blockly・変換・コード生成・部品を 1 つにまとめたもの。`npm run unity:sim` で作る） |
+| `Editor/Core/THIRD-PARTY-NOTICES.md` | Blockly のライセンス |
 | `Tests/Editor/` | EditMode テスト |

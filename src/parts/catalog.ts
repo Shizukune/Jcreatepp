@@ -134,3 +134,11 @@ export const PARTS: Part[] = [
 export function defaultValues(part: Part): PartValues {
   return Object.fromEntries(part.params.map((p) => [p.key, p.default]));
 }
+
+/** A parameter value as entered (form or another caller): numbers are clamped to the range, anything unusable becomes the default
+ * (same rule as the Web parts form; Number('') is 0 there too). */
+export function paramValue(param: PartParam, raw: unknown): number | string {
+  if (param.kind === 'axis') return raw === 'X' || raw === 'Y' || raw === 'Z' ? raw : param.default;
+  const v = typeof raw === 'number' || typeof raw === 'string' ? Number(raw) : NaN;
+  return Number.isFinite(v) ? Math.min(param.max, Math.max(param.min, v)) : param.default;
+}
