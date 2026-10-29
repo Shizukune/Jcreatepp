@@ -103,9 +103,20 @@ static class CoreHostCheck
             var spin = host.AddPart(bases["empty"], "spin", "{\"speed\": 99999, \"axis\": \"W\"}");
             var speed = parts.First(p => p.Id == "spin").Params.First(q => q.Key == "speed");
             Expect(spin.Ok && spin.Json.Contains("\"NUM\":" + speed.Max), "part values are clamped (speed " + speed.Max + ")");
+
+            // 5. Shadow blocks (most files saved from the Web palette have them) and the block editor's palette.
+            var shadow = host.Convert("{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"jcreatepp_on_interact\",\"inputs\":{\"DO\":{\"block\":{\"type\":\"jcreatepp_add_position\",\"inputs\":{" +
+                "\"X\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":0}}},\"Y\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":1}}},\"Z\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":0}}}}}}}}]}}");
+            Expect(shadow.Ok && shadow.Errors.Count == 0 && shadow.Code.Contains("new Vector3(0, 1, 0)"), "shadow blocks convert" + (shadow.Ok ? "" : ": " + shadow.Error));
+            Expect(host.EditorUnavailableReason == "", "block editor calls available" + (host.EditorUnavailableReason == "" ? "" : ": " + host.EditorUnavailableReason));
+            if (args.Length > 2)
+            {
+                var palette = host.Palette(File.ReadAllText(args[2]));
+                Expect(palette.Ok && palette.Json.Length > 0, "palette loads (" + host.LastCallMilliseconds.ToString("0") + " ms)" + (palette.Ok ? "" : ": " + palette.Error));
+            }
         }
 
-        // 5. Blockly throwing inside: the host stops; a new host works.
+        // 6. Blockly throwing inside: the host stops; a new host works.
         using (var host = new CoreHost(bundle))
         {
             var bad = "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"jcreatepp_on_start\",\"inputs\":{\"NOPE\":{\"block\":{\"type\":\"math_number\"}}}}]}}";

@@ -77,6 +77,8 @@ namespace UnityEditor
         public Rect position;
         public static T GetWindow<T>(string title) where T : EditorWindow { return null; }
         public static T GetWindow<T>() where T : EditorWindow { return null; }
+        public static T GetWindow<T>(bool utility, string title, bool focus) where T : EditorWindow { return null; }
+        public static bool HasOpenInstances<T>() where T : EditorWindow { return false; }
         public void Close() { }
         public void Show() { }
         public void Repaint() { }

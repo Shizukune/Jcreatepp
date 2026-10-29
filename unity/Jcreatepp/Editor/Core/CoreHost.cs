@@ -96,11 +96,37 @@ namespace Jcreatepp.Editor.Core
             public string Json = "";
         }
 
+        /// <summary>A block editor call's result: <see cref="Json"/> is the answer as JSON text when Ok.</summary>
+        public sealed class EditorResult
+        {
+            public bool Ok;
+            public string Error = "";
+            public string Json = "";
+        }
+
+        /// <summary>
+        /// The end of the core module in jcreatepp-core.txt (webpack output). The block editor's entry
+        /// is added just before the module closes, where Blockly and the core's register / broken state
+        /// are in scope. Only the text given to the engine changes, not the file.
+        /// </summary>
+        const string ExportLine = "JcreateppCore = __webpack_exports__;";
+        const string ModuleEnd = "})();";
+        const string EditorEntry =
+            "\n;__webpack_exports__.editorAccess = function () { return { " +
+            "Blockly: blockly_core__WEBPACK_IMPORTED_MODULE_0__, register: register, " +
+            "broken: function () { return brokenReason; }, " +
+            "markBroken: function (reason) { if (!brokenReason) brokenReason = reason; } }; };\n";
+
         /// <summary>Longest the core bundle may take to load (it parses about 1.4 MB).</summary>
         public static readonly TimeSpan LoadTimeout = TimeSpan.FromSeconds(10);
-        /// <summary>Longest one call may take.</summary>
-        public static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(2);
+        /// <summary>
+        /// Longest one call may take. A call normally takes tens of milliseconds (in Unity 6000.2 too), but with
+        /// 2 seconds Unity sometimes stopped calls that were not slow themselves (a pause outside the call, likely
+        /// the garbage collector); this is only the safety net for a call that never ends.
+        /// </summary>
+        public static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(5);
         const long MemoryLimitBytes = 512L * 1024 * 1024;
+        const int LargeStackBytes = 64 * 1024 * 1024;
         /// <summary>Blockly reads nested blocks recursively; the core refuses more than 150 levels.</summary>
         const int RecursionLimit = 1000;
         /// <summary>
@@ -129,8 +155,12 @@ namespace Jcreatepp.Editor.Core
         readonly CallTimeLimit timeLimit = new CallTimeLimit();
         Engine engine;
         JsValue versionFn, convertFn, partsFn, addPartFn;
+        JsValue paletteFn, shapesFn;
+        StackWorker worker;
 
         public bool IsStopped { get; private set; }
+        /// <summary>"" when the block editor calls (<see cref="Palette"/>, <see cref="Shapes"/>) can be used; otherwise why not.</summary>
+        public string EditorUnavailableReason { get; private set; }
         public string StopReason { get; private set; }
         /// <summary>How long loading the bundle took (for measuring in Unity).</summary>
         public double LoadMilliseconds { get; private set; }
@@ -153,7 +183,8 @@ namespace Jcreatepp.Editor.Core
             var watch = Stopwatch.StartNew();
             try
             {
-                var core = engine.Evaluate(coreBundle + "\n;JcreateppCore;").AsObject();
+                var e = engine;
+                var core = OnLargeStack(() => e.Evaluate(WithEditorEntry(coreBundle) + "\n;JcreateppCore;")).AsObject();
                 versionFn = core.Get("version");
                 convertFn = core.Get("convert");
                 partsFn = core.Get("parts");
@@ -164,7 +195,131 @@ namespace Jcreatepp.Editor.Core
                 Dispose();
                 throw new InvalidOperationException("Jcreate++ のブロック処理（jcreatepp-core.txt）を読み込めませんでした。", e);
             }
+            LoadEditor();
             LoadMilliseconds = watch.Elapsed.TotalMilliseconds;
+        }
+
+        /// <summary>
+        /// Runs engine work on this host's own thread, which has a large stack, and waits for it. Blockly reads
+        /// nested blocks recursively; 150 levels (the core's limit) overflowed the stack of Unity's main thread
+        /// (StackOverflowException in Unity 6000.2; .NET outside Unity has a larger default). One thread for the
+        /// host's whole life (not one per call), one call at a time.
+        /// </summary>
+        T OnLargeStack<T>(Func<T> work)
+        {
+            if (worker == null) worker = new StackWorker(LargeStackBytes);
+            var value = default(T);
+            worker.Run(() => { value = work(); });
+            return value;
+        }
+
+        sealed class StackWorker : IDisposable
+        {
+            readonly System.Threading.AutoResetEvent go = new System.Threading.AutoResetEvent(false);
+            readonly System.Threading.AutoResetEvent done = new System.Threading.AutoResetEvent(false);
+            Action work;
+            Exception error;
+            volatile bool stopping;
+
+            public StackWorker(int stackBytes)
+            {
+                var thread = new System.Threading.Thread(Loop, stackBytes) { IsBackground = true, Name = "Jcreate++ block core" };
+                thread.Start();
+            }
+
+            void Loop()
+            {
+                while (true)
+                {
+                    go.WaitOne();
+                    if (stopping) return;
+                    try
+                    {
+                        work();
+                    }
+                    catch (Exception e)
+                    {
+                        error = e;
+                    }
+                    done.Set();
+                }
+            }
+
+            public void Run(Action action)
+            {
+                error = null;
+                work = action;
+                go.Set();
+                done.WaitOne();
+                work = null;
+                // The same exception object, so the callers' catch blocks (time limit, recursion, memory) still match.
+                if (error != null) throw error;
+            }
+
+            public void Dispose()
+            {
+                stopping = true;
+                go.Set();
+            }
+        }
+
+        /// <summary>The bundle with the block editor's entry added; the bundle unchanged when its end does not look as expected.</summary>
+        static string WithEditorEntry(string bundle)
+        {
+            var export = bundle.LastIndexOf(ExportLine, StringComparison.Ordinal);
+            if (export < 0) return bundle;
+            var end = bundle.LastIndexOf(ModuleEnd, export, StringComparison.Ordinal);
+            if (end < 0 || bundle.Substring(end + ModuleEnd.Length, export - end - ModuleEnd.Length).Trim().Length != 0) return bundle;
+            return bundle.Substring(0, end) + EditorEntry + bundle.Substring(end);
+        }
+
+        /// <summary>Runs <see cref="CoreEditorScript"/>; the converter still works when it cannot.</summary>
+        void LoadEditor()
+        {
+            EditorUnavailableReason = "";
+            try
+            {
+                var e = engine;
+                var editor = OnLargeStack(() => e.Evaluate(CoreEditorScript.Source));
+                if (editor.IsString())
+                {
+                    EditorUnavailableReason = editor.AsString();
+                    return;
+                }
+                var o = editor.AsObject();
+                paletteFn = o.Get("palette");
+                shapesFn = o.Get("shapes");
+            }
+            catch (Exception e)
+            {
+                EditorUnavailableReason = "ブロックエディター用の処理を読み込めませんでした: " + e.GetType().Name + ": " + e.Message;
+            }
+        }
+
+        /// <summary>
+        /// The block editor's palette from a toolbox definition (src/toolbox.ts as JSON):
+        /// { categories: [{ name, colour, items: [{ kind: label | button | block, text, type, template }] }], types: [names whose shapes are needed] }.
+        /// </summary>
+        public EditorResult Palette(string toolboxJson)
+        {
+            // Once per editor window, all palette blocks at once: the load limit, not one call's.
+            return CallEditor(paletteFn, toolboxJson ?? "", LoadTimeout);
+        }
+
+        /// <summary>The shapes of block types (a JSON array of names): { shapes: { type: shape }, unknown: [names] }.</summary>
+        public EditorResult Shapes(string typesJson)
+        {
+            return CallEditor(shapesFn, typesJson ?? "", LoadTimeout);
+        }
+
+        EditorResult CallEditor(JsValue fn, string argument, TimeSpan limit)
+        {
+            if (!IsStopped && EditorUnavailableReason != "") return new EditorResult { Ok = false, Error = EditorUnavailableReason };
+            var value = CallWithin(limit, fn, argument);
+            if (value == null) return new EditorResult { Ok = false, Error = StopReason };
+            var o = value.AsObject();
+            if (StopIfBroken(o)) return new EditorResult { Ok = false, Error = StopReason };
+            return new EditorResult { Ok = o.Get("ok").AsBoolean(), Error = o.Get("error").AsString(), Json = o.Get("json").AsString() };
         }
 
         /// <summary>The core's version and the block types it knows; null when stopped.</summary>
@@ -285,16 +440,22 @@ namespace Jcreatepp.Editor.Core
 
         JsValue Call(JsValue fn, params object[] args)
         {
+            return CallWithin(CallTimeout, fn, args);
+        }
+
+        JsValue CallWithin(TimeSpan limit, JsValue fn, params object[] args)
+        {
             if (IsStopped || engine == null) return null;
-            timeLimit.Limit = CallTimeout;
+            timeLimit.Limit = limit;
             var watch = Stopwatch.StartNew();
             try
             {
-                return engine.Invoke(fn, args);
+                var e = engine;
+                return OnLargeStack(() => e.Invoke(fn, args));
             }
             catch (TimeoutException)
             {
-                Stop("ブロックの処理が " + CallTimeout.TotalSeconds + " 秒以上かかったので止めました。ブロックが多すぎるかもしれません。");
+                Stop("ブロックの処理が " + limit.TotalSeconds + " 秒以上かかったので止めました。ブロックが多すぎるかもしれません。");
             }
             catch (RecursionDepthOverflowException)
             {
@@ -333,11 +494,16 @@ namespace Jcreatepp.Editor.Core
         {
             IsStopped = true;
             if (StopReason == null) StopReason = "ブロック処理は終了しています。";
-            versionFn = convertFn = partsFn = addPartFn = null;
+            versionFn = convertFn = partsFn = addPartFn = paletteFn = shapesFn = null;
             if (engine != null)
             {
                 engine.Dispose();
                 engine = null;
+            }
+            if (worker != null)
+            {
+                worker.Dispose();
+                worker = null;
             }
         }
     }

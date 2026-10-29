@@ -5,7 +5,8 @@
 #      and SimHost.cs runs the simulator bundle on the real Jint: the kit scripts give the same
 #      result as Node (expected.js), and stops / errors behave as designed (SimHostCheck.cs)
 #   4. (with -JintDir) CoreHost.cs runs the block core bundle on the real Jint: every case converts
-#      exactly like Node (expected-core.js), parts add the same way, a broken core stops (CoreHostCheck.cs)
+#      exactly like Node (expected-core.js), parts add the same way, shadow blocks convert, the block
+#      editor's palette loads, a broken core stops (CoreHostCheck.cs)
 # This does not replace a check in Unity: Unity's own APIs are only stubs here.
 #
 # Usage (from the repository root):
@@ -62,9 +63,11 @@ node (Join-Path $PSScriptRoot 'expected.js') "$out\expected.txt"
 & "$out\SimHostCheck.exe" (Join-Path $root 'unity\Jcreatepp\Editor\Preview\Sim\jcreatepp-sim.txt') (Join-Path $root 'test\realdevice\scripts') "$out\expected.txt"
 if ($LASTEXITCODE -ne 0) { throw 'SimHost checks failed' }
 
-& $csc -nologo -langversion:5 -codepage:65001 "-out:$out\CoreHostCheck.exe" @refs (Join-Path $PSScriptRoot 'CoreHostCheck.cs') (Join-Path $root 'unity\Jcreatepp\Editor\Core\CoreHost.cs')
+# Every Core file but CoreBundle.cs (it finds the bundle through UnityEditor's AssetDatabase).
+$coreHost = $core | Where-Object { (Split-Path -Leaf $_) -ne 'CoreBundle.cs' }
+& $csc -nologo -langversion:5 -codepage:65001 "-out:$out\CoreHostCheck.exe" @refs (Join-Path $PSScriptRoot 'CoreHostCheck.cs') $coreHost
 if ($LASTEXITCODE -ne 0) { throw 'CoreHostCheck does not compile' }
 Copy-Item (Join-Path $PSScriptRoot 'SimHostCheck.exe.config') "$out\CoreHostCheck.exe.config" -Force
 node (Join-Path $PSScriptRoot 'expected-core.js') "$out\core-cases"
-& "$out\CoreHostCheck.exe" (Join-Path $root 'unity\Jcreatepp\Editor\Core\jcreatepp-core.txt') "$out\core-cases"
+& "$out\CoreHostCheck.exe" (Join-Path $root 'unity\Jcreatepp\Editor\Core\jcreatepp-core.txt') "$out\core-cases" (Join-Path $root 'unity\Jcreatepp\Editor\Blocks\jcreatepp-toolbox.json')
 if ($LASTEXITCODE -ne 0) { throw 'CoreHost checks failed' }

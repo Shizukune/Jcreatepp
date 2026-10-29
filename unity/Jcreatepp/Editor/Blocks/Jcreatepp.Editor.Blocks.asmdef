@@ -1,0 +1,21 @@
+{
+    "name": "Jcreatepp.Editor.Blocks",
+    "rootNamespace": "Jcreatepp.Editor.Blocks",
+    "references": [
+        "Jcreatepp.Editor",
+        "Jcreatepp.Editor.Preview",
+        "Jcreatepp.Editor.Core",
+        "ClusterVR.CreatorKit.Item.Implements"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

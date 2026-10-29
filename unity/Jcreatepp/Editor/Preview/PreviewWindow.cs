@@ -39,6 +39,11 @@ namespace Jcreatepp.Editor.Preview
         };
 
         [SerializeField] JavaScriptAsset script;
+        /// <summary>Code sent from the block editor (used when no .js is chosen); "" when none.</summary>
+        [SerializeField] string blockCode = "";
+        [SerializeField] string blockTitle = "";
+        /// <summary>Why the blocks now in the editor are not what runs here (the last code that converted is); "" when they are.</summary>
+        [SerializeField] string blockStale = "";
         [SerializeField] int speedIndex = 2;
         [SerializeField] bool showTransform = true;
         [SerializeField] bool showState = true;
@@ -68,13 +73,60 @@ namespace Jcreatepp.Editor.Preview
             window.Show();
         }
 
+        /// <summary>Opens the preview with code from the block editor (not saved anywhere), from its 開始時.</summary>
+        public static void ShowCode(string code, string title)
+        {
+            Open();
+            var window = GetWindow<PreviewWindow>();
+            window.script = null;
+            window.blockCode = code ?? "";
+            window.blockTitle = title ?? "";
+            window.blockStale = "";
+            window.Restart();
+        }
+
+        /// <summary>
+        /// When an open preview shows the block editor's code: the blocks now give <paramref name="code"/> ("" when
+        /// they give none). With <paramref name="restart"/> new code starts again from 開始時; otherwise, or with no
+        /// code, the preview keeps the code it has and shows <paramref name="staleReason"/>. Does not open a window.
+        /// </summary>
+        public static void SyncBlockCode(string code, bool restart, string staleReason)
+        {
+            if (!HasOpenInstances<PreviewWindow>()) return;
+            var window = GetWindow<PreviewWindow>(false, null, false);
+            if (window.script != null || window.blockCode == "") return;
+            code = code ?? "";
+            var stale = "";
+            if (code != window.blockCode)
+            {
+                if (code != "" && restart)
+                {
+                    window.blockCode = code;
+                    window.Restart();
+                }
+                else
+                {
+                    stale = staleReason ?? "";
+                }
+            }
+            window.blockStale = stale;
+            window.Repaint();
+        }
+
+        /// <summary>The script text to run: the chosen .js, else the block editor's code; null when neither.</summary>
+        string Source()
+        {
+            if (script != null) return script.text;
+            return blockCode != "" ? blockCode : null;
+        }
+
         void OnEnable()
         {
             stage = new PreviewStage();
             EditorApplication.update += Tick;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             AssemblyReloadEvents.beforeAssemblyReload += Shutdown;
-            if (script != null) Restart();
+            if (Source() != null) Restart();
         }
 
         void OnDisable()
@@ -141,7 +193,8 @@ namespace Jcreatepp.Editor.Preview
             log.Clear();
             notice = "";
             problem = "";
-            if (script == null) return;
+            var source = Source();
+            if (source == null) return;
 
             var bundle = LoadBundle();
             if (bundle == null)
@@ -159,7 +212,7 @@ namespace Jcreatepp.Editor.Preview
                 return;
             }
             // The item starts at the origin, like the Web preview (the scene is not used).
-            var error = host.Load(script.text, new double[] { 0, 0, 0 }, new double[] { 0, 0, 0, 1 });
+            var error = host.Load(source, new double[] { 0, 0, 0 }, new double[] { 0, 0, 0, 1 });
             if (error != "")
             {
                 problem = error;
@@ -223,8 +276,29 @@ namespace Jcreatepp.Editor.Preview
             EditorGUI.BeginChangeCheck();
             script = (JavaScriptAsset)EditorGUILayout.ObjectField(
                 new GUIContent("スクリプト", "Jcreate++ の「JS保存」で保存した .js（JavaScript Asset）"), script, typeof(JavaScriptAsset), false);
-            if (EditorGUI.EndChangeCheck()) Restart();
-            if (script == null)
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (script != null) blockCode = "";
+                Restart();
+            }
+            if (script == null && blockCode != "")
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("ブロックエディターのコード" + (blockTitle != "" ? "（" + blockTitle + "）" : ""), EditorStyles.wordWrappedLabel);
+                if (GUILayout.Button(new GUIContent("やめる", "ブロックエディターのコードを使うのをやめます"), GUILayout.Width(60)))
+                {
+                    blockCode = "";
+                    Restart();
+                    GUIUtility.ExitGUI();
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.LabelField("ブロックを変えると、ここも最初からやり直します。", EditorStyles.miniLabel);
+                if (blockStale != "")
+                {
+                    EditorGUILayout.HelpBox("いまのブロックではなく、最後に変換できたときのコードで動いています。" + blockStale, MessageType.Warning);
+                }
+            }
+            if (script == null && blockCode == "")
             {
                 EditorGUILayout.HelpBox("Jcreate++ の「JS保存」で保存した .js をプロジェクトに入れて、ここに入れてください。", MessageType.Info);
                 Footer();

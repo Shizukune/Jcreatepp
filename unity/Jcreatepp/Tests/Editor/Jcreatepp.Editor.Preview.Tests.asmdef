@@ -4,6 +4,7 @@
     "references": [
         "Jcreatepp.Editor.Preview",
         "Jcreatepp.Editor.Core",
+        "Jcreatepp.Editor.Blocks",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
