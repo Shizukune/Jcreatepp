@@ -105,7 +105,11 @@ test('placement: fixed allow / deny cases', () => {
     ['sequence in every frame', 'jcreatepp_on_update', [seq()], /毎フレーム」の中には置けません/],
     ['sequence in a sequence', 'jcreatepp_on_start', [seq(seq())], /ネスト禁止/],
     ['smooth move in every frame', 'jcreatepp_on_update', [b('jcreatepp_smooth_move_by')], /毎フレーム」の中には置けません/],
-    ['smooth move in a sequence', 'jcreatepp_on_interact', [seq(b('jcreatepp_smooth_rotate_by'))], /一連の動作」の中には置けません/],
+    // Directly in a sequence a smooth move is a step the sequence waits for; deeper inside it is not.
+    ['smooth rotate in a sequence', 'jcreatepp_on_interact', [seq(b('jcreatepp_smooth_rotate_by'))], null],
+    ['smooth move in an if inside a sequence', 'jcreatepp_on_interact', [seq(iff(b('jcreatepp_smooth_move_by')))], /一連の動作の中に直接置いてください/],
+    ['smooth move in run for inside a sequence', 'jcreatepp_on_interact', [seq(runFor(b('jcreatepp_smooth_move_local')))], /一連の動作の中に直接置いてください/],
+    ['smooth move in an event-level if', 'jcreatepp_on_interact', [iff(b('jcreatepp_smooth_move_by'))], null],
     ['continuous rotation outside every frame', 'jcreatepp_on_interact', [b('jcreatepp_continuous_rotation')], /毎フレーム」の中でしか使えません/],
     ['oscillate in every frame', 'jcreatepp_on_update', [b('jcreatepp_oscillate')], null],
     ['move speed when grabbed', 'jcreatepp_on_grab_start', [b('jcreatepp_set_move_speed')], null],
@@ -150,4 +154,52 @@ test('placement: value blocks that read the event are rejected inside a sequence
     assert.ok(warning, `${valueType}: editor warning expected`);
     assert.ok(errors.includes(warning!), `${valueType}: conversion error should match the warning\n  ${warning}\n  got ${JSON.stringify(errors)}`);
   }
+});
+
+test('motion warnings: moves that add up get none; physics, chase turns and every-frame "set" do', () => {
+  const num = (value: number) => b('math_number', { fields: { NUM: value } });
+  const xyz = (x: number, y: number, z: number) => ({ X: num(x), Y: num(y), Z: num(z) });
+  const osc = (axis: string, id: string) => b('jcreatepp_oscillate', { id, fields: { AXIS: axis }, inputs: { WIDTH: num(1), SPEED: num(1) } as any });
+  const warningOf = (state: object, id: string) => {
+    const ws = loadWorkspace(state);
+    return collectWarnings(ws).get(ws.getBlockById(id)!) ?? null;
+  };
+  const motionWarnings = (state: object) => {
+    const ws = loadWorkspace(state);
+    return [...collectWarnings(ws).values()].filter((w): w is string => !!w && /足し合わせ|消えてしまいます/.test(w));
+  };
+
+  // Two oscillations, or an oscillation and a smooth move: combined, so no warning.
+  assert.deepEqual(motionWarnings(workspace(onEvent('jcreatepp_on_update', [osc('Y', 'a'), osc('X', 'b')]))), []);
+  assert.deepEqual(motionWarnings(workspace(
+    onEvent('jcreatepp_on_update', [osc('Y', 'a')]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_move_by', { inputs: { ...xyz(1, 0, 0), DURATION: num(1) } as any })]),
+  )), []);
+
+  // Physics cannot be combined.
+  const force = workspace(
+    onEvent('jcreatepp_on_update', [osc('Y', 'a')]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_add_force', { id: 'f', inputs: { POWER: num(1), ...xyz(0, 1, 0) } as any })]),
+  );
+  assert.match(warningOf(force, 'f') ?? '', /物理.*「往復する」.*足し合わせられません/);
+
+  // "Set" every frame wipes the other moves.
+  const set = workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_set_position', { id: 's', inputs: xyz(0, 0, 0) as any }), osc('X', 'a')]));
+  assert.match(warningOf(set, 's') ?? '', /毎フレーム位置が決め直される.*「往復する」/);
+  // "Go back to the saved position" every frame puts the item back each frame, too.
+  const load = workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_load_position', { id: 'l' }), osc('X', 'a')]));
+  assert.match(warningOf(load, 'l') ?? '', /「保存した位置に戻る」.*毎フレーム位置が決め直される.*「往復する」/);
+  // ...but not when it is the only move, or not every frame.
+  assert.equal(warningOf(workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_set_position', { id: 's', inputs: xyz(0, 0, 0) as any })])), 's'), null);
+  assert.deepEqual(motionWarnings(workspace(
+    onEvent('jcreatepp_on_start', [b('jcreatepp_set_position', { id: 's', inputs: xyz(0, 0, 0) as any })]),
+    onEvent('jcreatepp_on_update', [osc('X', 'a')]),
+  )), []);
+
+  // The chase gimmick turns the item every frame.
+  const chase = workspace(
+    b('jcreatepp_chase_template', { id: 'c', inputs: { MOVE_SPEED: num(1), MAX_DISTANCE: num(10), MIN_DISTANCE: num(1) } as any }),
+    onEvent('jcreatepp_on_update', [b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(30) } as any })]),
+  );
+  assert.match(warningOf(chase, 'c') ?? '', /向きを決め直す.*「回転し続ける」/);
 });

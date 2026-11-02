@@ -86,16 +86,33 @@ test('part names avoid names already in use (flags and boolean variables share o
   assert.ok(flags.length > 0 && flags.every((f) => f === 'ドアが開いている2'), flags.join(','));
 });
 
-test('a part that would fight existing motion is refused and nothing is added', () => {
-  const state = workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_add_rotation', { inputs: { X: num(0), Y: num(1), Z: num(0) } })]));
+test('a part whose move cannot be added to an existing one is refused and nothing is added', () => {
+  // "角度を〜にする" every frame sets the angle again each frame: a spin could not add to it.
+  const state = workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_set_rotation', { inputs: { X: num(0), Y: num(1), Z: num(0) } })]));
   const ws = loadWorkspace(state);
   const before = JSON.stringify(saveWorkspace(ws));
   const result = insertPart(ws, part('spin'), defaultValues(part('spin')));
   assert.equal(result.ok, false);
-  assert.match(result.ok ? '' : result.reason, /角度を〜ずつ変える/);
+  assert.match(result.ok ? '' : result.reason, /角度を〜にする.*足し合わせられません/);
   assert.equal(JSON.stringify(saveWorkspace(ws)), before);
   // A part on another channel is still fine.
   assert.ok(insertPart(ws, part('bob'), defaultValues(part('bob'))).ok);
+});
+
+test('a loose block (not in an event) does not stop a part', () => {
+  const force = b('jcreatepp_add_force', { inputs: { POWER: num(1), X: num(0), Y: num(1), Z: num(0) } });
+  const ws = loadWorkspace(workspace(force));
+  assert.ok(insertPart(ws, part('bob'), defaultValues(part('bob'))).ok);
+  // In an event it runs, so the part is refused as before.
+  const running = loadWorkspace(workspace(onEvent('jcreatepp_on_interact', [force])));
+  assert.equal(insertPart(running, part('bob'), defaultValues(part('bob'))).ok, false);
+});
+
+test('a part adds to existing moves of the same kind (they are added up)', () => {
+  const ws = loadWorkspace(workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_add_rotation', { inputs: { X: num(0), Y: num(1), Z: num(0) } })])));
+  assert.ok(insertPart(ws, part('spin'), defaultValues(part('spin'))).ok);
+  assert.ok(insertPart(ws, part('door'), defaultValues(part('door'))).ok, 'a door turns on top of the spin');
+  assert.deepEqual(conversionErrors(saveWorkspace(ws)), []);
 });
 
 test('one part = one undo step (undo and redo)', async () => {
@@ -116,12 +133,16 @@ test('one part = one undo step (undo and redo)', async () => {
   assert.deepEqual(conversionErrors(saveWorkspace(ws)), []);
 });
 
-test('adding the same motion part twice is refused (two oscillations would fight)', () => {
+test('adding the oscillation part twice (up-down and left-right) moves the item both ways', () => {
   const ws = loadWorkspace(workspace());
-  assert.ok(insertPart(ws, part('bob'), defaultValues(part('bob'))).ok);
-  const second = insertPart(ws, part('bob'), defaultValues(part('bob')));
-  assert.equal(second.ok, false, 'two oscillations would fight over the position');
-  assert.equal(ws.getTopBlocks(false).filter((x) => x.type === 'jcreatepp_on_update').length, 1);
+  assert.ok(insertPart(ws, part('bob'), { ...defaultValues(part('bob')), axis: 'Y' }).ok);
+  assert.ok(insertPart(ws, part('bob'), { ...defaultValues(part('bob')), axis: 'X' }).ok, 'two oscillations are added up');
+  assert.equal(ws.getTopBlocks(false).filter((x) => x.type === 'jcreatepp_on_update').length, 1, 'both go into the same 毎フレーム');
+  const r = createRunner(generateCode(saveWorkspace(ws)));
+  r.start();
+  r.advance(Math.PI / 2); // a quarter period at speed 1: both at their widest
+  assert.ok(Math.abs(r.item.position.x - 1) < 0.05 && Math.abs(r.item.position.y - 1) < 0.05, JSON.stringify(r.item.position));
+  assert.deepEqual(r.errors(), []);
 });
 
 test('every block whose demo moves the item is in the conflict table', () => {

@@ -2,12 +2,13 @@ import type { Handler, Program } from '../ir';
 import { exprToJS } from './expr';
 import type { Stmt } from '../ir';
 import { generateSequenceStateMachine } from './sequence';
-import { getAllSequences, indent, jsString, safeId, smoothRotateKeys, smoothTransitionKeys } from './shared';
+import { getAllSequences, indent, jsString } from './shared';
 import { bodyToJS } from './stmt';
-import { traceLine, withTrace } from './trace';
+import { withTrace } from './trace';
 import { withHelpers } from './helpers';
-import { describeStmt } from './describe';
 import { bare, commentText } from './format';
+import { forgetPose, placeAt, positionNow, rotationNow, turnTo, withPose } from './pose';
+import { smoothUpdatesToJS } from './smooth';
 
 export type CodegenOptions = {
   /** Emit __jpp_trace() calls for the 3D preview. Never use for code sent to Cluster. */
@@ -15,8 +16,14 @@ export type CodegenOptions = {
 };
 
 export function programToJS(program: Program, options: CodegenOptions = {}): string {
-  return withTrace(options.trace === true, () => withHelpers(() => programToJSCore(program)));
+  return withTrace(options.trace === true, () => withHelpers(() => withPose(program, () => programToJSCore(program))));
 }
+
+/**
+ * First line of onUpdate when the frame time is used: every timer and movement then gets a usable
+ * number (Cluster passes seconds; a missing, negative, NaN or infinite value would break timers).
+ */
+const CLEAN_DELTA_TIME = 'deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う';
 
 /** `// ── 見出し ──` line above each event. */
 const heading = (title: string) => `// ── ${title} ──`;
@@ -38,14 +45,9 @@ function programToJSCore(program: Program): string {
     updateSections.push(indent(generateSequenceStateMachine(sequence), 2));
   }
 
-  const smoothMoves = getSmoothMoveBlocks(program);
-  if (smoothMoves.length > 0) {
-    updateSections.push(indent(smoothMoveUpdateToJS(smoothMoves), 2));
-  }
-
-  const smoothRotations = getSmoothRotateBlocks(program);
-  if (smoothRotations.length > 0) {
-    updateSections.push(indent(smoothRotateUpdateToJS(smoothRotations), 2));
+  const smoothUpdates = smoothUpdatesToJS(program);
+  if (smoothUpdates) {
+    updateSections.push(indent(smoothUpdates, 2));
   }
 
   const cooldownNames = getCooldownNames(program);
@@ -63,7 +65,9 @@ function programToJSCore(program: Program): string {
   }
 
   if (updateSections.length > 0) {
-    parts.push(`${heading('毎フレーム')}\n$.onUpdate((deltaTime) => {\n${updateSections.join('\n\n')}\n});\n`);
+    const body = updateSections.join('\n\n');
+    const clean = /\bdeltaTime\b/.test(body) ? `  ${CLEAN_DELTA_TIME}\n\n` : '';
+    parts.push(`${heading('毎フレーム')}\n$.onUpdate((deltaTime) => {\n${clean}${body}\n});\n`);
   }
 
   if (program.onInteract) {
@@ -89,146 +93,6 @@ function programToJSCore(program: Program): string {
   return parts.join('\n');
 }
 
-type SmoothMoveStmt = Extract<Stmt, { kind: 'smooth_move_by' | 'smooth_move_local' }>;
-type SmoothRotateStmt = Extract<Stmt, { kind: 'smooth_rotate_by' }>;
-
-/** Reads a number from $.state, or the fallback when it was never set. */
-const READ_NUMBER = 'const read = (key, fallback) => (typeof $.state[key] === "number" ? $.state[key] : fallback);';
-
-function smoothMoveUpdateToJS(stmts: SmoothMoveStmt[]): string {
-  const lines = stmts.map((stmt) => {
-    const keys = smoothTransitionKeys('move', safeId(stmt.blockId));
-    return `// 「${describeStmt(stmt)}」の途中の動き
-if ($.state[${keys.active}]) {
-  ${traceLine(stmt, 'tick')}${READ_NUMBER}
-  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
-  const duration = Math.max(0.001, read(${keys.duration}, 0.001));
-  const current = $.getPosition() || new Vector3(0, 0, 0);
-  const fromX = read(${keys.fromX}, current.x);
-  const fromY = read(${keys.fromY}, current.y);
-  const fromZ = read(${keys.fromZ}, current.z);
-  const toX = read(${keys.toX}, fromX);
-  const toY = read(${keys.toY}, fromY);
-  const toZ = read(${keys.toZ}, fromZ);
-  const elapsed = Math.min(duration, read(${keys.elapsed}, 0) + delta);
-  const t = elapsed / duration; // 0（始点）〜 1（終点）
-  $.setPosition(new Vector3(
-    fromX + (toX - fromX) * t,
-    fromY + (toY - fromY) * t,
-    fromZ + (toZ - fromZ) * t
-  ));
-  $.state[${keys.elapsed}] = elapsed;
-  if (elapsed >= duration) {
-    $.state[${keys.active}] = false;
-    $.setPosition(new Vector3(toX, toY, toZ));
-  }
-}`;
-  });
-  return lines.join('\n');
-}
-
-function getSmoothMoveBlocks(program: Program): SmoothMoveStmt[] {
-  const stmts: SmoothMoveStmt[] = [];
-
-  const visitStmt = (stmt: Stmt) => {
-    switch (stmt.kind) {
-      case 'smooth_move_by':
-      case 'smooth_move_local':
-        stmts.push(stmt);
-        break;
-      case 'if':
-        stmt.thenBody.forEach(visitStmt);
-        stmt.elseBody?.forEach(visitStmt);
-        break;
-      case 'if_edge':
-        stmt.body.forEach(visitStmt);
-        break;
-      case 'sequence':
-        stmt.body.forEach(visitStmt);
-        break;
-      case 'run_for_seconds':
-        stmt.body.forEach(visitStmt);
-        break;
-    }
-  };
-
-  const visitHandler = (handler?: Handler) => {
-    handler?.body.forEach(visitStmt);
-  };
-
-  visitHandler(program.onStart);
-  visitHandler(program.onUpdate);
-  visitHandler(program.onInteract);
-  visitHandler(program.onCollide);
-  visitHandler(program.onGrabStart);
-  visitHandler(program.onGrabEnd);
-  program.onReceives?.forEach((receive) => visitHandler(receive.handler));
-
-  return stmts;
-}
-
-function smoothRotateUpdateToJS(stmts: SmoothRotateStmt[]): string {
-  const lines = stmts.map((stmt) => {
-    const keys = smoothRotateKeys(safeId(stmt.blockId));
-    return `// 「${describeStmt(stmt)}」の途中の動き
-if ($.state[${keys.active}]) {
-  ${traceLine(stmt, 'tick')}${READ_NUMBER}
-  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
-  const duration = Math.max(0.001, read(${keys.duration}, 0.001));
-  const from = new Quaternion(read(${keys.fromQx}, 0), read(${keys.fromQy}, 0), read(${keys.fromQz}, 0), read(${keys.fromQw}, 1));
-  const elapsed = Math.min(duration, read(${keys.elapsed}, 0) + delta);
-  const t = elapsed / duration; // 0（始め）〜 1（終わり）
-  // 「角度を〜ずつ変える」と同じ回し方で、回す量を t の割合だけ進める
-  const step = new Vector3(read(${keys.deltaX}, 0) * t, read(${keys.deltaY}, 0) * t, read(${keys.deltaZ}, 0) * t);
-  $.setRotation(from.multiply(new Quaternion().setFromEulerAngles(step)));
-  $.state[${keys.elapsed}] = elapsed;
-  if (elapsed >= duration) {
-    $.state[${keys.active}] = false;
-  }
-}`;
-  });
-  return lines.join('\n');
-}
-
-function getSmoothRotateBlocks(program: Program): SmoothRotateStmt[] {
-  const stmts: SmoothRotateStmt[] = [];
-
-  const visitStmt = (stmt: Stmt) => {
-    switch (stmt.kind) {
-      case 'smooth_rotate_by':
-        stmts.push(stmt);
-        break;
-      case 'if':
-        stmt.thenBody.forEach(visitStmt);
-        stmt.elseBody?.forEach(visitStmt);
-        break;
-      case 'if_edge':
-        stmt.body.forEach(visitStmt);
-        break;
-      case 'sequence':
-        stmt.body.forEach(visitStmt);
-        break;
-      case 'run_for_seconds':
-        stmt.body.forEach(visitStmt);
-        break;
-    }
-  };
-
-  const visitHandler = (handler?: Handler) => {
-    handler?.body.forEach(visitStmt);
-  };
-
-  visitHandler(program.onStart);
-  visitHandler(program.onUpdate);
-  visitHandler(program.onInteract);
-  visitHandler(program.onCollide);
-  visitHandler(program.onGrabStart);
-  visitHandler(program.onGrabEnd);
-  program.onReceives?.forEach((receive) => visitHandler(receive.handler));
-
-  return stmts;
-}
-
 function handlerToJS(title: string, event: string, params: string, handler: Handler): string {
   return `${heading(title)}\n$.${event}((${params}) => {\n${bodyToJS(handler.body, 2)}\n});\n`;
 }
@@ -237,11 +101,10 @@ function cooldownTickToJS(names: string[]): string {
   const keys = names.map((name) => jsString(`__jpp_cd_${name}`)).join(', ');
   return `// クールダウンの残り秒数を減らす
 {
-  const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
   for (const key of [${keys}]) {
     const left = $.state[key];
     if (typeof left === "number" && left > 0) {
-      $.state[key] = Math.max(0, left - delta);
+      $.state[key] = Math.max(0, left - deltaTime);
     }
   }
 }`;
@@ -336,8 +199,8 @@ function rideUpdateToJS(program: Program): string {
 
   return `// 乗り物ギミック: 乗っている間、入力に合わせて動かす（進む向き: ${forwardNote}）
 if ($.state["__jpp_ride_active"]) {
-  const pos = $.getPosition() || new Vector3(0, 0, 0);
-  const rot = $.getRotation() || new Quaternion();
+  const pos = ${bare(positionNow())};
+  const rot = ${bare(rotationNow())};
   const turnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
   const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, turnAmount, 0)));
 
@@ -351,8 +214,8 @@ if ($.state["__jpp_ride_active"]) {
   );
   const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state["__jpp_ride_upd"] || 0) * deltaTime);
 
-  $.setPosition(pos.clone().add(forwardVec).add(upVec));
-  $.setRotation(nextRot);
+  ${placeAt('pos.clone().add(forwardVec).add(upVec)')}
+  ${turnTo('nextRot')}
 }`;
 }
 
@@ -367,7 +230,7 @@ function chaseUpdateToJS(program: Program): string {
 
   return `// 追いかけるギミック: いちばん近いプレイヤーの方を向いて近づく
 {
-  const pos = $.getPosition() || new Vector3(0, 0, 0);
+  const pos = ${bare(positionNow())};
   let target = null;
   let nearest = Infinity;
   for (const player of $.getPlayersNear(pos, ${maxDistance})) {
@@ -387,9 +250,9 @@ function chaseUpdateToJS(program: Program): string {
       if (length > 0) {
         // 前（+Z）がプレイヤーを向くように回す
         const angle = Math.atan2(dir.x, dir.z) * 180 / Math.PI;
-        $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, angle, 0)));
+        ${turnTo('new Quaternion().setFromEulerAngles(new Vector3(0, angle, 0))')}
         if (length > ${minDistance}) {
-          $.setPosition(pos.add(dir.normalize().multiplyScalar(${moveSpeed} * deltaTime)));
+          ${placeAt(`pos.add(dir.normalize().multiplyScalar(${moveSpeed} * deltaTime))`)}
         }
       }
     }
@@ -399,6 +262,12 @@ function chaseUpdateToJS(program: Program): string {
 
 function grabHandlerToJS(program: Program): string {
   const lines: string[] = [heading('持ったとき / 離したとき'), '$.onGrab((isGrab, isLeftHand, player) => {'];
+  const forget = forgetPose();
+  if (forget.length > 0) {
+    // The hand moves the item while it is held, so the remembered pose is out of date.
+    lines.push('  // 手で持つとアイテムが動くので、覚えている位置・向きを捨てて、次に動かすときは今の位置・向きから始める');
+    lines.push(...forget.map((line) => `  ${line}`));
+  }
 
   if (program.onGrabStart) {
     lines.push('  // 持ったとき', '  if (isGrab) {', bodyToJS(program.onGrabStart.body, 4), '  }');

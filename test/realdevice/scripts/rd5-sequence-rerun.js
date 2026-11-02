@@ -1,6 +1,8 @@
 // Jcreate++ 実機テスト rd5「一連の動作の再実行」 — 手順は CHECKLIST.md
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 一連の動作（ブロック t60）: 実行中なら、今のステップから続きを進める
   if ($.state["__jpp_seq_active_t60"]) {
     let step = $.state["__jpp_seq_step_t60"] || 0;

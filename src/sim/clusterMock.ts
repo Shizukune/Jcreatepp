@@ -8,7 +8,8 @@
  * Simplification: setPosition / setRotation take effect immediately and getPosition /
  * getRotation return them. On Cluster, the getters may return the interpolated (moving)
  * transform rather than the value just set, so code that reads right after writing can
- * behave differently in-world.
+ * behave differently in-world. Tests can ask for that with `laggingGetters`: the getters then return
+ * the transform as it was at the start of the frame (see `catchUp`).
  */
 
 import { Quaternion, Vector3 } from './math';
@@ -55,6 +56,8 @@ export type ClusterMock = {
   /** Virtual players / items that near / raycast / reference queries can see. */
   world: { players: Handle[]; items: Handle[] };
   createHandle(type: 'player' | 'item', name: string, position?: Vector3): Handle;
+  /** With laggingGetters: the end of a frame, after which the getters return the current transform. */
+  catchUp(): void;
 };
 
 /** Deep-copies values stored in $.state so later mutations of the source do not leak in. */
@@ -63,7 +66,7 @@ function copyStateValue(value: unknown): unknown {
   return value;
 }
 
-export function createClusterMock(options: { position?: Vector3; rotation?: Quaternion } = {}): ClusterMock {
+export function createClusterMock(options: { position?: Vector3; rotation?: Quaternion; laggingGetters?: boolean } = {}): ClusterMock {
   const handlers: Handlers = {};
   const log: LogEntry[] = [];
   const unsupported = new Set<string>();
@@ -72,6 +75,13 @@ export function createClusterMock(options: { position?: Vector3; rotation?: Quat
     rotation: options.rotation?.clone() ?? new Quaternion(),
   };
   const world = { players: [] as Handle[], items: [] as Handle[] };
+  // What the getters return: the item itself, or (laggingGetters) the transform at the start of the frame.
+  const seen = options.laggingGetters ? { position: item.position.clone(), rotation: item.rotation.clone() } : item;
+  const catchUp = () => {
+    if (seen === item) return;
+    seen.position = item.position.clone();
+    seen.rotation = item.rotation.clone();
+  };
 
   const createHandle = (type: 'player' | 'item', name: string, position = new Vector3()): Handle => ({
     type,
@@ -117,9 +127,9 @@ export function createClusterMock(options: { position?: Vector3; rotation?: Quat
     onSteer: (f: Handlers['steer']) => (handlers.steer = f),
     onSteerAdditionalAxis: (f: Handlers['steerAdditionalAxis']) => (handlers.steerAdditionalAxis = f),
 
-    getPosition: () => item.position.clone(),
+    getPosition: () => seen.position.clone(),
     setPosition: (v: Vector3) => (item.position = v.clone()),
-    getRotation: () => item.rotation.clone(),
+    getRotation: () => seen.rotation.clone(),
     setRotation: (q: Quaternion) => (item.rotation = q.clone()),
 
     getPlayersNear: (center: Vector3, radius: number) => near(world.players, center, radius),
@@ -171,5 +181,5 @@ export function createClusterMock(options: { position?: Vector3; rotation?: Quat
     },
   });
 
-  return { $, handlers, log, unsupported, item, world, createHandle };
+  return { $, handlers, log, unsupported, item, world, createHandle, catchUp };
 }

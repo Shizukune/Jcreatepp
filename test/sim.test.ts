@@ -354,9 +354,257 @@ test('timers ignore negative or missing frame times (cooldown, smooth move / rot
   r.interact();
   r.update(-1);
   r.update(undefined as unknown as number);
+  r.update(NaN);
+  r.update(Infinity);
+  r.update(-Infinity);
   assert.equal(r.$.state['__jpp_cd_cd'], 2);
   assert.ok(r.item.position.equals(new Vector3(0, 0, 0)), JSON.stringify(r.item.position));
   assert.ok(r.item.rotation.equals(new Quaternion()));
+  r.advance(1.5);
+  assert.ok(r.item.position.equals(new Vector3(1, 0, 0)), 'still finishes with normal frames');
+});
+
+test('every-frame motion ignores NaN / infinite frame times too (oscillate, continuous rotation)', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_update', [
+    b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(1) } }),
+    b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(90) } }),
+  ])));
+  const r = createRunner(code);
+  for (const dt of [NaN, Infinity, -Infinity, -1, undefined as unknown as number]) r.update(dt);
+  assert.ok(r.item.position.equals(new Vector3(0, 0, 0)), JSON.stringify(r.item.position));
+  assert.ok(r.item.rotation.equals(new Quaternion()), JSON.stringify(r.item.rotation));
+});
+
+test('a zero-second smooth move / rotate finishes on the next frame without NaN', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_smooth_move_by', { inputs: { ...xyz(0, 2, 0), DURATION: num(0) } }),
+    b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(-1) } }),
+  ]))));
+  r.interact();
+  r.update(1 / 60);
+  assert.ok(r.item.position.equals(new Vector3(0, 2, 0)), JSON.stringify(r.item.position));
+  assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0))));
+});
+
+test('interacting again while turning starts a new turn from the current angle (documented behavior)', () => {
+  const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(1) } }),
+  ]))));
+  r.interact();
+  r.advance(0.5);
+  r.interact();
+  r.advance(1.5);
+  assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(new Vector3(0, 135, 0))), 'ends at 45 + 90 degrees');
+});
+
+// ── several blocks moving the same thing add up (src/codegen/pose.ts) ──
+
+/** Runs with Cluster-like getters too: they return the transform as it was at the start of the frame. */
+const bothGetters = (code: string, check: (r: ReturnType<typeof createRunner>, lagging: boolean) => void, options: { position?: Vector3; rotation?: Quaternion } = {}) => {
+  for (const laggingGetters of [false, true]) {
+    const r = createRunner(code, { ...options, laggingGetters });
+    check(r, laggingGetters);
+    assert.deepEqual(r.errors(), [], `lagging=${laggingGetters}: runtime errors`);
+  }
+};
+const near = (a: Vector3, b: Vector3, eps = 1e-6) => a.clone().sub(b).length() < eps;
+
+test('combine: up-down and left-right oscillations both move the item', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_update', [
+    b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(Math.PI / 2) } }),
+    b('jcreatepp_oscillate', { fields: { AXIS: 'X' }, inputs: { WIDTH: num(2), SPEED: num(Math.PI / 2) } }),
+  ])));
+  bothGetters(code, (r, lagging) => {
+    r.advance(1); // a quarter period: both at their widest
+    assert.ok(near(r.item.position, new Vector3(12, 1, 0)), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+    r.advance(3); // a whole period: back at the center
+    assert.ok(near(r.item.position, new Vector3(10, 0, 0), 1e-4), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+  }, { position: new Vector3(10, 0, 0) });
+});
+
+test('combine: a smooth move adds to an oscillation', () => {
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_update', [b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(Math.PI / 2) } })]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_move_by', { inputs: { ...xyz(0, 0, 3), DURATION: num(1) } })]),
+  ));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.advance(1);
+    assert.ok(near(r.item.position, new Vector3(0, 1, 3)), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+  });
+});
+
+test('combine: two smooth turns running at the same time add up', () => {
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(1) } })]),
+    onEvent('jcreatepp_on_receive', [b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 45, 0), DURATION: num(2) } })], { MESSAGE: 'turn' }),
+  ));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.receive('turn');
+    r.advance(3);
+    assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(new Vector3(0, 135, 0))), `lagging=${lagging}: ${JSON.stringify(r.item.rotation)}`);
+  });
+});
+
+test('combine: a continuous rotation and a smooth turn add up', () => {
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_update', [b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(30) } })]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(1) } })]),
+  ));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.advance(2);
+    assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(new Vector3(0, 150, 0))), `lagging=${lagging}: ${JSON.stringify(r.item.rotation.createEulerAngles())}`);
+  });
+});
+
+test('a single moving block is generated as before and does not need the getters to be up to date', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_move_by', { inputs: { ...xyz(1, 2, 3), DURATION: num(1) } })])));
+  assert.ok(!code.includes('itemPosition'), 'no remembered position with one moving block');
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.advance(1.5);
+    assert.ok(r.item.position.equals(new Vector3(1, 2, 3)), `lagging=${lagging}`);
+  });
+});
+
+test('combine: releasing a held item forgets the remembered position (moves continue from where it is)', () => {
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_move_by', { inputs: { ...xyz(1, 0, 0), DURATION: num(1) } })]),
+    onEvent('jcreatepp_on_receive', [b('jcreatepp_add_position', { inputs: xyz(0, 1, 0) })], { MESSAGE: 'up' }),
+    onEvent('jcreatepp_on_grab_end', [b('jcreatepp_set_jump_speed', { inputs: { RATE: num(1) } })]),
+  ));
+  const r = createRunner(code);
+  r.interact();
+  r.advance(1.5);
+  r.grab(true);
+  r.item.position = new Vector3(5, 5, 5); // carried somewhere by the hand
+  r.grab(false);
+  r.receive('up');
+  assert.ok(r.item.position.equals(new Vector3(5, 6, 5)), JSON.stringify(r.item.position));
+});
+
+test('combine: state left by an earlier JS (without the new keys) starts the move over instead of breaking', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_update', [
+    b('jcreatepp_oscillate', { id: 'o', fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(1) } }),
+    b('jcreatepp_timed_move_return', { id: 't', inputs: { ...xyz(1, 0, 0), SPEED: num(1), DURATION: num(1) } }),
+  ])));
+  bothGetters(code, (r, lagging) => {
+    r.advance(0.5);
+    // An earlier JS kept the center / "moving" flags, but not the keys added for combining.
+    delete (r.$.state as Record<string, unknown>)['__jpp_osc_offset_o'];
+    delete (r.$.state as Record<string, unknown>)['__jpp_move_return_moved_t'];
+    r.advance(0.5);
+    const p = r.item.position;
+    assert.ok([p.x, p.y, p.z].every(Number.isFinite), `lagging=${lagging}: ${JSON.stringify(p)}`);
+  });
+});
+
+test('combine: "move for a while and return" takes back only its own move', () => {
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_update', [b('jcreatepp_timed_move_return', { inputs: { ...xyz(1, 0, 0), SPEED: num(1), DURATION: num(1) } })]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_add_position', { inputs: xyz(0, 5, 0) })]),
+  ));
+  bothGetters(code, (r, lagging) => {
+    r.advance(0.5);
+    r.interact(); // moved up by another block while this one is moving
+    // Frame by frame until it goes back (it starts over on the next frame: it runs every frame).
+    let frames = 0;
+    while (r.item.position.x > 1e-9 && frames++ < 60) r.update(1 / 60);
+    assert.ok(frames < 60, `lagging=${lagging}: went back on x`);
+    assert.ok(Math.abs(r.item.position.y - 5) < 1e-9, `lagging=${lagging}: the other move stays ${JSON.stringify(r.item.position)}`);
+  });
+});
+
+test('combine: an oscillation whose width changes while it runs stays around its center', () => {
+  const width = b('jcreatepp_number_var', { fields: { VAR_NAME: 'w' } });
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_start', [b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'w' }, inputs: { VALUE: num(2) } })]),
+    onEvent('jcreatepp_on_update', [
+      b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: width, SPEED: num(Math.PI / 2) } }),
+      b('jcreatepp_oscillate', { fields: { AXIS: 'X' }, inputs: { WIDTH: num(0), SPEED: num(1) } }),
+    ]),
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_set_number_var', { fields: { VAR_NAME: 'w' }, inputs: { VALUE: num(0) } })]),
+  ));
+  bothGetters(code, (r, lagging) => {
+    r.start();
+    r.advance(1); // at the widest point (y = 2)
+    assert.ok(Math.abs(r.item.position.y - 2) < 1e-6, `lagging=${lagging}: ${r.item.position.y}`);
+    r.interact(); // width 0: the swing stops at the center
+    r.advance(0.5);
+    assert.ok(Math.abs(r.item.position.y) < 1e-9, `lagging=${lagging}: back at the center ${r.item.position.y}`);
+  });
+});
+
+test('combine: a turn on several axes from a tilted start still ends like rotate_by', () => {
+  const tilted = new Quaternion().setFromEulerAngles(new Vector3(30, 20, 10));
+  const delta = { X: num(45), Y: num(90), Z: num(-30) };
+  const instant = createRunner(generateCode(workspace(onEvent('jcreatepp_on_interact', [b('jcreatepp_add_rotation', { inputs: delta })]))), { rotation: tilted });
+  instant.interact();
+  // A second rotating block (never run) switches the turn to the combined form.
+  const code = generateCode(workspace(
+    onEvent('jcreatepp_on_interact', [b('jcreatepp_smooth_rotate_by', { inputs: { X: num(45), Y: num(90), Z: num(-30), DURATION: num(1) } })]),
+    onEvent('jcreatepp_on_receive', [b('jcreatepp_add_rotation', { inputs: xyz(0, 0, 90) })], { MESSAGE: 'never' }),
+  ));
+  assert.ok(code.includes('turnItem('), 'combined form');
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.advance(0.37, 0.05);
+    r.advance(1, 0.07);
+    assert.ok(r.item.rotation.equals(instant.item.rotation), `lagging=${lagging}`);
+  }, { rotation: tilted });
+});
+
+test('trace: a smooth step in a sequence reports run once when it starts (the 3D preview records its start)', () => {
+  const phases: string[] = [];
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_sequence', { stmts: { DO: [b('jcreatepp_smooth_move_by', { id: 'm', inputs: { ...xyz(1, 0, 0), DURATION: num(0.5) } })] } }),
+  ])), { trace: true });
+  const r = createRunner(code, { onTrace: (id, phase) => id === 'm' && phases.push(phase) });
+  r.interact();
+  r.advance(1);
+  assert.equal(phases.filter((p) => p === 'run').length, 1, phases.join(','));
+  assert.ok(phases.includes('wait'));
+});
+
+// ── a smooth move / turn directly in a sequence is a step the sequence waits for ──
+
+test('sequence: turn 90 degrees in 1 s, wait 2 s, turn back in 1 s', () => {
+  const turn = (y: number) => b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, y, 0), DURATION: num(1) } });
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_sequence', { stmts: { DO: [turn(90), b('jcreatepp_wait_seconds', { inputs: { SECONDS: num(2) } }), turn(-90)] } }),
+  ])));
+  const angle = (r: ReturnType<typeof createRunner>) => r.item.rotation.createEulerAngles().y;
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.advance(0.5, 0.1);
+    assert.ok(Math.abs(angle(r) - 45) < 1e-6, `lagging=${lagging}: halfway ${angle(r)}`);
+    r.advance(0.5, 0.1);
+    assert.ok(Math.abs(angle(r) - 90) < 1e-6, `lagging=${lagging}: turned ${angle(r)}`);
+    r.advance(1.9, 0.1);
+    assert.ok(Math.abs(angle(r) - 90) < 1e-6, `lagging=${lagging}: still waiting ${angle(r)}`);
+    r.advance(0.6, 0.1); // 3.5 s: 0.5 s into the turn back
+    assert.ok(Math.abs(angle(r) - 45) < 1e-6, `lagging=${lagging}: turning back ${angle(r)}`);
+    r.advance(1, 0.1);
+    assert.ok(r.item.rotation.equals(new Quaternion()), `lagging=${lagging}: back at the start`);
+    const active = Object.entries(r.$.state).filter(([k, v]) => k.endsWith('_active') && v === true);
+    assert.deepEqual(active, [], 'nothing left running');
+  });
+});
+
+test('sequence: a smooth move hands its spare frame time to the next step', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_sequence', { stmts: { DO: [
+      b('jcreatepp_smooth_move_by', { inputs: { ...xyz(1, 0, 0), DURATION: num(0.25) } }),
+      b('jcreatepp_smooth_move_by', { inputs: { ...xyz(0, 1, 0), DURATION: num(0.25) } }),
+    ] } }),
+  ])));
+  const r = createRunner(code);
+  r.interact();
+  r.update(0.375); // the first move ends and the second is half done in the same frame
+  assert.ok(near(r.item.position, new Vector3(1, 0.5, 0)), JSON.stringify(r.item.position));
+  assert.deepEqual(r.errors(), []);
 });
 
 // ── state values are not aliased by later movement ──

@@ -5,6 +5,17 @@ Unity側で必要な設定
 - 乗り物ギミックを使うには、アイテムにRidable Itemを付け、Seat（座る位置）に子オブジェクトを設定してください。Colliderも必要です。
 - 移動系テンプレートを使うため、このアイテムは移動可能な設定が必要です。
 // ==== code ====
+// 位置を動かすブロックが複数あるので、このスクリプトが最後に決めた位置を覚えておき、そこに足していく
+// （$.getPosition() は移動中の位置を返すので、同じフレームで何度も読むと、前の動きが消えてしまう）
+const itemPosition = () => { const p = $.state["__jpp_pose_position"]; return p ? p.clone() : ($.getPosition() || new Vector3(0, 0, 0)); };
+// アイテムを pos に動かして、その位置を覚える
+const placeItem = (pos) => { $.state["__jpp_pose_position"] = pos; $.setPosition(pos); };
+// 向きを変えるブロックが複数あるので、このスクリプトが最後に決めた向きを覚えておき、そこから回していく
+// （$.getRotation() は回転中の向きを返すので、同じフレームで何度も読むと、前の回転が消えてしまう）
+const itemRotation = () => { const q = $.state["__jpp_pose_rotation"]; return q ? q.clone() : ($.getRotation() || new Quaternion()); };
+// アイテムを rot の向きにして、その向きを覚える
+const turnItem = (rot) => { $.state["__jpp_pose_rotation"] = rot; $.setRotation(rot); };
+
 // ── 乗り物ギミック: 乗る・降りる・操作 ──
 $.onRide((isGetOn, player) => {
   if (isGetOn) {
@@ -35,10 +46,12 @@ $.onSteerAdditionalAxis((input, player) => {
 
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 乗り物ギミック: 乗っている間、入力に合わせて動かす（進む向き: 従来の向き（アイテムの左 -X））
   if ($.state["__jpp_ride_active"]) {
-    const pos = $.getPosition() || new Vector3(0, 0, 0);
-    const rot = $.getRotation() || new Quaternion();
+    const pos = itemPosition();
+    const rot = itemRotation();
     const turnAmount = ($.state["__jpp_ride_trn"] || 0) * deltaTime;
     const nextRot = rot.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, turnAmount, 0)));
 
@@ -52,13 +65,13 @@ $.onUpdate((deltaTime) => {
     );
     const upVec = new Vector3(0, 1, 0).multiplyScalar(($.state["__jpp_ride_upd"] || 0) * deltaTime);
 
-    $.setPosition(pos.clone().add(forwardVec).add(upVec));
-    $.setRotation(nextRot);
+    placeItem(pos.clone().add(forwardVec).add(upVec));
+    turnItem(nextRot);
   }
 
   // 追いかけるギミック: いちばん近いプレイヤーの方を向いて近づく
   {
-    const pos = $.getPosition() || new Vector3(0, 0, 0);
+    const pos = itemPosition();
     let target = null;
     let nearest = Infinity;
     for (const player of $.getPlayersNear(pos, 10)) {
@@ -78,9 +91,9 @@ $.onUpdate((deltaTime) => {
         if (length > 0) {
           // 前（+Z）がプレイヤーを向くように回す
           const angle = Math.atan2(dir.x, dir.z) * 180 / Math.PI;
-          $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, angle, 0)));
+          turnItem(new Quaternion().setFromEulerAngles(new Vector3(0, angle, 0)));
           if (length > 1) {
-            $.setPosition(pos.add(dir.normalize().multiplyScalar(3 * deltaTime)));
+            placeItem(pos.add(dir.normalize().multiplyScalar(3 * deltaTime)));
           }
         }
       }

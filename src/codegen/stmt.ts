@@ -1,9 +1,11 @@
 import type { Expr, MessageTarget, Stmt } from '../ir';
 import { atLeastJS, boolExprToJS, decimalNormalized, exprToJS, settledNumberToJS } from './expr';
-import { axisVector, jsString, safeId, smoothRotateKeys, smoothTransitionKeys, variableKeyJS } from './shared';
+import { axisVector, jsString, safeId, variableKeyJS } from './shared';
 import { traceLine } from './trace';
 import { describeStmt } from './describe';
 import { bare } from './format';
+import { placeAt, positionNow, rotationNow, turnTo, usesPose } from './pose';
+import { smoothStartLines } from './smooth';
 
 /** A statement: a Japanese comment naming the block, then its code. */
 export function stmtToJS(stmt: Stmt): string {
@@ -23,53 +25,52 @@ const euler = (x: Expr, y: Expr, z: Expr) => `new Quaternion().setFromEulerAngle
 function stmtToJSCore(stmt: Stmt): string {
   switch (stmt.kind) {
     case 'set_position':
-      return `$.setPosition(${vec(stmt.x, stmt.y, stmt.z)});`;
+      return placeAt(vec(stmt.x, stmt.y, stmt.z));
 
     case 'move_by':
-      return `$.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(${vec(stmt.x, stmt.y, stmt.z)}));`;
+      return placeAt(`${positionNow()}.add(${vec(stmt.x, stmt.y, stmt.z)})`);
 
     case 'smooth_move_by':
     case 'smooth_move_local':
-      return smoothMoveStarterToJS(stmt);
+    case 'smooth_rotate_by':
+      return `{\n${smoothStartLines(stmt).map((line) => `  ${line}`).join('\n')}\n}`;
 
     case 'move_local':
       return `{
-  const rot = $.getRotation() || new Quaternion();
-  const pos = $.getPosition() || new Vector3(0, 0, 0);
-  $.setPosition(pos.add(${vec(stmt.x, stmt.y, stmt.z)}.applyQuaternion(rot)));
+  const rot = ${bare(rotationNow())};
+  const pos = ${bare(positionNow())};
+  ${placeAt(`pos.add(${vec(stmt.x, stmt.y, stmt.z)}.applyQuaternion(rot))`)}
 }`;
 
     case 'set_rotation':
-      return `$.setRotation(${euler(stmt.x, stmt.y, stmt.z)});`;
+      return turnTo(euler(stmt.x, stmt.y, stmt.z));
 
     case 'rotate_by':
+      if (usesPose('rotation')) return turnTo(`${rotationNow()}.multiply(${euler(stmt.x, stmt.y, stmt.z)})`);
       return `{
   const rot = $.getRotation();
   $.setRotation((rot ? rot.clone() : new Quaternion()).multiply(${euler(stmt.x, stmt.y, stmt.z)}));
 }`;
 
-    case 'smooth_rotate_by':
-      return smoothRotateStarterToJS(stmt);
-
     case 'random_warp':
       return `{
-  const pos = $.getPosition() || new Vector3(0, 0, 0);
-  $.setPosition(new Vector3(pos.x + (Math.random() * 2 - 1) * ${exprToJS(stmt.rangeX)}, pos.y, pos.z + (Math.random() * 2 - 1) * ${exprToJS(stmt.rangeZ)}));
+  const pos = ${bare(positionNow())};
+  ${placeAt(`new Vector3(pos.x + (Math.random() * 2 - 1) * ${exprToJS(stmt.rangeX)}, pos.y, pos.z + (Math.random() * 2 - 1) * ${exprToJS(stmt.rangeZ)})`)}
 }`;
 
     case 'save_position':
-      return `$.state["__jpp_saved_position"] = $.getPosition() || new Vector3(0, 0, 0);`;
+      return `$.state["__jpp_saved_position"] = ${bare(positionNow())};`;
 
     case 'load_position':
       return `if ($.state["__jpp_saved_position"]) {
-  $.setPosition($.state["__jpp_saved_position"]);
+  ${placeAt('$.state["__jpp_saved_position"]')}
 }`;
 
     case 'add_force':
       return `$.addImpulsiveForce(${vec(stmt.dirX, stmt.dirY, stmt.dirZ)}.normalize().multiplyScalar(${bare(exprToJS(stmt.power))}));`;
 
     case 'continuous_rotation':
-      return `$.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(${axisVector(stmt.axis)}, ${exprToJS(stmt.speed)} * deltaTime)));`;
+      return turnTo(`${rotationNow()}.multiply(new Quaternion().setFromAxisAngle(${axisVector(stmt.axis)}, ${exprToJS(stmt.speed)} * deltaTime))`);
 
     case 'timed_random_warp':
       return timedRandomWarpToJS(stmt);
@@ -142,46 +143,6 @@ function stmtToJSCore(stmt: Stmt): string {
 /** Math.max(min, value) where value is stored (arithmetic normalized); folded for literals. */
 function atLeastSettled(min: number, expr: Expr): string {
   return expr.kind === 'binary' ? `Math.max(${min}, ${bare(settledNumberToJS(expr))})` : atLeastJS(min, expr);
-}
-
-function smoothMoveStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_move_by' | 'smooth_move_local' }>): string {
-  const id = safeId(stmt.blockId);
-  const keys = smoothTransitionKeys('move', id);
-  // Local moves are converted to world space once, with the facing at the start of the move.
-  const facing = stmt.kind === 'smooth_move_local' ? '.applyQuaternion($.getRotation() || new Quaternion())' : '';
-  return `{
-  // 動き始め: 始点と終点を覚えて、毎フレームの処理で少しずつ動かす
-  const from = $.getPosition() || new Vector3(0, 0, 0);
-  const to = from.clone().add(${vec(stmt.x, stmt.y, stmt.z)}${facing});
-  $.state[${keys.active}] = true;
-  $.state[${keys.elapsed}] = 0;
-  $.state[${keys.duration}] = ${bare(atLeastJS(0.001, stmt.duration))};
-  $.state[${keys.fromX}] = from.x;
-  $.state[${keys.fromY}] = from.y;
-  $.state[${keys.fromZ}] = from.z;
-  $.state[${keys.toX}] = to.x;
-  $.state[${keys.toY}] = to.y;
-  $.state[${keys.toZ}] = to.z;
-}`;
-}
-
-function smoothRotateStarterToJS(stmt: Extract<Stmt, { kind: 'smooth_rotate_by' }>): string {
-  const id = safeId(stmt.blockId);
-  const keys = smoothRotateKeys(id);
-  return `{
-  // 回り始め: 今の向きと回す量を覚えて、毎フレームの処理で少しずつ回す
-  const from = $.getRotation() || new Quaternion();
-  $.state[${keys.active}] = true;
-  $.state[${keys.elapsed}] = 0;
-  $.state[${keys.duration}] = ${bare(atLeastJS(0.001, stmt.duration))};
-  $.state[${keys.fromQx}] = from.x;
-  $.state[${keys.fromQy}] = from.y;
-  $.state[${keys.fromQz}] = from.z;
-  $.state[${keys.fromQw}] = from.w;
-  $.state[${keys.deltaX}] = ${bare(exprToJS(stmt.x))};
-  $.state[${keys.deltaY}] = ${bare(exprToJS(stmt.y))};
-  $.state[${keys.deltaZ}] = ${bare(exprToJS(stmt.z))};
-}`;
 }
 
 function sendMessageToJS(stmt: Extract<Stmt, { kind: 'send_message' }>): string {
@@ -311,13 +272,13 @@ function timedRandomWarpToJS(stmt: Extract<Stmt, { kind: 'timed_random_warp' }>)
   return `{
   $.state[${timerKey}] = ($.state[${timerKey}] || 0) + deltaTime;
   if ($.state[${timerKey}] >= ${exprToJS(stmt.interval)}) {
-    const pos = $.getPosition() || new Vector3(0, 0, 0);
+    const pos = ${bare(positionNow())};
     const range = ${bare(exprToJS(stmt.range))};
-    $.setPosition(new Vector3(
+    ${placeAt(`new Vector3(
       pos.x + (Math.random() * 2 - 1) * range,
       pos.y,
       pos.z + (Math.random() * 2 - 1) * range
-    ));
+    )`)}
     $.state[${timerKey}] = 0;
   }
 }`;
@@ -328,24 +289,50 @@ function timedMoveReturnToJS(stmt: Extract<Stmt, { kind: 'timed_move_return' }>)
   const activeKey = jsString(`__jpp_move_return_active_${id}`);
   const timeKey = jsString(`__jpp_move_return_time_${id}`);
   const startKey = jsString(`__jpp_move_return_pos_${id}`);
-  return `{
-  if (!$.state[${activeKey}]) {
-    // 動き始めの位置を覚える
+  if (usesPose('position')) {
+    // Composed: remembers how far this block moved and takes back only that, so other moves stay.
+    const movedKey = jsString(`__jpp_move_return_moved_${id}`);
+    return `{
+  if (!$.state[${activeKey}] || !$.state[${movedKey}]) {
+    // 動き始め: このブロックで動いた量を 0 から数える（前の JS の途中から続くときも、ここからやり直す）
     $.state[${activeKey}] = true;
     $.state[${timeKey}] = 0;
-    $.state[${startKey}] = $.getPosition() || new Vector3(0, 0, 0);
+    $.state[${movedKey}] = new Vector3(0, 0, 0);
   }
   $.state[${timeKey}] = ($.state[${timeKey}] || 0) + deltaTime;
   if ($.state[${timeKey}] < ${exprToJS(stmt.duration)}) {
     const dir = ${vec(stmt.dirX, stmt.dirY, stmt.dirZ)};
     if (dir.length() > 0) {
-      const pos = $.getPosition() || new Vector3(0, 0, 0);
-      $.setPosition(pos.add(dir.normalize().multiplyScalar(${exprToJS(stmt.speed)} * deltaTime)));
+      const move = dir.normalize().multiplyScalar(${exprToJS(stmt.speed)} * deltaTime);
+      $.state[${movedKey}] = $.state[${movedKey}].add(move);
+      ${placeAt(`${positionNow()}.add(move)`)}
+    }
+  } else {
+    // 時間が来たら、このブロックで動いた分だけ戻る（ほかのブロックの動きはそのまま）
+    ${placeAt(`${positionNow()}.sub($.state[${movedKey}])`)}
+    $.state[${activeKey}] = false;
+    $.state[${timeKey}] = 0;
+  }
+}`;
+  }
+  return `{
+  if (!$.state[${activeKey}]) {
+    // 動き始めの位置を覚える
+    $.state[${activeKey}] = true;
+    $.state[${timeKey}] = 0;
+    $.state[${startKey}] = ${bare(positionNow())};
+  }
+  $.state[${timeKey}] = ($.state[${timeKey}] || 0) + deltaTime;
+  if ($.state[${timeKey}] < ${exprToJS(stmt.duration)}) {
+    const dir = ${vec(stmt.dirX, stmt.dirY, stmt.dirZ)};
+    if (dir.length() > 0) {
+      const pos = ${bare(positionNow())};
+      ${placeAt(`pos.add(dir.normalize().multiplyScalar(${exprToJS(stmt.speed)} * deltaTime))`)}
     }
   } else {
     // 時間が来たら元の位置に戻る
     if ($.state[${startKey}]) {
-      $.setPosition($.state[${startKey}]);
+      ${placeAt(`$.state[${startKey}]`)}
     }
     $.state[${activeKey}] = false;
     $.state[${timeKey}] = 0;
@@ -371,6 +358,27 @@ function oscillateToJS(stmt: Extract<Stmt, { kind: 'oscillate' }>): string {
   const originKey = jsString(`__jpp_osc_init_pos_${id}`);
   const timeKey = jsString(`__jpp_osc_time_${id}`);
   const along = (axis: 'X' | 'Y' | 'Z') => (stmt.axis === axis ? 'offset' : '0');
+
+  if (usesPose('position')) {
+    // Composed: moves by how much the offset from the center changed since the last frame, so other
+    // moves add up. The last offset is stored (not recomputed), so a width that changes stays exact.
+    const offsetKey = jsString(`__jpp_osc_offset_${id}`);
+    const change = (axis: 'X' | 'Y' | 'Z') => (stmt.axis === axis ? 'change' : '0');
+    return `{
+  if (!$.state[${originKey}] || typeof $.state[${offsetKey}] !== "number") {
+    // 最初の位置を往復の中心として覚える（前の JS の途中から続くときも、今の位置からやり直す）
+    $.state[${originKey}] = ${bare(positionNow())};
+    $.state[${timeKey}] = 0;
+    $.state[${offsetKey}] = 0;
+  }
+  $.state[${timeKey}] += deltaTime * ${exprToJS(stmt.speed)};
+  const offset = Math.sin($.state[${timeKey}]) * ${exprToJS(stmt.width)}; // 中心からのずれ
+  // 前のフレームからずれが変わった分だけ動かす（ほかの動きと足し合わせるため）
+  const change = offset - $.state[${offsetKey}];
+  $.state[${offsetKey}] = offset;
+  ${placeAt(`${positionNow()}.add(new Vector3(${change('X')}, ${change('Y')}, ${change('Z')}))`)}
+}`;
+  }
 
   return `{
   if (!$.state[${originKey}]) {

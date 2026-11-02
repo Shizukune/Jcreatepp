@@ -141,7 +141,7 @@ const smoothMoveByBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 210,
-  tooltip: '現在位置から指定した差分だけ、指定秒数をかけて滑らかに移動します。インタラクト時や受信時の中で直接使えます。',
+  tooltip: '現在位置から指定した差分だけ、指定秒数をかけて滑らかに移動します。インタラクト時や受信時の中で直接使えます。動いている途中でもう一度始めると、その時点の位置から動き直します。一連の動作の中に直接置くと、動き終わってから次へ進みます。',
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
 };
 
@@ -174,7 +174,7 @@ const smoothMoveLocalBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 210,
-  tooltip: '動き始めたときに向いている方向を基準に、指定秒数をかけて滑らかに移動します。移動中に回転しても進む向きは変わりません。インタラクト時や受信時の中で直接使えます。',
+  tooltip: '動き始めたときに向いている方向を基準に、指定秒数をかけて滑らかに移動します。移動中に回転しても進む向きは変わりません。インタラクト時や受信時の中で直接使えます。動いている途中でもう一度始めると、その時点の位置から動き直します。一連の動作の中に直接置くと、動き終わってから次へ進みます。',
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setposition',
 };
 
@@ -223,7 +223,7 @@ const smoothRotateByBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 210,
-  tooltip: '現在の角度から指定した差分だけ、指定秒数をかけて滑らかに回転します。インタラクト時や受信時の中で直接使えます。',
+  tooltip: '現在の角度から指定した差分だけ、指定秒数をかけて滑らかに回転します。インタラクト時や受信時の中で直接使えます。回っている途中でもう一度始めると、その時点の向きから回り直します（90度ずつのような区切りからずれることがあります）。一連の動作の中に直接置くと、回り終わってから次へ進みます。',
   helpUrl: 'https://docs.cluster.mu/script/interfaces/ClusterScript.html#setrotation',
 };
 
@@ -299,7 +299,7 @@ const oscillateBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 210,
-  tooltip: '初期位置を基準にサイン波で往復します。毎フレーム内で使います。',
+  tooltip: '最初の位置を中心に、サイン波で往復します。幅は中心から片側への距離です（端から端は幅の2倍）。速さ1で1往復に約6.3秒かかり、速さを2にすると半分の時間になります。ほかの往復や移動と一緒に使うと、動きが足し合わされます。毎フレーム内で使います。',
   helpUrl: '',
 };
 

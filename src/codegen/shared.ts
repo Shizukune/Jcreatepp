@@ -22,48 +22,6 @@ export function safeId(value: string): string {
   return value.replace(/[^a-zA-Z0-9]/g, (c) => `_${c.charCodeAt(0).toString(16)}_`);
 }
 
-export function smoothTransitionKeys(kind: 'move' | 'rotate', id: string): Record<
-  'active' | 'elapsed' | 'duration' | 'fromX' | 'fromY' | 'fromZ' | 'toX' | 'toY' | 'toZ',
-  string
-> {
-  const prefix = `__jpp_smooth_${kind}_${id}`;
-  return {
-    active: jsString(`${prefix}_active`),
-    elapsed: jsString(`${prefix}_elapsed`),
-    duration: jsString(`${prefix}_duration`),
-    fromX: jsString(`${prefix}_from_x`),
-    fromY: jsString(`${prefix}_from_y`),
-    fromZ: jsString(`${prefix}_from_z`),
-    toX: jsString(`${prefix}_to_x`),
-    toY: jsString(`${prefix}_to_y`),
-    toZ: jsString(`${prefix}_to_z`),
-  };
-}
-
-/**
- * Smooth rotation state: start rotation (quaternion) and the Euler delta applied locally,
- * so the final rotation matches "rotate_by" (current * euler(delta)).
- * Uses its own prefix so state left by the older Euler-based format is never read.
- */
-export function smoothRotateKeys(id: string): Record<
-  'active' | 'elapsed' | 'duration' | 'fromQx' | 'fromQy' | 'fromQz' | 'fromQw' | 'deltaX' | 'deltaY' | 'deltaZ',
-  string
-> {
-  const prefix = `__jpp_smooth_rotq_${id}`;
-  return {
-    active: jsString(`${prefix}_active`),
-    elapsed: jsString(`${prefix}_elapsed`),
-    duration: jsString(`${prefix}_duration`),
-    fromQx: jsString(`${prefix}_from_qx`),
-    fromQy: jsString(`${prefix}_from_qy`),
-    fromQz: jsString(`${prefix}_from_qz`),
-    fromQw: jsString(`${prefix}_from_qw`),
-    deltaX: jsString(`${prefix}_delta_x`),
-    deltaY: jsString(`${prefix}_delta_y`),
-    deltaZ: jsString(`${prefix}_delta_z`),
-  };
-}
-
 export function indent(code: string, spaces: number): string {
   const pad = ' '.repeat(spaces);
   return code.replace(/^(?=.)/gm, pad);

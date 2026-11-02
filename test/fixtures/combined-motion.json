@@ -1,0 +1,194 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "upd",
+        "x": 0,
+        "y": 0,
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_oscillate",
+              "id": "oscY",
+              "fields": {
+                "AXIS": "Y"
+              },
+              "inputs": {
+                "WIDTH": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "oyw",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                },
+                "SPEED": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "oys",
+                    "fields": {
+                      "NUM": 1
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_oscillate",
+                  "id": "oscX",
+                  "fields": {
+                    "AXIS": "X"
+                  },
+                  "inputs": {
+                    "WIDTH": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "oxw",
+                        "fields": {
+                          "NUM": 0.5
+                        }
+                      }
+                    },
+                    "SPEED": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "oxs",
+                        "fields": {
+                          "NUM": 2
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "int",
+        "x": 0,
+        "y": 300,
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_sequence",
+              "id": "seq",
+              "inputs": {
+                "DO": {
+                  "block": {
+                    "type": "jcreatepp_smooth_rotate_by",
+                    "id": "turn",
+                    "inputs": {
+                      "X": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "turnx",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "Y": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "turny",
+                          "fields": {
+                            "NUM": 90
+                          }
+                        }
+                      },
+                      "Z": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "turnz",
+                          "fields": {
+                            "NUM": 0
+                          }
+                        }
+                      },
+                      "DURATION": {
+                        "block": {
+                          "type": "math_number",
+                          "id": "turnd",
+                          "fields": {
+                            "NUM": 1
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "jcreatepp_wait_seconds",
+                        "id": "wait",
+                        "inputs": {
+                          "SECONDS": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "ws",
+                              "fields": {
+                                "NUM": 2
+                              }
+                            }
+                          }
+                        },
+                        "next": {
+                          "block": {
+                            "type": "jcreatepp_smooth_rotate_by",
+                            "id": "back",
+                            "inputs": {
+                              "X": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "backx",
+                                  "fields": {
+                                    "NUM": 0
+                                  }
+                                }
+                              },
+                              "Y": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "backy",
+                                  "fields": {
+                                    "NUM": -90
+                                  }
+                                }
+                              },
+                              "Z": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "backz",
+                                  "fields": {
+                                    "NUM": 0
+                                  }
+                                }
+                              },
+                              "DURATION": {
+                                "block": {
+                                  "type": "math_number",
+                                  "id": "backd",
+                                  "fields": {
+                                    "NUM": 1
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

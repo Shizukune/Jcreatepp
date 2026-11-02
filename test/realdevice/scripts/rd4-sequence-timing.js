@@ -1,6 +1,14 @@
 // Jcreate++ 実機テスト rd4「待機のタイミング」 — 手順は CHECKLIST.md
+// 位置を動かすブロックが複数あるので、このスクリプトが最後に決めた位置を覚えておき、そこに足していく
+// （$.getPosition() は移動中の位置を返すので、同じフレームで何度も読むと、前の動きが消えてしまう）
+const itemPosition = () => { const p = $.state["__jpp_pose_position"]; return p ? p.clone() : ($.getPosition() || new Vector3(0, 0, 0)); };
+// アイテムを pos に動かして、その位置を覚える
+const placeItem = (pos) => { $.state["__jpp_pose_position"] = pos; $.setPosition(pos); };
+
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 一連の動作（ブロック t50）: 実行中なら、今のステップから続きを進める
   if ($.state["__jpp_seq_active_t50"]) {
     let step = $.state["__jpp_seq_step_t50"] || 0;
@@ -14,7 +22,7 @@ $.onUpdate((deltaTime) => {
       switch (step) {
         case 0: {
           // 位置を x:0 y:1 z:0 ずつ変える
-          $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, 1, 0)));
+          placeItem(itemPosition().add(new Vector3(0, 1, 0)));
           step++;
           break;
         }
@@ -71,7 +79,7 @@ $.onUpdate((deltaTime) => {
         }
         case 4: {
           // 位置を x:0 y:-1 z:0 ずつ変える
-          $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(0, -1, 0)));
+          placeItem(itemPosition().add(new Vector3(0, -1, 0)));
           step++;
           break;
         }

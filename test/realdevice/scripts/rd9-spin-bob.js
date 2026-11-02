@@ -1,6 +1,8 @@
 // Jcreate++ 実機テスト rd9「回り続ける・往復する」 — 手順は CHECKLIST.md
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // Y 軸を 速度 45 で回転し続ける
   $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 45 * deltaTime)));
   // Y 方向に 幅 0.5 速さ 2 で往復する

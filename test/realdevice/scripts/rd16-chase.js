@@ -1,6 +1,8 @@
 // Jcreate++ 実機テスト rd16「追いかけるギミック」 — 手順は CHECKLIST.md
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 追いかけるギミック: いちばん近いプレイヤーの方を向いて近づく
   {
     const pos = $.getPosition() || new Vector3(0, 0, 0);

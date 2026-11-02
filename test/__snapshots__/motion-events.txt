@@ -7,27 +7,32 @@ Unity側で必要な設定
 - つかむイベントを使うには、アイテムにGrabbable Item（とMovable Item）、Colliderが必要です。
 - ⚠ インタラクト時は、つかめないアイテムでだけ発生します。つかむイベントと同じアイテムで使うと、インタラクト時は動きません。
 // ==== code ====
+// 向きを変えるブロックが複数あるので、このスクリプトが最後に決めた向きを覚えておき、そこから回していく
+// （$.getRotation() は回転中の向きを返すので、同じフレームで何度も読むと、前の回転が消えてしまう）
+const itemRotation = () => { const q = $.state["__jpp_pose_rotation"]; return q ? q.clone() : ($.getRotation() || new Quaternion()); };
+// アイテムを rot の向きにして、その向きを覚える
+const turnItem = (rot) => { $.state["__jpp_pose_rotation"] = rot; $.setRotation(rot); };
+
 // ── 開始時 ──
 $.onStart(() => {
   // 位置を x:0 y:1 z:2 にする
   $.setPosition(new Vector3(0, 1, 2));
   // 角度を x:0 y:90 z:0 にする
-  $.setRotation(new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0)));
+  turnItem(new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0)));
   // 今の位置を保存する
   $.state["__jpp_saved_position"] = $.getPosition() || new Vector3(0, 0, 0);
 });
 
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 位置を x:(2 × 経過時間) y:0 z:0 ずつ変える
   $.setPosition(($.getPosition() || new Vector3(0, 0, 0)).add(new Vector3(2 * deltaTime, 0, 0)));
   // 角度を x:0 y:1 z:0 ずつ変える
-  {
-    const rot = $.getRotation();
-    $.setRotation((rot ? rot.clone() : new Quaternion()).multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
-  }
+  turnItem(itemRotation().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 1, 0))));
   // Y 軸を 速度 45 で回転し続ける
-  $.setRotation(($.getRotation() || new Quaternion()).multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 45 * deltaTime)));
+  turnItem(itemRotation().multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), 45 * deltaTime)));
   // X 方向に 幅 2 速さ 1 で往復する
   {
     if (!$.state["__jpp_osc_init_pos_b25"]) {
@@ -103,6 +108,8 @@ $.onInteract((player) => {
 
 // ── 持ったとき / 離したとき ──
 $.onGrab((isGrab, isLeftHand, player) => {
+  // 手で持つとアイテムが動くので、覚えている位置・向きを捨てて、次に動かすときは今の位置・向きから始める
+  $.state["__jpp_pose_rotation"] = null;
   // 持ったとき
   if (isGrab) {
     // プレイヤーのジャンプ速度倍率を 1.5 にする

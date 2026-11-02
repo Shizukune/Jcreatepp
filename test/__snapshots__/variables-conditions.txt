@@ -23,6 +23,8 @@ $.onStart(() => {
 
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // もし クールダウン tap の残り秒数 ≦ 0 になった瞬間だけ
   {
     const condition = getCooldown("tap") <= 0;
@@ -38,11 +40,10 @@ $.onUpdate((deltaTime) => {
 
   // クールダウンの残り秒数を減らす
   {
-    const delta = typeof deltaTime === "number" ? Math.max(0, deltaTime) : 0; // このフレームの経過時間
     for (const key of ["__jpp_cd_tap"]) {
       const left = $.state[key];
       if (typeof left === "number" && left > 0) {
-        $.state[key] = Math.max(0, left - delta);
+        $.state[key] = Math.max(0, left - deltaTime);
       }
     }
   }

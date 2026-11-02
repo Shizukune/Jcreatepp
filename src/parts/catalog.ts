@@ -11,7 +11,8 @@
 import { block, num, type BlockJson } from '../demos/blockJson';
 import type { VariableKind } from '../variables';
 
-export type Channel = 'position' | 'rotation';
+export type { Channel } from '../blocks/motion';
+import type { Channel } from '../blocks/motion';
 
 export type PartParam =
   | { key: string; label: string; kind: 'number'; default: number; min: number; max: number; step: number }

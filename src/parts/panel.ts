@@ -110,7 +110,7 @@ export function createPartsPanel(root: HTMLElement, ws: Blockly.WorkspaceSvg, is
       const channel = conflictChannel(ws, p);
       const card = root.querySelector(`[data-part="${p.id}"]`) as HTMLElement;
       card.classList.toggle('partsBlocked', channel !== null);
-      (card.querySelector('.partsWhy') as HTMLElement).textContent = channel ? `今は追加できません（${channelLabel(channel)}がぶつかる）` : '';
+      (card.querySelector('.partsWhy') as HTMLElement).textContent = channel ? `今は追加できません（${channelLabel(channel)}の動きを足し合わせられない）` : '';
     }
     warn.textContent = part ? partConflict(ws, part) ?? '' : '';
   }

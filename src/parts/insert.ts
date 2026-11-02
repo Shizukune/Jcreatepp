@@ -2,7 +2,7 @@
  * Adding a part (src/parts/catalog.ts) to a Blockly workspace. No DOM: works on headless workspaces.
  *
  * Order of work:
- *  1. refuse when the part would fight existing blocks over position / rotation
+ *  1. refuse when the part's move cannot be added to an existing block's (see src/blocks/motion.ts)
  *  2. choose variable names that are not in use yet (per kind, like $.state keys)
  *  3. try the result on a throwaway copy of the workspace; refuse when it adds conversion errors
  *  4. add the blocks to the real workspace as one undo step
@@ -16,46 +16,29 @@ import { chain, type BlockJson } from '../demos/blockJson';
 import { convertState } from '../demos/playback';
 import type { VariableKind } from '../variables';
 import type { Channel, Part, PartExpansion, PartValues } from './catalog';
+import { CHANNEL_LABEL, channelsWrittenBy, uncombinable } from '../blocks/motion';
+import { blockRuns, findEventContext } from '../validator';
 
-/** Blocks that set the item's position / rotation (all of them, wherever they are placed). */
-const WRITERS: Record<string, Channel[]> = {
-  jcreatepp_set_position: ['position'],
-  jcreatepp_add_position: ['position'],
-  jcreatepp_smooth_move_by: ['position'],
-  jcreatepp_move_local: ['position'],
-  jcreatepp_smooth_move_local: ['position'],
-  jcreatepp_random_warp: ['position'],
-  jcreatepp_load_position: ['position'],
-  jcreatepp_add_force: ['position'],
-  jcreatepp_oscillate: ['position'],
-  jcreatepp_timed_random_warp: ['position'],
-  jcreatepp_timed_move_return: ['position'],
-  jcreatepp_set_rotation: ['rotation'],
-  jcreatepp_add_rotation: ['rotation'],
-  jcreatepp_smooth_rotate_by: ['rotation'],
-  jcreatepp_continuous_rotation: ['rotation'],
-  jcreatepp_ride_template: ['position', 'rotation'],
-  jcreatepp_chase_template: ['position', 'rotation'],
-};
-
-/** Channels a block type writes (empty when it does not move the item). */
-export function channelsWrittenBy(type: string): Channel[] {
-  return WRITERS[type] ?? [];
-}
-
-const CHANNEL_LABEL: Record<Channel, string> = { position: '位置', rotation: '角度' };
+// Which blocks move the item (shared with the editor warnings): src/blocks/motion.ts
+export { channelsWrittenBy };
 
 /** Event blocks that may appear only once (same list as the converter); parts add into the existing one. */
 const UNIQUE_EVENTS = new Set<string>(UNIQUE_EVENT_BLOCK_TYPES);
 
 export type InsertResult = { ok: true; blockIds: string[] } | { ok: false; reason: string };
 
+/**
+ * Existing blocks whose move on `channel` cannot be added to the part's (physics, the chase gimmick's
+ * facing, "set" every frame). Other moves are added up by the generated code, so they do not block a part.
+ * Only blocks that run count, as for the editor warnings (a loose block does not move anything).
+ */
+function blockersOf(ws: Blockly.Workspace, channel: Channel): Blockly.Block[] {
+  return ws.getAllBlocks(false).filter((b) => blockRuns(b) && channelsWrittenBy(b.type).includes(channel) && uncombinable(b.type, channel, findEventContext(b)) !== null);
+}
+
 /** The first channel (position / rotation) the part would fight over, or null. */
 export function conflictChannel(ws: Blockly.Workspace, part: Part): Channel | null {
-  for (const channel of part.writes) {
-    if (ws.getAllBlocks(false).some((b) => WRITERS[b.type]?.includes(channel))) return channel;
-  }
-  return null;
+  return part.writes.find((channel) => blockersOf(ws, channel).length > 0) ?? null;
 }
 
 export function channelLabel(channel: Channel): string {
@@ -65,13 +48,10 @@ export function channelLabel(channel: Channel): string {
 /** Why the part cannot be added to this workspace (or null when it can). */
 export function partConflict(ws: Blockly.Workspace, part: Part): string | null {
   for (const channel of part.writes) {
-    const labels = new Set<string>();
-    for (const b of ws.getAllBlocks(false)) {
-      if (WRITERS[b.type]?.includes(channel)) labels.add(blockLabel(b.type));
-    }
+    const labels = new Set(blockersOf(ws, channel).map((b) => blockLabel(b.type)));
     if (labels.size > 0) {
       const list = [...labels].map((l) => `「${l}」`).join('');
-      return `${list}がもう${CHANNEL_LABEL[channel]}を動かしています。「${part.label}」も${CHANNEL_LABEL[channel]}を動かすので、動きがぶつかります（今は追加できません）。`;
+      return `${list}があると、「${part.label}」の${CHANNEL_LABEL[channel]}の動きと足し合わせられません（今は追加できません）。`;
     }
   }
   return null;

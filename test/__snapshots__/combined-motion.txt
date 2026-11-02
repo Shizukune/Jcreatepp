@@ -1,0 +1,172 @@
+// ==== errors ====
+// ==== warnings ====
+// ==== unity requirements ====
+Unity側で必要な設定
+- 位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。
+- インタラクト（クリック・使う）するには、アイテムにColliderが必要です。
+// ==== code ====
+// 位置を動かすブロックが複数あるので、このスクリプトが最後に決めた位置を覚えておき、そこに足していく
+// （$.getPosition() は移動中の位置を返すので、同じフレームで何度も読むと、前の動きが消えてしまう）
+const itemPosition = () => { const p = $.state["__jpp_pose_position"]; return p ? p.clone() : ($.getPosition() || new Vector3(0, 0, 0)); };
+// アイテムを pos に動かして、その位置を覚える
+const placeItem = (pos) => { $.state["__jpp_pose_position"] = pos; $.setPosition(pos); };
+// 向きを変えるブロックが複数あるので、このスクリプトが最後に決めた向きを覚えておき、そこから回していく
+// （$.getRotation() は回転中の向きを返すので、同じフレームで何度も読むと、前の回転が消えてしまう）
+const itemRotation = () => { const q = $.state["__jpp_pose_rotation"]; return q ? q.clone() : ($.getRotation() || new Quaternion()); };
+// アイテムを rot の向きにして、その向きを覚える
+const turnItem = (rot) => { $.state["__jpp_pose_rotation"] = rot; $.setRotation(rot); };
+
+// ── 毎フレーム ──
+$.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
+  // Y 方向に 幅 1 速さ 1 で往復する
+  {
+    if (!$.state["__jpp_osc_init_pos_oscY"] || typeof $.state["__jpp_osc_offset_oscY"] !== "number") {
+      // 最初の位置を往復の中心として覚える（前の JS の途中から続くときも、今の位置からやり直す）
+      $.state["__jpp_osc_init_pos_oscY"] = itemPosition();
+      $.state["__jpp_osc_time_oscY"] = 0;
+      $.state["__jpp_osc_offset_oscY"] = 0;
+    }
+    $.state["__jpp_osc_time_oscY"] += deltaTime * 1;
+    const offset = Math.sin($.state["__jpp_osc_time_oscY"]) * 1; // 中心からのずれ
+    // 前のフレームからずれが変わった分だけ動かす（ほかの動きと足し合わせるため）
+    const change = offset - $.state["__jpp_osc_offset_oscY"];
+    $.state["__jpp_osc_offset_oscY"] = offset;
+    placeItem(itemPosition().add(new Vector3(0, change, 0)));
+  }
+  // X 方向に 幅 0.5 速さ 2 で往復する
+  {
+    if (!$.state["__jpp_osc_init_pos_oscX"] || typeof $.state["__jpp_osc_offset_oscX"] !== "number") {
+      // 最初の位置を往復の中心として覚える（前の JS の途中から続くときも、今の位置からやり直す）
+      $.state["__jpp_osc_init_pos_oscX"] = itemPosition();
+      $.state["__jpp_osc_time_oscX"] = 0;
+      $.state["__jpp_osc_offset_oscX"] = 0;
+    }
+    $.state["__jpp_osc_time_oscX"] += deltaTime * 2;
+    const offset = Math.sin($.state["__jpp_osc_time_oscX"]) * 0.5; // 中心からのずれ
+    // 前のフレームからずれが変わった分だけ動かす（ほかの動きと足し合わせるため）
+    const change = offset - $.state["__jpp_osc_offset_oscX"];
+    $.state["__jpp_osc_offset_oscX"] = offset;
+    placeItem(itemPosition().add(new Vector3(change, 0, 0)));
+  }
+
+  // 一連の動作（ブロック seq）: 実行中なら、今のステップから続きを進める
+  if ($.state["__jpp_seq_active_seq"]) {
+    let step = $.state["__jpp_seq_step_seq"] || 0;
+    let budget = deltaTime; // このフレームで使える時間（待つステップが使う）
+    let yielded = false; // true になったら、続きは次のフレーム
+    let guard = 0;
+    const MAX_SYNC_STEPS_PER_TICK = 100;
+
+    while (!yielded && guard < MAX_SYNC_STEPS_PER_TICK) {
+      guard++;
+      switch (step) {
+        case 0: {
+          // 角度を x:0 y:90 z:0 だけ 1 秒かけて回す（終わってから次へ進む）
+          if (!$.state["__jpp_smooth_rot_turn_active"]) {
+            // 回り始め: 今の向きと回す量を覚えて、毎フレーム少しずつ回す
+            $.state["__jpp_smooth_rot_turn_active"] = true;
+            $.state["__jpp_smooth_rot_turn_elapsed"] = 0;
+            $.state["__jpp_smooth_rot_turn_duration"] = 1;
+            $.state["__jpp_smooth_rot_turn_from"] = itemRotation();
+            $.state["__jpp_smooth_rot_turn_delta"] = new Vector3(0, 90, 0);
+          }
+          const duration = $.state["__jpp_smooth_rot_turn_duration"];
+          const before = $.state["__jpp_smooth_rot_turn_elapsed"];
+          const elapsed = Math.min(duration, before + budget);
+          $.state["__jpp_smooth_rot_turn_elapsed"] = elapsed;
+          const delta = $.state["__jpp_smooth_rot_turn_delta"];
+          // 前のフレームまでに回した分を戻してから、今のフレームまでの分を回す（ほかの回転と足し合わせるため）
+          const undo = new Quaternion().setFromEulerAngles(delta.clone().multiplyScalar(before / duration)).invert();
+          const redo = new Quaternion().setFromEulerAngles(delta.clone().multiplyScalar(elapsed / duration));
+          turnItem(itemRotation().multiply(undo).multiply(redo));
+          if (elapsed >= duration) {
+            // 終わり: 余った時間は次のステップに回す
+            $.state["__jpp_smooth_rot_turn_active"] = false;
+            budget = Math.max(0, before + budget - duration);
+            step++;
+          } else {
+            // まだ途中: 続きは次のフレーム
+            budget = 0;
+            yielded = true;
+          }
+          break;
+        }
+        case 1: {
+          // 2 秒待つ
+          let time = ($.state["__jpp_seq_time_seq"] || 0) + budget;
+          const seconds = 2;
+          if (time >= seconds - 1e-6) {
+            // 待ち終わり: 余った時間は次のステップに回す
+            budget = Math.max(0, time - seconds);
+            $.state["__jpp_seq_time_seq"] = 0;
+            step++;
+          } else {
+            // まだ待つ: 続きは次のフレーム
+            $.state["__jpp_seq_time_seq"] = time;
+            budget = 0;
+            yielded = true;
+          }
+          break;
+        }
+        case 2: {
+          // 角度を x:0 y:-90 z:0 だけ 1 秒かけて回す（終わってから次へ進む）
+          if (!$.state["__jpp_smooth_rot_back_active"]) {
+            // 回り始め: 今の向きと回す量を覚えて、毎フレーム少しずつ回す
+            $.state["__jpp_smooth_rot_back_active"] = true;
+            $.state["__jpp_smooth_rot_back_elapsed"] = 0;
+            $.state["__jpp_smooth_rot_back_duration"] = 1;
+            $.state["__jpp_smooth_rot_back_from"] = itemRotation();
+            $.state["__jpp_smooth_rot_back_delta"] = new Vector3(0, -90, 0);
+          }
+          const duration = $.state["__jpp_smooth_rot_back_duration"];
+          const before = $.state["__jpp_smooth_rot_back_elapsed"];
+          const elapsed = Math.min(duration, before + budget);
+          $.state["__jpp_smooth_rot_back_elapsed"] = elapsed;
+          const delta = $.state["__jpp_smooth_rot_back_delta"];
+          // 前のフレームまでに回した分を戻してから、今のフレームまでの分を回す（ほかの回転と足し合わせるため）
+          const undo = new Quaternion().setFromEulerAngles(delta.clone().multiplyScalar(before / duration)).invert();
+          const redo = new Quaternion().setFromEulerAngles(delta.clone().multiplyScalar(elapsed / duration));
+          turnItem(itemRotation().multiply(undo).multiply(redo));
+          if (elapsed >= duration) {
+            // 終わり: 余った時間は次のステップに回す
+            $.state["__jpp_smooth_rot_back_active"] = false;
+            budget = Math.max(0, before + budget - duration);
+            step++;
+          } else {
+            // まだ途中: 続きは次のフレーム
+            budget = 0;
+            yielded = true;
+          }
+          break;
+        }
+        case 3: {
+          // 最後まで進んだので終わる（次に始めるときは最初から）
+          $.state["__jpp_seq_active_seq"] = false;
+          step = 0;
+          $.state["__jpp_seq_step_seq"] = 0;
+          $.state["__jpp_seq_time_seq"] = 0;
+          yielded = true;
+          break;
+        }
+        default: {
+          yielded = true;
+          break;
+        }
+      }
+    }
+
+    $.state["__jpp_seq_step_seq"] = step;
+  }
+});
+
+// ── インタラクト時 ──
+$.onInteract((player) => {
+  // 一連の動作を始める（中は「毎フレーム」の中で順番に進む）
+  if (!$.state["__jpp_seq_active_seq"]) {
+    $.state["__jpp_seq_active_seq"] = true;
+    $.state["__jpp_seq_step_seq"] = 0;
+    $.state["__jpp_seq_time_seq"] = 0;
+  }
+});

@@ -29,6 +29,8 @@ $.onSteerAdditionalAxis((input, player) => {
 
 // ── 毎フレーム ──
 $.onUpdate((deltaTime) => {
+  deltaTime = typeof deltaTime === "number" && isFinite(deltaTime) ? Math.max(0, deltaTime) : 0; // このフレームの経過時間（秒）。おかしな値は 0 として扱う
+
   // 乗り物ギミック: 乗っている間、入力に合わせて動かす（進む向き: アイテムの前（+Z））
   if ($.state["__jpp_ride_active"]) {
     const pos = $.getPosition() || new Vector3(0, 0, 0);

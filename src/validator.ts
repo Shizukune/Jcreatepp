@@ -12,7 +12,8 @@ import {
   valueBlockLabel,
   type EventContext,
 } from './blocks/context';
-import { placementError, valueInSequenceError } from './blocks/placement';
+import { blockLabel, placementError, valueInSequenceError } from './blocks/placement';
+import { CHANNEL_LABEL, channelsWrittenBy, uncombinable, type Channel } from './blocks/motion';
 import { blockVariableAccess, neverSetMessage } from './blocks/variableBlocks';
 import { variableStateKey } from './variables';
 import { utf8ByteLength } from './utf8';
@@ -140,7 +141,44 @@ export function collectWarnings(workspace: Blockly.Workspace): Map<Blockly.Block
     }
   }
 
+  warnMotionConflicts(allBlocks, warn);
+
   return warnings;
+}
+
+/** Whether the block runs: inside an event, or a gimmick placed on its own (not a loose block). */
+export function blockRuns(block: Blockly.Block): boolean {
+  return !!findEventContext(block) || block.type === 'jcreatepp_ride_template' || block.type === 'jcreatepp_chase_template';
+}
+
+/**
+ * Moves that cannot be added up. Blocks that move the same thing (position / rotation) are normally
+ * combined by the generated code (src/codegen/pose.ts); these are the exceptions, where the result
+ * would be one block's move only.
+ */
+function warnMotionConflicts(allBlocks: Blockly.Block[], warn: (block: Blockly.Block, message: string | null) => void): void {
+  for (const channel of ['position', 'rotation'] as Channel[]) {
+    const writers = allBlocks.filter((b) => blockRuns(b) && channelsWrittenBy(b.type).includes(channel));
+    if (writers.length < 2) continue;
+    const others = (self: Blockly.Block) => {
+      const labels = [...new Set(writers.filter((b) => b !== self).map((b) => blockLabel(b.type)))];
+      return labels.map((l) => `「${l}」`).join('');
+    };
+    const what = CHANNEL_LABEL[channel];
+    for (const block of writers) {
+      switch (uncombinable(block.type, channel, findEventContext(block))) {
+        case 'physics':
+          warn(block, `「${blockLabel(block.type)}」は物理でアイテムを動かすので、ほかに${what}を動かすブロック（${others(block)}）と動きを足し合わせられません。`);
+          break;
+        case 'chase':
+          warn(block, `追いかけるギミックは毎フレーム向きを決め直すので、ほかに${what}を変えるブロック（${others(block)}）の回転は消えてしまいます。`);
+          break;
+        case 'set':
+          warn(block, `「${blockLabel(block.type)}」を「毎フレーム」の中で使うと毎フレーム${what}が決め直されるので、ほかに${what}を動かすブロック（${others(block)}）の動きは消えてしまいます。`);
+          break;
+      }
+    }
+  }
 }
 
 function validateNames(block: Blockly.Block, warn: (block: Blockly.Block, message: string | null) => void): void {

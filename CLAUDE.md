@@ -9,9 +9,12 @@ Blockly で組んだブロックから Cluster Script（JavaScript）を生成�
   - 生成コードは読む人（学習者）向け: 各文の前に `describe.ts` の日本語コメント、括弧は `format.ts` の `group()` / `bare()` で必要な所だけ、補助関数は `helpers.ts` で使うときだけ先頭に定義
   - 利用者の文字列をコメントに入れるときは必ず `commentText()`、文字列リテラルは `jsString()`（U+2028/2029 で注釈やリテラルを抜けられないように）
   - 生成コードの見た目を変える変更では `test/__behavior__`（動作スナップショット）が1バイトも変わらないことを確認する
+  - 位置・角度を動かすブロックが2つ以上ある作品は、`pose.ts` の「覚えている位置・向き」（`itemPosition()` / `placeItem()` など、helpers.ts）を通して動きを足し合わせる（Cluster の getter は移動中の値を返すため）。動かすブロックが1つの作品は従来どおりの出力。動作ブロックを足したら `pose.ts` の `channelsOf` も更新し、`$.getPosition()` / `$.setPosition()` を直接書かず `positionNow()` / `placeAt()` を使う
+  - 「〜秒かけて動かす / 回す」の開始と毎フレームの処理は `smooth.ts`（一連の動作の中に直接置いたものは `sequence.ts` が時間を使って進め、終わるまで待つ）
+  - `$.onUpdate` の先頭で `deltaTime` を有限の 0 以上に直してから使う（個々の処理で直さない）
 - `src/unityRequirements.ts` IR → Unity 側で必要な設定の案内。`src/unitySetup.ts` は同じ内容の機械可読版（将来の Unity 拡張用）
 - `src/demos/` ブロックの動き見本（ツールチップ）。`playback.ts` はブロック JSON → IR → コード → sim を DOM なしで再生する共通の土台。`demoRenderer.ts` は three.js を使うので必ず動的 import
-- `src/parts/` 部品（ブロックのかたまりを自動で追加）。部品は IR ではなく保存形式のブロック JSON に展開し、追加前にコピーで変換エラーを確認、本番には 1 回の Undo で消せる形で入れる。位置・角度を動かすブロックの表（`insert.ts` の `WRITERS`）は新しい動作ブロックを足したら更新する
+- `src/parts/` 部品（ブロックのかたまりを自動で追加）。部品は IR ではなく保存形式のブロック JSON に展開し、追加前にコピーで変換エラーを確認、本番には 1 回の Undo で消せる形で入れる。位置・角度を動かすブロックの表（`src/blocks/motion.ts`。部品の衝突判定とエディタの「動きを足し合わせられない」警告が共用）は新しい動作ブロックを足したら更新する
 - `unity/Jcreatepp/` Unity エディタ拡張（試作。UPM パッケージ形式、Assets にコピーしても使える）。C# は Unity 2021.3 / CCK 3.4 向け、C# 5 相当の書き方で、ここでは Unity が無いのでスタブに対するコンパイル確認まで。スクリプトの読み取り（`ScriptAnalysis.cs`）は生成コードの書き方（`$.setPosition(` など）に依存するので、codegen の API 呼び出しを変えたらここも見直す
   - プレビュー（`Editor/Preview/`）は `src/unityHost/host.ts` を `npm run unity:sim` でまとめた `Sim/jcreatepp-sim.txt` を Jint（同梱 DLL、`Plugins/`）で動かす。`src/sim`・host・それが import するものを変えたら必ず `npm run unity:sim`（古いと `npm test` が失敗する）
   - ブロック処理（`Editor/Core/`）は `src/unityHost/core.ts`（画面なしの Blockly＋変換＋警告＋コード生成＋設定＋部品）を同じ `npm run unity:sim` で `Core/jcreatepp-core.txt` にまとめ、`CoreHost.cs` が Jint で動かす。Web 版と結果が 1 バイトも違わないことを `test/unityCore.test.ts` と `unity/check` で確認する。変換・生成・部品まわりを変えたら `npm run unity:sim`（Blockly の版は package-lock.json で追う）。これらのコードではブラウザ専用 API（`TextEncoder`・DOM など）を使わない（Jint に無い。UTF-8 のバイト数は `src/utf8.ts`）

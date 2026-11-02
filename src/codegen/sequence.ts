@@ -4,6 +4,7 @@ import { safeId, type SequenceStmt } from './shared';
 import { traceLine } from './trace';
 import { describeStmt } from './describe';
 import { bare, commentText } from './format';
+import { isSmooth, smoothActiveKey, smoothStartLines, smoothStepLines } from './smooth';
 
 /**
  * A sequence runs inside onUpdate as a small state machine: each frame it continues from the
@@ -61,12 +62,35 @@ if (time < seconds - 1e-6) {
   $.state["${timeVar}"] = 0;
   step++;
 }`;
+    } else if (isSmooth(stmt)) {
+      // The sequence moves the block on itself with its time budget, and goes on when it has finished.
+      const active = smoothActiveKey(stmt);
+      // 'run' when it starts: the 3D preview records where the block starts from (as for other blocks).
+      const started = traceLine(stmt, 'run').trimEnd();
+      caseBody = [
+        `// ${describeStmt(stmt)}（終わってから次へ進む）`,
+        `if (!$.state[${active}]) {`,
+        ...(started ? [`  ${started}`] : []),
+        ...smoothStartLines(stmt).map((line) => `  ${line}`),
+        '}',
+        ...smoothStepLines(stmt, 'budget', true),
+        'if (elapsed >= duration) {',
+        '  // 終わり: 余った時間は次のステップに回す',
+        `  $.state[${active}] = false;`,
+        '  budget = Math.max(0, before + budget - duration);',
+        '  step++;',
+        '} else {',
+        '  // まだ途中: 続きは次のフレーム',
+        '  budget = 0;',
+        '  yielded = true;',
+        '}',
+      ].join('\n');
     } else {
       caseBody = `${stmtToJS(stmt)}\nstep++;`;
     }
 
     // Waiting steps are not emitted through stmtToJS, so trace them here.
-    if (stmt.kind === 'wait_seconds' || stmt.kind === 'wait_until' || stmt.kind === 'run_for_seconds') {
+    if (stmt.kind === 'wait_seconds' || stmt.kind === 'wait_until' || stmt.kind === 'run_for_seconds' || isSmooth(stmt)) {
       caseBody = traceLine(stmt, 'wait') + caseBody;
     }
 

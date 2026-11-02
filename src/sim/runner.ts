@@ -18,6 +18,8 @@ export type RunnerOptions = {
   rotation?: Quaternion;
   /** Receives __jpp_trace(blockId, phase) calls from code generated with { trace: true }. */
   onTrace?: (blockId: string, phase: string) => void;
+  /** Getters return the transform at the start of the frame, like Cluster's interpolated getters (tests only). */
+  laggingGetters?: boolean;
 };
 
 export type Runner = ClusterMock & {
@@ -50,7 +52,7 @@ function seededRandom(seed: number): () => number {
 }
 
 export function createRunner(code: string, options: RunnerOptions = {}): Runner {
-  const mock = createClusterMock({ position: options.position, rotation: options.rotation });
+  const mock = createClusterMock({ position: options.position, rotation: options.rotation, laggingGetters: options.laggingGetters });
   const math = Object.create(Math) as Math;
   math.random = seededRandom(options.seed ?? 1);
 
@@ -80,6 +82,7 @@ export function createRunner(code: string, options: RunnerOptions = {}): Runner 
     update(deltaTime) {
       runner.time += deltaTime;
       call('update', mock.handlers.update && (() => mock.handlers.update!(deltaTime)));
+      mock.catchUp();
     },
     advance(seconds, deltaTime = 1 / 60) {
       // Whole frames only; the remainder carries over to the next advance() call.

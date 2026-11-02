@@ -28,8 +28,8 @@ type StatementRule = {
   onlyIn?: { events: EventContext[]; message: Message };
   /** Not allowed in these events. */
   notIn?: { events: EventContext[]; message: Message };
-  /** Sequence requirement. */
-  sequence?: { rule: 'required' | 'forbidden'; message: Message };
+  /** Sequence requirement. 'direct': allowed in a sequence only as one of its own steps (not inside an if / run-for there). */
+  sequence?: { rule: 'required' | 'forbidden' | 'direct'; message: Message };
   notInIf?: Message;
   notInRunFor?: Message;
 };
@@ -41,9 +41,10 @@ const startTiming: StatementRule = {
     events: ['jcreatepp_on_update'],
     message: (l) => `「${l}」は「毎フレーム」の中には置けません。インタラクト時やメッセージ受信時など、開始するタイミングの中で使ってください。`,
   },
+  // Directly in a sequence it is one of the steps: the sequence waits until it has finished.
   sequence: {
-    rule: 'forbidden',
-    message: (l) => `「${l}」は「一連の動作」の中には置けません。インタラクト時やメッセージ受信時などの中に直接置いてください。`,
+    rule: 'direct',
+    message: (l) => `「${l}」を「一連の動作」の中で使うときは、条件分岐や「N秒間、毎フレーム実行する」の中ではなく、一連の動作の中に直接置いてください（終わるまで待ってから次へ進みます）。`,
   },
 };
 
@@ -113,6 +114,7 @@ export function placementError(blockType: string, p: Placement): string | null {
   if (rule.notIn && rule.notIn.events.includes(p.event)) return rule.notIn.message(label);
   if (rule.sequence?.rule === 'required' && !p.inSequence) return rule.sequence.message(label);
   if (rule.sequence?.rule === 'forbidden' && p.inSequence) return rule.sequence.message(label);
+  if (rule.sequence?.rule === 'direct' && p.inSequence && (p.inIf || p.inRunFor)) return rule.sequence.message(label);
   if (rule.notInIf && p.inIf) return rule.notInIf(label);
   if (rule.notInRunFor && p.inRunFor) return rule.notInRunFor(label);
   return null;
@@ -156,6 +158,11 @@ export function blockLabel(type: string): string {
     case 'jcreatepp_timed_random_warp': return '一定間隔でランダムワープ';
     case 'jcreatepp_timed_move_return': return '一定時間移動して戻る';
     case 'jcreatepp_oscillate': return '往復する';
+    case 'jcreatepp_random_warp': return 'ランダム移動する';
+    case 'jcreatepp_load_position': return '保存した位置に戻る';
+    case 'jcreatepp_add_force': return '力を加える';
+    case 'jcreatepp_ride_template': return '乗り物ギミック';
+    case 'jcreatepp_chase_template': return '追いかけるギミック';
     case 'jcreatepp_set_move_speed': return 'プレイヤーの移動速度倍率を変える';
     case 'jcreatepp_set_jump_speed': return 'プレイヤーのジャンプ速度倍率を変える';
     case 'jcreatepp_if': return 'もし〜なら';
