@@ -44,6 +44,8 @@ namespace Jcreatepp.Editor.Preview
         [SerializeField] string blockTitle = "";
         /// <summary>Why the blocks now in the editor are not what runs here (the last code that converted is); "" when they are.</summary>
         [SerializeField] string blockStale = "";
+        /// <summary>Whether the block editor starts this preview again when the blocks change (its 自動でやり直す).</summary>
+        [SerializeField] bool blockRestarts = true;
         [SerializeField] int speedIndex = 2;
         [SerializeField] bool showTransform = true;
         [SerializeField] bool showState = true;
@@ -73,8 +75,11 @@ namespace Jcreatepp.Editor.Preview
             window.Show();
         }
 
-        /// <summary>Opens the preview with code from the block editor (not saved anywhere), from its 開始時.</summary>
-        public static void ShowCode(string code, string title)
+        /// <summary>
+        /// Opens the preview with code from the block editor (not saved anywhere), from its 開始時.
+        /// <paramref name="restarts"/>: the editor starts it again when the blocks change.
+        /// </summary>
+        public static void ShowCode(string code, string title, bool restarts)
         {
             Open();
             var window = GetWindow<PreviewWindow>();
@@ -82,6 +87,7 @@ namespace Jcreatepp.Editor.Preview
             window.blockCode = code ?? "";
             window.blockTitle = title ?? "";
             window.blockStale = "";
+            window.blockRestarts = restarts;
             window.Restart();
         }
 
@@ -96,6 +102,7 @@ namespace Jcreatepp.Editor.Preview
             var window = GetWindow<PreviewWindow>(false, null, false);
             if (window.script != null || window.blockCode == "") return;
             code = code ?? "";
+            window.blockRestarts = restart;
             var stale = "";
             if (code != window.blockCode)
             {
@@ -292,7 +299,9 @@ namespace Jcreatepp.Editor.Preview
                     GUIUtility.ExitGUI();
                 }
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.LabelField("ブロックを変えると、ここも最初からやり直します。", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField(blockRestarts
+                    ? "ブロックを変えると、ここも最初からやり直します。"
+                    : "ブロックを変えても、ここはやり直しません（ブロックエディターの「開いているプレビューもやり直す」がオフ）。", EditorStyles.wordWrappedMiniLabel);
                 if (blockStale != "")
                 {
                     EditorGUILayout.HelpBox("いまのブロックではなく、最後に変換できたときのコードで動いています。" + blockStale, MessageType.Warning);

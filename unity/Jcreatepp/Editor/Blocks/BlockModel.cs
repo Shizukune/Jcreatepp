@@ -144,6 +144,15 @@ namespace Jcreatepp.Editor.Blocks
                 }
             }
             ws.Relink();
+            // Like Blockly when it loads: a block with no id, or one another block already has, gets a new one,
+            // so every block can be found (selected, deleted, ...).
+            var used = new HashSet<string>();
+            var renamed = new List<BlockNode>();
+            foreach (var b in ws.All())
+            {
+                if (b.Id == "" || !used.Add(b.Id)) renamed.Add(b);
+            }
+            foreach (var b in renamed) b.Id = NewId(used);
             return ws;
         }
 

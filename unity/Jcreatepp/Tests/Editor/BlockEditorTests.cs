@@ -132,6 +132,42 @@ namespace Jcreatepp.Editor.Preview.Tests
         }
 
         [Test]
+        public void BlocksWithoutIdsGetOneWhenRead()
+        {
+            // Written by hand or by another tool: Blockly gives these blocks new ids when it loads; so must the editor.
+            var ws = BlockWorkspace.FromJson(
+                "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"jcreatepp_on_start\",\"x\":0,\"y\":0," +
+                "\"inputs\":{\"DO\":{\"block\":{\"type\":\"jcreatepp_set_position\",\"id\":\"same\",\"inputs\":{" +
+                "\"X\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":1}}}}," +
+                "\"next\":{\"block\":{\"type\":\"jcreatepp_set_position\",\"id\":\"same\"}}}}}}," +
+                "{\"type\":\"jcreatepp_on_start\",\"id\":\"kept\",\"x\":0,\"y\":200}]}}");
+            var ids = new HashSet<string>();
+            foreach (var b in ws.All())
+            {
+                Assert.AreNotEqual("", b.Id, b.Type + " has no id");
+                Assert.IsTrue(ids.Add(b.Id), "two blocks have the id " + b.Id);
+                Assert.AreSame(b, ws.Find(b.Id), "found by its id");
+            }
+            Assert.AreEqual(5, ids.Count);
+            Assert.IsTrue(ids.Contains("same"), "the first block with an id keeps it");
+            Assert.IsTrue(ids.Contains("kept"));
+            Assert.AreEqual(ws.ToJson(false), BlockWorkspace.FromJson(ws.ToJson(false)).ToJson(false), "ids are saved, so reading again changes nothing");
+        }
+
+        [Test]
+        public void UnsavedMeansNotWhatTheFileHas()
+        {
+            const string saved = "{\"blocks\":1}";
+            Assert.IsFalse(BlockEditorState.Unsaved("", "", ""), "new and empty: nothing to keep");
+            Assert.IsTrue(BlockEditorState.Unsaved(saved, "", ""), "blocks never saved");
+            Assert.IsFalse(BlockEditorState.Unsaved(saved, "Assets/a.json", saved), "just saved or opened");
+            Assert.IsTrue(BlockEditorState.Unsaved("{\"blocks\":2}", "Assets/a.json", saved), "changed after saving");
+            // Edit, save, then Undo: the blocks go back to before the edit, the file keeps the edit.
+            Assert.IsTrue(BlockEditorState.Unsaved("{\"blocks\":0}", "Assets/a.json", saved), "undone past a save");
+            Assert.IsTrue(BlockEditorState.Unsaved("", "Assets/a.json", saved), "a saved file emptied");
+        }
+
+        [Test]
         public void EditsMakeTheDoorScript()
         {
             using (var core = new CoreHost(Bundle()))

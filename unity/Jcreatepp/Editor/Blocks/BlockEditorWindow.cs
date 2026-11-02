@@ -38,6 +38,13 @@ namespace Jcreatepp.Editor.Blocks
         static readonly string[] Axes = { "X", "Y", "Z" };
 
         [SerializeField] BlockEditorState state;
+        /// <summary>"Assets/....json" where the blocks are saved; "" before the first save. Not undone with the blocks.</summary>
+        [SerializeField] string assetPath = "";
+        /// <summary>The blocks as they are in that file (state.Json's form), to tell unsaved changes even after Undo.</summary>
+        [SerializeField] string savedJson = "";
+        /// <summary>.js files this window wrote and the text written (same order); overwritten again without asking only while the file still has that text.</summary>
+        [SerializeField] List<string> writtenPaths = new List<string>();
+        [SerializeField] List<string> writtenTexts = new List<string>();
         [SerializeField] Vector2 pan = new Vector2(40, 40);
         [SerializeField] int category = 1;
         [SerializeField] Vector2 paletteScroll;
@@ -81,8 +88,6 @@ namespace Jcreatepp.Editor.Blocks
         ItemSetup.Result applyResult;
         GameObject applyTarget;
         string notice = "";
-        /// <summary>.js files this window wrote → the text written; overwritten again without asking only while the file still has that text.</summary>
-        readonly Dictionary<string, string> written = new Dictionary<string, string>();
 
         GUIStyle blockLabel, fieldText, fieldPopup, smallWrap;
         readonly Dictionary<string, float> widths = new Dictionary<string, float>();
@@ -131,6 +136,7 @@ namespace Jcreatepp.Editor.Blocks
             EditorApplication.update += Tick;
             AssemblyReloadEvents.beforeAssemblyReload += DisposeCore;
             ws = null;
+            RefreshUnsaved();
             ScheduleConvert();
         }
 
@@ -144,12 +150,17 @@ namespace Jcreatepp.Editor.Blocks
 
         void OnDestroy()
         {
-            if (state != null && HasUnsavedChanges() &&
-                EditorUtility.DisplayDialog("Jcreate++", "ブロックの変更が保存されていません。保存しますか？", "保存する", "保存しない"))
-            {
-                Save(false);
-            }
+            // Unsaved blocks were asked about before closing (hasUnsavedChanges), when closing could still be cancelled.
             if (state != null) DestroyImmediate(state);
+        }
+
+        /// <summary>
+        /// Unity calls this when the window (or Unity) closes with unsaved blocks and 保存 is chosen. When the blocks
+        /// are not saved (the save place was not chosen), hasUnsavedChanges stays on and Unity does not close.
+        /// </summary>
+        public override void SaveChanges()
+        {
+            Save(false);
         }
 
         void OnLostFocus()
@@ -276,8 +287,8 @@ namespace Jcreatepp.Editor.Blocks
             Undo.IncrementCurrentGroup();
             Undo.RecordObject(state, "Jcreate++ ブロック: " + what);
             state.Json = ws.Tops.Count == 0 ? "" : ws.ToJson(false);
-            state.Dirty = true;
             wsJson = state.Json;
+            RefreshUnsaved();
             ScheduleConvert();
             Repaint();
         }
@@ -287,6 +298,7 @@ namespace Jcreatepp.Editor.Blocks
             if (state == null || state.Json == wsJson) return;
             CancelDrag();
             ws = null;
+            RefreshUnsaved();
             ScheduleConvert();
             Repaint();
         }
@@ -352,29 +364,49 @@ namespace Jcreatepp.Editor.Blocks
 
         string FileName
         {
-            get { return state.AssetPath != "" ? Path.GetFileName(state.AssetPath) : "（まだ保存していません）"; }
+            get { return assetPath != "" ? Path.GetFileName(assetPath) : "（まだ保存していません）"; }
+        }
+
+        /// <summary>
+        /// Starts on other blocks (新規 / 開く). Not an Undo step: Undo would bring the old blocks back under the
+        /// new file's name, so the steps before are dropped (their changes were asked about first).
+        /// </summary>
+        void Replace(string json, string path, string saved)
+        {
+            Undo.ClearUndo(state);
+            state.Json = json;
+            assetPath = path;
+            savedJson = saved;
+            wsJson = null;
+            ws = null;
+            selectedId = "";
+            applyResult = null;
+            RefreshUnsaved();
+            ScheduleConvert();
         }
 
         void New()
         {
             if (!ConfirmDiscard()) return;
-            Undo.RecordObject(state, "Jcreate++ ブロック: 新規");
-            state.Json = "";
-            state.AssetPath = "";
-            state.Dirty = false;
-            ws = null;
-            selectedId = "";
-            applyResult = null;
-            ScheduleConvert();
+            Replace("", "", "");
         }
 
         /// <summary>
-        /// Changed since the last save or open. Emptying a saved file counts (the file still has blocks);
-        /// an empty workspace that was never saved has nothing to keep.
+        /// Blocks not in their file: changed since the last save or open (also after Undo / Redo back past a save),
+        /// or never saved. Emptying a saved file counts (the file still has blocks); an empty workspace that was
+        /// never saved has nothing to keep.
         /// </summary>
         bool HasUnsavedChanges()
         {
-            return state.Dirty && !(state.Json == "" && state.AssetPath == "");
+            return BlockEditorState.Unsaved(state.Json, assetPath, savedJson);
+        }
+
+        /// <summary>Tells Unity whether closing the window (or Unity) has to ask about saving first.</summary>
+        void RefreshUnsaved()
+        {
+            if (state == null) return;
+            hasUnsavedChanges = HasUnsavedChanges();
+            saveChangesMessage = "Jcreate++ のブロックの変更が保存されていません（" + FileName + "）。保存しますか？";
         }
 
         bool ConfirmDiscard()
@@ -389,7 +421,7 @@ namespace Jcreatepp.Editor.Blocks
         void PickAndLoad()
         {
             if (!ConfirmDiscard()) return;
-            var start = state.AssetPath != "" ? Path.GetDirectoryName(state.AssetPath) : (AssetDatabase.IsValidFolder(SaveFolder) ? SaveFolder : "Assets");
+            var start = assetPath != "" ? Path.GetDirectoryName(assetPath) : (AssetDatabase.IsValidFolder(SaveFolder) ? SaveFolder : "Assets");
             var path = EditorUtility.OpenFilePanel("Jcreate++ のブロックを開く（Web 版で保存した .json も開けます）", start, "json");
             if (string.IsNullOrEmpty(path)) return;
             Load(path);
@@ -430,16 +462,11 @@ namespace Jcreatepp.Editor.Blocks
                 if (core.IsStopped) EnsureCore();
                 return;
             }
-            Undo.RecordObject(state, "Jcreate++ ブロック: 開く");
-            state.Json = loaded.Tops.Count == 0 ? "" : loaded.ToJson(false);
-            var assetPath = ToAssetPath(path);
-            state.AssetPath = assetPath ?? "";
-            state.Dirty = assetPath == null;
-            ws = null;
-            selectedId = "";
-            applyResult = null;
-            notice = assetPath == null ? "プロジェクトの外のファイルを開きました。保存するときはプロジェクトの中に保存します。" : "";
-            ScheduleConvert();
+            var json = loaded.Tops.Count == 0 ? "" : loaded.ToJson(false);
+            var inProject = ToAssetPath(path);
+            // A file outside the project is not where the blocks are saved, so they count as unsaved.
+            Replace(json, inProject ?? "", inProject != null ? json : "");
+            notice = inProject == null ? "プロジェクトの外のファイルを開きました。保存するときはプロジェクトの中に保存します。" : "";
             FitView();
             Repaint();
         }
@@ -447,7 +474,7 @@ namespace Jcreatepp.Editor.Blocks
         /// <summary>Saves the blocks (.json, the Web editor's format). False when not saved.</summary>
         bool Save(bool choosePlace)
         {
-            var path = state.AssetPath;
+            var path = assetPath;
             if (choosePlace || path == "")
             {
                 if (!AssetDatabase.IsValidFolder(SaveFolder)) AssetDatabase.CreateFolder("Assets", Path.GetFileName(SaveFolder));
@@ -458,10 +485,19 @@ namespace Jcreatepp.Editor.Blocks
                 if (string.IsNullOrEmpty(path)) return false;
             }
             var w = Workspace();
-            WriteText(path, w.ToJson(true) + "\n");
+            try
+            {
+                WriteText(path, w.ToJson(true) + "\n");
+            }
+            catch (Exception e)
+            {
+                EditorUtility.DisplayDialog("Jcreate++", "保存できませんでした: " + e.Message, "OK");
+                return false;
+            }
             AssetDatabase.ImportAsset(path);
-            state.AssetPath = path;
-            state.Dirty = false;
+            assetPath = path;
+            savedJson = w.Tops.Count == 0 ? "" : w.ToJson(false);
+            RefreshUnsaved();
             notice = "保存しました: " + path;
             Repaint();
             return true;
@@ -483,27 +519,43 @@ namespace Jcreatepp.Editor.Blocks
                     : "コードを作れるブロックがありません。イベント（開始時 など）のブロックを置いて、中に動作をつなげてください。", "OK");
                 return null;
             }
-            if (state.AssetPath == "" || state.Dirty)
+            if (assetPath == "" || HasUnsavedChanges())
             {
                 if (!Save(false)) return null;
             }
-            var jsPath = Path.ChangeExtension(state.AssetPath, ".js").Replace('\\', '/');
+            var jsPath = Path.ChangeExtension(assetPath, ".js").Replace('\\', '/');
             var full = Path.Combine(Path.GetDirectoryName(Application.dataPath), jsPath);
+            var wroteAt = writtenPaths.IndexOf(jsPath);
             if (File.Exists(full))
             {
                 // Asks unless the file is what this window wrote last time (not edited since) or already the new code.
                 var current = File.ReadAllText(full, Encoding.UTF8);
-                string last;
-                var ours = written.TryGetValue(jsPath, out last) && last == current;
+                var ours = wroteAt >= 0 && writtenTexts[wroteAt] == current;
                 if (!ours && current != result.Code &&
-                    !EditorUtility.DisplayDialog("Jcreate++", "「" + jsPath + "」はもうあります" + (written.ContainsKey(jsPath) ? "（前に書き出したあとで変更されています）" : "") +
+                    !EditorUtility.DisplayDialog("Jcreate++", "「" + jsPath + "」はもうあります" + (wroteAt >= 0 ? "（前に書き出したあとで変更されています）" : "") +
                         "。ブロックから作ったコードで上書きしますか？", "上書きする", "やめる"))
                 {
                     return null;
                 }
             }
-            WriteText(jsPath, result.Code);
-            written[jsPath] = result.Code;
+            try
+            {
+                WriteText(jsPath, result.Code);
+            }
+            catch (Exception e)
+            {
+                EditorUtility.DisplayDialog("Jcreate++", "「" + jsPath + "」に書き出せませんでした: " + e.Message, "OK");
+                return null;
+            }
+            if (wroteAt >= 0)
+            {
+                writtenTexts[wroteAt] = result.Code;
+            }
+            else
+            {
+                writtenPaths.Add(jsPath);
+                writtenTexts.Add(result.Code);
+            }
             // CCK's importer turns the .js into a JavaScriptAsset.
             AssetDatabase.ImportAsset(jsPath, ImportAssetOptions.ForceUpdate);
             var asset = AssetDatabase.LoadAssetAtPath<JavaScriptAsset>(jsPath);
@@ -1322,7 +1374,7 @@ namespace Jcreatepp.Editor.Blocks
             {
                 if (GUILayout.Button(new GUIContent(" プレビューで動かす", EditorGUIUtility.IconContent("PlayButton").image, "ウィンドウの中の立方体で動かします（シーンには触れません）"), GUILayout.Height(26)))
                 {
-                    PreviewWindow.ShowCode(result.Code, state.AssetPath != "" ? Path.GetFileNameWithoutExtension(state.AssetPath) : "未保存");
+                    PreviewWindow.ShowCode(result.Code, assetPath != "" ? Path.GetFileNameWithoutExtension(assetPath) : "未保存", autoPreview);
                 }
             }
             var auto = EditorGUILayout.ToggleLeft("ブロックを変えたら、開いているプレビューもやり直す", autoPreview, EditorStyles.miniLabel);
