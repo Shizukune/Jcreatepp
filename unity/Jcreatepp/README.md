@@ -139,7 +139,6 @@ Web 版と同じブロックを、Unity のウィンドウの中で組み立て�
 | `Editor/Preview/Plugins/` | 同梱ライブラリと、そのライセンス |
 | `Editor/Core/Jcreatepp.Editor.Core.asmdef` | ブロック処理用のアセンブリ（同梱 DLL だけを明示的に参照） |
 | `Editor/Core/CoreHost.cs` | Jint でブロック処理を動かす（保存したブロックの `.json` → 変換エラー・警告・コード・必要な設定・部品、ブロックエディター用のパレットとブロックの形） |
-| `Editor/Core/CoreEditorScript.cs` | ブロックエディター用に、ブロック処理の Blockly からブロックの形とパレットを読む処理。影のブロックを変換できるようにする代わりの DOM も（いずれ Web 版の `src/unityHost/core.ts` へ移す） |
 | `Editor/Core/Json.cs` | JSON の読み書き（Web 版と同じ書き方） |
 | `Editor/Blocks/Jcreatepp.Editor.Blocks.asmdef` | ブロックエディターのアセンブリ |
 | `Editor/Blocks/BlockEditorWindow.cs` | ブロックエディターのウィンドウ |
@@ -147,7 +146,6 @@ Web 版と同じブロックを、Unity のウィンドウの中で組み立て�
 | `Editor/Blocks/BlockLayout.cs` | ブロックの並べ方、クリックの当たり、つながる場所の判定 |
 | `Editor/Blocks/BlockShapes.cs` | ブロックの形とパレット（ブロック処理から読む） |
 | `Editor/Blocks/BlockEditorState.cs` | 編集中のブロック（Undo とスクリプトの再読み込み用） |
-| `Editor/Blocks/jcreatepp-toolbox.json` | パレットの定義（Web 版の `src/toolbox.ts` から `Tools~/make-toolbox.ps1` で作る） |
 | `Editor/Core/CoreBundle.cs` | プロジェクトの中からブロック処理本体を探す |
 | `Editor/Core/jcreatepp-core.txt` | ブロック処理本体（Web 版と同じ Blockly・変換・コード生成・部品を 1 つにまとめたもの。`npm run unity:sim` で作る） |
 | `Editor/Core/THIRD-PARTY-NOTICES.md` | Blockly のライセンス |

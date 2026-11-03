@@ -53,6 +53,9 @@ cases['depth-150'] = JSON.stringify(state([{ type: 'jcreatepp_on_interact', inpu
 cases['depth-151'] = JSON.stringify(state([{ type: 'jcreatepp_on_interact', inputs: { DO: { block: chain(flat(150)) } } }]));
 cases['unknown-block'] = JSON.stringify(state([{ type: 'jcreatepp_future_block' }]));
 cases['broken-json'] = '{';
+// Shadow blocks (the Web palette puts them in most inputs): Blockly writes an XML copy of each.
+const shadowNum = (n) => ({ shadow: { type: 'math_number', fields: { NUM: n } } });
+cases['shadow'] = JSON.stringify(state([{ type: 'jcreatepp_on_interact', x: 0, y: 0, inputs: { DO: { block: { type: 'jcreatepp_add_position', inputs: { X: shadowNum(0), Y: shadowNum(1), Z: shadowNum(0) } } } } }]));
 
 for (const [name, json] of Object.entries(cases)) {
   fs.writeFileSync(path.join(out, name + '.input.json'), json);
@@ -72,6 +75,13 @@ for (const p of core.parts()) {
 }
 fs.writeFileSync(path.join(out, 'parts.expected.txt'), partLines.join('\n') + '\n');
 fs.writeFileSync(path.join(out, 'empty.input.json'), bases.empty);
+// The block editor's palette and some shapes (JSON text, compared as is).
+const palette = core.palette();
+if (!palette.ok) throw new Error('palette: ' + palette.error);
+fs.writeFileSync(path.join(out, 'palette.expected.json'), palette.json + '\n');
+const shapes = core.shapes(JSON.stringify(['jcreatepp_add_position', 'math_number', 'no_such_block']));
+if (!shapes.ok) throw new Error('shapes: ' + shapes.error);
+fs.writeFileSync(path.join(out, 'shapes.expected.json'), shapes.json + '\n');
 const v = core.version();
 fs.writeFileSync(path.join(out, 'version.expected.txt'), [v.format, v.jcreatepp, v.blockly, v.blockTypes.length].join(' ') + '\n');
 console.log(`expected (core): ${Object.keys(cases).length} cases, ${partLines.length} part additions`);

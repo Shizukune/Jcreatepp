@@ -25,12 +25,13 @@ import { collectWarnings } from '../validator';
 import { buildUnitySetup, describeScriptSize, scriptByteLength } from '../unitySetup';
 import { PARTS, defaultValues, paramValue, type PartValues } from '../parts/catalog';
 import { insertPart } from '../parts/insert';
+import { paletteOn, provideMinimalDom, shapesOn } from './editor';
 
 declare const __JCREATEPP_VERSION__: string;
 declare const __BLOCKLY_VERSION__: string;
 
-/** Version of this contract (bump when a function or result changes shape). */
-const CORE_FORMAT = 1;
+/** Version of this contract (bump when a function or result changes shape). 2: palette / shapes for the block editor. */
+const CORE_FORMAT = 2;
 const MAX_JSON_CHARS = 5_000_000;
 const MAX_BLOCKS = 5_000;
 /** Blocks inside blocks (inputs and next both count). Blockly reads them recursively. */
@@ -79,6 +80,7 @@ let brokenReason = '';
 function register(): void {
   if (registered) return;
   registered = true;
+  provideMinimalDom();
   Blockly.common.defineBlocks(libraryBlocks);
   Blockly.common.defineBlocks(blocks);
   // Same dummy generators as src/index.ts: the converter only needs them to exist.
@@ -154,7 +156,7 @@ function checkState(json: string): { state: object } | { error: string } {
  * Events, the event group and undo recording are put back whatever happens; if Blockly throws,
  * the engine is marked broken (Blockly does not restore all of its own state on an exception).
  */
-function withWorkspace<T>(state: object, work: (ws: Blockly.Workspace) => T, onBroken: (reason: string) => T): T {
+function withWorkspace<T>(state: object | null, work: (ws: Blockly.Workspace) => T, onBroken: (reason: string) => T): T {
   if (brokenReason) return onBroken(brokenReason);
   register();
   const group = Blockly.Events.getGroup();
@@ -163,7 +165,7 @@ function withWorkspace<T>(state: object, work: (ws: Blockly.Workspace) => T, onB
   try {
     const ws = new Blockly.Workspace();
     try {
-      Blockly.serialization.workspaces.load(state, ws);
+      if (state) Blockly.serialization.workspaces.load(state, ws);
       return work(ws);
     } finally {
       ws.dispose();
@@ -274,5 +276,39 @@ export function addPart(json: string, partId: string, valuesJson: string): AddPa
       return { ok: true, error: '', broken: false, json: out };
     },
     (reason) => fail(reason, true),
+  );
+}
+
+/** A block editor call's result: `json` is the answer as JSON text when ok. */
+export type EditorResult = { ok: boolean; error: string; broken: boolean; json: string };
+
+/**
+ * The block editor's palette (src/toolbox.ts): { categories: [{ name, colour, items: [{ kind: label |
+ * button | block, text, callbackKey, type, template }] }], types: [names whose shapes are needed] }.
+ */
+export function palette(): EditorResult {
+  register();
+  return withWorkspace<EditorResult>(
+    null,
+    (ws) => ({ ok: true, error: '', broken: false, json: JSON.stringify(paletteOn(ws)) }),
+    (reason) => ({ ok: false, error: reason, broken: true, json: '' }),
+  );
+}
+
+/** The shapes of block types (a JSON array of names): { shapes: { type: shape }, unknown: [names] }. */
+export function shapes(typesJson: string): EditorResult {
+  register();
+  const refused = (error: string): EditorResult => ({ ok: false, error, broken: false, json: '' });
+  let types: unknown;
+  try {
+    types = JSON.parse(typesJson);
+  } catch {
+    return refused('ブロックの種類の一覧を読めません。');
+  }
+  if (!Array.isArray(types)) return refused('ブロックの種類の一覧の形が違います。');
+  return withWorkspace<EditorResult>(
+    null,
+    (ws) => ({ ok: true, error: '', broken: false, json: JSON.stringify(shapesOn(ws, types as unknown[])) }),
+    (reason) => ({ ok: false, error: reason, broken: true, json: '' }),
   );
 }

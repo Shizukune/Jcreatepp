@@ -1,12 +1,13 @@
 # Checks unity/Jcreatepp without Unity (Windows, .NET Framework's csc, C# 5):
 #   1. the setup code compiles against Stubs.cs (Unity / CCK API signatures it uses)
 #   2. ScriptAnalysis edge cases, and ScriptAnalysis over the real-device kit scripts
-#   3. (with -JintDir) the preview code compiles against Stubs.cs + PreviewStubs.cs + the real Jint,
+#   3. (with -JintDir) the preview, block core and block editor code compiles against Stubs.cs +
+#      PreviewStubs.cs + BlocksStubs.cs + the real Jint,
 #      and SimHost.cs runs the simulator bundle on the real Jint: the kit scripts give the same
 #      result as Node (expected.js), and stops / errors behave as designed (SimHostCheck.cs)
 #   4. (with -JintDir) CoreHost.cs runs the block core bundle on the real Jint: every case converts
 #      exactly like Node (expected-core.js), parts add the same way, shadow blocks convert, the block
-#      editor's palette loads, a broken core stops (CoreHostCheck.cs)
+#      editor's palette and shapes come out like Node, a broken core stops (CoreHostCheck.cs)
 # This does not replace a check in Unity: Unity's own APIs are only stubs here.
 #
 # Usage (from the repository root):
@@ -28,8 +29,9 @@ New-Item -ItemType Directory -Force $out | Out-Null
 $setup = Get-ChildItem (Join-Path $root 'unity\Jcreatepp\Editor\*.cs') | ForEach-Object FullName
 $preview = Get-ChildItem (Join-Path $root 'unity\Jcreatepp\Editor\Preview\*.cs') | ForEach-Object FullName
 $core = Get-ChildItem (Join-Path $root 'unity\Jcreatepp\Editor\Core\*.cs') | ForEach-Object FullName
+$blocks = Get-ChildItem (Join-Path $root 'unity\Jcreatepp\Editor\Blocks\*.cs') | ForEach-Object FullName
 $analysis = Join-Path $root 'unity\Jcreatepp\Editor\ScriptAnalysis.cs'
-$stubs = @((Join-Path $PSScriptRoot 'Stubs.cs'), (Join-Path $PSScriptRoot 'PreviewStubs.cs'))
+$stubs = @((Join-Path $PSScriptRoot 'Stubs.cs'), (Join-Path $PSScriptRoot 'PreviewStubs.cs'), (Join-Path $PSScriptRoot 'BlocksStubs.cs'))
 
 & $csc -nologo -target:library -langversion:5 -warn:4 -codepage:65001 "-out:$out\setup.dll" $stubs $setup
 if ($LASTEXITCODE -ne 0) { throw 'setup code does not compile' }
@@ -52,7 +54,7 @@ $netstandard = (Get-ChildItem (Join-Path $gac 'netstandard\*\netstandard.dll') |
 $runtime = (Get-ChildItem (Join-Path $gac 'System.Runtime\*\System.Runtime.dll') | Select-Object -First 1).FullName
 $refs = @("-r:$out\Jint.dll", "-r:$out\Acornima.dll", "-r:$netstandard", "-r:$runtime", '-r:System.Numerics.dll')
 
-& $csc -nologo -target:library -langversion:5 -warn:4 -codepage:65001 "-out:$out\preview.dll" @refs $stubs $setup $preview $core
+& $csc -nologo -target:library -langversion:5 -warn:4 -codepage:65001 "-out:$out\preview.dll" @refs $stubs $setup $preview $core $blocks
 if ($LASTEXITCODE -ne 0) { throw 'preview code does not compile' }
 Write-Output 'compile (preview): ok'
 
@@ -69,5 +71,5 @@ $coreHost = $core | Where-Object { (Split-Path -Leaf $_) -ne 'CoreBundle.cs' }
 if ($LASTEXITCODE -ne 0) { throw 'CoreHostCheck does not compile' }
 Copy-Item (Join-Path $PSScriptRoot 'SimHostCheck.exe.config') "$out\CoreHostCheck.exe.config" -Force
 node (Join-Path $PSScriptRoot 'expected-core.js') "$out\core-cases"
-& "$out\CoreHostCheck.exe" (Join-Path $root 'unity\Jcreatepp\Editor\Core\jcreatepp-core.txt') "$out\core-cases" (Join-Path $root 'unity\Jcreatepp\Editor\Blocks\jcreatepp-toolbox.json')
+& "$out\CoreHostCheck.exe" (Join-Path $root 'unity\Jcreatepp\Editor\Core\jcreatepp-core.txt') "$out\core-cases"
 if ($LASTEXITCODE -ne 0) { throw 'CoreHost checks failed' }

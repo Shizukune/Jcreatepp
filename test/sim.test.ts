@@ -13,6 +13,7 @@ import { createRunner } from '../src/sim/runner';
 import { b, bool, num, onEvent, workspace, xyz } from './build';
 import { generateCode } from './harness';
 import { toolbox } from '../src/toolbox';
+import { blocks } from '../src/blocks/jcreatepp';
 
 const fixtureDir = path.resolve(__dirname, '../../test/fixtures');
 
@@ -485,6 +486,117 @@ test('combine: releasing a held item forgets the remembered position (moves cont
   assert.ok(r.item.position.equals(new Vector3(5, 6, 5)), JSON.stringify(r.item.position));
 });
 
+test('combine: an item moved by something else (no grab blocks: physics, a hand) continues from where it is', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_position', { inputs: xyz(1, 0, 0) }),
+    b('jcreatepp_add_position', { inputs: xyz(1, 0, 0) }),
+  ])));
+  assert.ok(code.includes('placeItem('), 'combined form');
+  assert.ok(!code.includes('$.onGrab'), 'no grab handler');
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.update(1 / 60);
+    assert.ok(near(r.item.position, new Vector3(2, 0, 0)), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+    r.item.position = new Vector3(10, 0, 3); // moved by something other than this script
+    r.update(1 / 60);
+    r.interact();
+    assert.ok(near(r.item.position, new Vector3(12, 0, 3)), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+  });
+});
+
+test('combine: moved off the middle of a long move (30 cm), the item continues from where it is', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_position', { inputs: xyz(5, 0, 0) }),
+    b('jcreatepp_add_position', { inputs: xyz(5, 0, 0) }),
+  ])));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.item.position = new Vector3(5, 0.3, 0); // halfway along the move, 30 cm to the side
+    r.update(1 / 60);
+    r.interact();
+    assert.ok(near(r.item.position, new Vector3(15, 0.3, 0)), `lagging=${lagging}: ${JSON.stringify(r.item.position)}`);
+  });
+});
+
+test('combine: moved back along the line of a finished move, the item continues from where it is (getters up to date)', () => {
+  // With Cluster's getters this one cannot be told apart from the item still on its way: see pose.ts.
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_position', { inputs: xyz(5, 0, 0) }),
+    b('jcreatepp_add_position', { inputs: xyz(5, 0, 0) }),
+  ])));
+  const r = createRunner(code);
+  r.interact();
+  r.item.position = new Vector3(7, 0, 0);
+  r.interact();
+  assert.ok(near(r.item.position, new Vector3(17, 0, 0)), JSON.stringify(r.item.position));
+});
+
+test('combine: turned off the middle of a long turn, the item continues from the angle it has', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 80, 0) }),
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 80, 0) }),
+  ])));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    const turned = new Quaternion().setFromEulerAngles(new Vector3(10, 80, 0)); // halfway, tilted 10 degrees
+    r.item.rotation = turned.clone();
+    r.update(1 / 60);
+    r.interact();
+    const want = turned.clone().multiply(new Quaternion().setFromEulerAngles(new Vector3(0, 160, 0)));
+    assert.ok(r.item.rotation.equals(want, 1e-6), `lagging=${lagging}: ${JSON.stringify(r.item.rotation.createEulerAngles())}`);
+  });
+});
+
+test('combine: the same angle written with the other sign (-x, -y, -z, -w) is not taken for an outside turn', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 80, 0) }),
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 0, 0) }), // the remembered angle stays where it is (from == q)
+  ])));
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.update(1 / 60);
+    const q = r.item.rotation;
+    r.item.rotation = new Quaternion(-q.x, -q.y, -q.z, -q.w);
+    r.update(1 / 60);
+    r.interact();
+    const yaw = r.item.rotation.createEulerAngles().y;
+    assert.ok(Math.abs(yaw - 160) < 1e-6 && [r.item.rotation.x, r.item.rotation.w].every(Number.isFinite), `lagging=${lagging}: yaw ${yaw}`);
+  });
+});
+
+test('combine: an item turned by something else continues from the angle it has', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 10, 0) }),
+    b('jcreatepp_add_rotation', { inputs: xyz(0, 10, 0) }),
+  ])));
+  assert.ok(code.includes('turnItem('), 'combined form');
+  bothGetters(code, (r, lagging) => {
+    r.interact();
+    r.update(1 / 60);
+    r.item.rotation = new Quaternion().setFromEulerAngles(new Vector3(0, 90, 0));
+    r.update(1 / 60);
+    r.interact();
+    assert.ok(r.item.rotation.equals(new Quaternion().setFromEulerAngles(new Vector3(0, 110, 0)), 1e-6), `lagging=${lagging}: ${JSON.stringify(r.item.rotation.createEulerAngles())}`);
+  });
+});
+
+test('combine: two smooth turns on different axes at the same time end the same at any usual frame rate', () => {
+  // Turning on X and Y together is one turn about the axis between them; frame by frame it is built
+  // from small steps, so it differs slightly with the frame rate (not with the order of the blocks).
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
+    b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(90, 0, 0), DURATION: num(1) } }),
+    b('jcreatepp_smooth_rotate_by', { inputs: { ...xyz(0, 90, 0), DURATION: num(1) } }),
+  ])));
+  const at = (fps: number) => {
+    const r = createRunner(code);
+    r.interact();
+    r.advance(1.5, 1 / fps);
+    return r.item.rotation;
+  };
+  const degrees = (a: Quaternion, b: Quaternion) => (2 * Math.acos(Math.min(1, Math.abs(a.dot(b)))) * 180) / Math.PI;
+  for (const fps of [30, 60, 90]) assert.ok(degrees(at(fps), at(144)) < 2, `${fps} fps vs 144 fps: ${degrees(at(fps), at(144))} degrees`);
+});
+
 test('combine: state left by an earlier JS (without the new keys) starts the move over instead of breaking', () => {
   const code = generateCode(workspace(onEvent('jcreatepp_on_update', [
     b('jcreatepp_oscillate', { id: 'o', fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(1) } }),
@@ -605,6 +717,32 @@ test('sequence: a smooth move hands its spare frame time to the next step', () =
   r.update(0.375); // the first move ends and the second is half done in the same frame
   assert.ok(near(r.item.position, new Vector3(1, 0.5, 0)), JSON.stringify(r.item.position));
   assert.deepEqual(r.errors(), []);
+});
+
+test('sequence: no block allowed inside "N seconds, every frame" reads deltaTime', () => {
+  // The step runs its body with the whole frame's deltaTime (not the part of the frame it uses, after
+  // time carried over from an earlier step or at the end of the N seconds). That is only right while no
+  // block placed inside reads it; if one is allowed there one day, give the body the time it uses.
+  for (const type of Object.keys(blocks)) {
+    const def = (blocks as Record<string, Record<string, unknown>>)[type];
+    if (def.output !== undefined || type.includes('_on_')) continue;
+    const inputs: Record<string, ReturnType<typeof num>> = {};
+    for (let k = 0; k < 4; k++) {
+      for (const arg of (def[`args${k}`] as { type: string; name: string }[] | undefined) ?? []) if (arg.type === 'input_value') inputs[arg.name] = num(1);
+    }
+    const state = workspace(onEvent('jcreatepp_on_interact', [
+      b('jcreatepp_sequence', { stmts: { DO: [b('jcreatepp_run_for_seconds', { inputs: { SECONDS: num(1) }, stmts: { DO: [b(type, { inputs })] } })] } }),
+    ]));
+    let code: string;
+    try {
+      code = generateCode(state);
+    } catch {
+      continue; // not allowed there
+    }
+    const from = code.indexOf('if (budget > 0 && start < seconds) {');
+    const body = code.slice(from, code.indexOf('\n        }\n', from));
+    assert.ok(from >= 0 && !/\bdeltaTime\b/.test(body), `${type} reads deltaTime inside "N seconds, every frame"`);
+  }
 });
 
 // ── state values are not aliased by later movement ──

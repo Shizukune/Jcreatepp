@@ -104,19 +104,6 @@ namespace Jcreatepp.Editor.Core
             public string Json = "";
         }
 
-        /// <summary>
-        /// The end of the core module in jcreatepp-core.txt (webpack output). The block editor's entry
-        /// is added just before the module closes, where Blockly and the core's register / broken state
-        /// are in scope. Only the text given to the engine changes, not the file.
-        /// </summary>
-        const string ExportLine = "JcreateppCore = __webpack_exports__;";
-        const string ModuleEnd = "})();";
-        const string EditorEntry =
-            "\n;__webpack_exports__.editorAccess = function () { return { " +
-            "Blockly: blockly_core__WEBPACK_IMPORTED_MODULE_0__, register: register, " +
-            "broken: function () { return brokenReason; }, " +
-            "markBroken: function (reason) { if (!brokenReason) brokenReason = reason; } }; };\n";
-
         /// <summary>Longest the core bundle may take to load (it parses about 1.4 MB).</summary>
         public static readonly TimeSpan LoadTimeout = TimeSpan.FromSeconds(10);
         /// <summary>
@@ -184,18 +171,23 @@ namespace Jcreatepp.Editor.Core
             try
             {
                 var e = engine;
-                var core = OnLargeStack(() => e.Evaluate(WithEditorEntry(coreBundle) + "\n;JcreateppCore;")).AsObject();
+                var core = OnLargeStack(() => e.Evaluate(coreBundle + "\n;JcreateppCore;"), LoadTimeout).AsObject();
                 versionFn = core.Get("version");
                 convertFn = core.Get("convert");
                 partsFn = core.Get("parts");
                 addPartFn = core.Get("addPart");
+                paletteFn = core.Get("palette");
+                shapesFn = core.Get("shapes");
             }
             catch (Exception e)
             {
                 Dispose();
                 throw new InvalidOperationException("Jcreate++ のブロック処理（jcreatepp-core.txt）を読み込めませんでした。", e);
             }
-            LoadEditor();
+            // An older bundle converts but has no block editor calls.
+            EditorUnavailableReason = paletteFn.IsUndefined() || shapesFn.IsUndefined()
+                ? "ブロック処理（jcreatepp-core.txt）が古く、ブロックエディター用の処理がありません。Jcreatepp フォルダを丸ごと入れ直してください。"
+                : "";
             LoadMilliseconds = watch.Elapsed.TotalMilliseconds;
         }
 
@@ -204,14 +196,19 @@ namespace Jcreatepp.Editor.Core
         /// nested blocks recursively; 150 levels (the core's limit) overflowed the stack of Unity's main thread
         /// (StackOverflowException in Unity 6000.2; .NET outside Unity has a larger default). One thread for the
         /// host's whole life (not one per call), one call at a time.
+        /// The engine's own time limit (<paramref name="limit"/>) stops the work; the wait here gives up a little
+        /// later in case the work does not come back at all, so the editor never waits forever.
         /// </summary>
-        T OnLargeStack<T>(Func<T> work)
+        T OnLargeStack<T>(Func<T> work, TimeSpan limit)
         {
             if (worker == null) worker = new StackWorker(LargeStackBytes);
             var value = default(T);
-            worker.Run(() => { value = work(); });
+            worker.Run(() => { value = work(); }, limit + WorkerGrace);
             return value;
         }
+
+        /// <summary>How much longer than the engine's limit the host waits for the worker thread.</summary>
+        static readonly TimeSpan WorkerGrace = TimeSpan.FromSeconds(5);
 
         sealed class StackWorker : IDisposable
         {
@@ -245,12 +242,19 @@ namespace Jcreatepp.Editor.Core
                 }
             }
 
-            public void Run(Action action)
+            /// <summary>Runs <paramref name="action"/> on the worker; throws TimeoutException when it has not come back within <paramref name="wait"/>.</summary>
+            public void Run(Action action, TimeSpan wait)
             {
                 error = null;
                 work = action;
                 go.Set();
-                done.WaitOne();
+                if (!done.WaitOne(wait))
+                {
+                    // The thread is left behind (it is a background thread, so it does not keep Unity open);
+                    // the caller stops this host, and a new host makes a new thread.
+                    stopping = true;
+                    throw new TimeoutException();
+                }
                 work = null;
                 // The same exception object, so the callers' catch blocks (time limit, recursion, memory) still match.
                 if (error != null) throw error;
@@ -263,59 +267,26 @@ namespace Jcreatepp.Editor.Core
             }
         }
 
-        /// <summary>The bundle with the block editor's entry added; the bundle unchanged when its end does not look as expected.</summary>
-        static string WithEditorEntry(string bundle)
-        {
-            var export = bundle.LastIndexOf(ExportLine, StringComparison.Ordinal);
-            if (export < 0) return bundle;
-            var end = bundle.LastIndexOf(ModuleEnd, export, StringComparison.Ordinal);
-            if (end < 0 || bundle.Substring(end + ModuleEnd.Length, export - end - ModuleEnd.Length).Trim().Length != 0) return bundle;
-            return bundle.Substring(0, end) + EditorEntry + bundle.Substring(end);
-        }
-
-        /// <summary>Runs <see cref="CoreEditorScript"/>; the converter still works when it cannot.</summary>
-        void LoadEditor()
-        {
-            EditorUnavailableReason = "";
-            try
-            {
-                var e = engine;
-                var editor = OnLargeStack(() => e.Evaluate(CoreEditorScript.Source));
-                if (editor.IsString())
-                {
-                    EditorUnavailableReason = editor.AsString();
-                    return;
-                }
-                var o = editor.AsObject();
-                paletteFn = o.Get("palette");
-                shapesFn = o.Get("shapes");
-            }
-            catch (Exception e)
-            {
-                EditorUnavailableReason = "ブロックエディター用の処理を読み込めませんでした: " + e.GetType().Name + ": " + e.Message;
-            }
-        }
-
         /// <summary>
-        /// The block editor's palette from a toolbox definition (src/toolbox.ts as JSON):
-        /// { categories: [{ name, colour, items: [{ kind: label | button | block, text, type, template }] }], types: [names whose shapes are needed] }.
+        /// The block editor's palette, the Web editor's (src/toolbox.ts, inside the bundle):
+        /// { categories: [{ name, colour, items: [{ kind: label | button | block, text, callbackKey, type, template }] }], types: [names whose shapes are needed] }.
         /// </summary>
-        public EditorResult Palette(string toolboxJson)
+        public EditorResult Palette()
         {
             // Once per editor window, all palette blocks at once: the load limit, not one call's.
-            return CallEditor(paletteFn, toolboxJson ?? "", LoadTimeout);
+            return CallEditor(paletteFn, LoadTimeout);
         }
 
         /// <summary>The shapes of block types (a JSON array of names): { shapes: { type: shape }, unknown: [names] }.</summary>
         public EditorResult Shapes(string typesJson)
         {
-            return CallEditor(shapesFn, typesJson ?? "", LoadTimeout);
+            return CallEditor(shapesFn, LoadTimeout, typesJson ?? "");
         }
 
-        EditorResult CallEditor(JsValue fn, string argument, TimeSpan limit)
+        EditorResult CallEditor(JsValue fn, TimeSpan limit, params object[] args)
         {
             if (!IsStopped && EditorUnavailableReason != "") return new EditorResult { Ok = false, Error = EditorUnavailableReason };
-            var value = CallWithin(limit, fn, argument);
+            var value = CallWithin(limit, fn, args);
             if (value == null) return new EditorResult { Ok = false, Error = StopReason };
             var o = value.AsObject();
             if (StopIfBroken(o)) return new EditorResult { Ok = false, Error = StopReason };
@@ -451,7 +422,7 @@ namespace Jcreatepp.Editor.Core
             try
             {
                 var e = engine;
-                return OnLargeStack(() => e.Invoke(fn, args));
+                return OnLargeStack(() => e.Invoke(fn, args), limit);
             }
             catch (TimeoutException)
             {

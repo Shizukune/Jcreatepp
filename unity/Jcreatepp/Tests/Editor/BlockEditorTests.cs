@@ -31,22 +31,11 @@ namespace Jcreatepp.Editor.Preview.Tests
             return bundle;
         }
 
-        static string Toolbox()
-        {
-            foreach (var guid in AssetDatabase.FindAssets("jcreatepp-toolbox t:TextAsset"))
-            {
-                var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(AssetDatabase.GUIDToAssetPath(guid));
-                if (asset != null && asset.text.Contains("\"categoryToolbox\"")) return asset.text;
-            }
-            Assert.Fail("jcreatepp-toolbox.json not found");
-            return null;
-        }
-
         static BlockCatalog Catalog(CoreHost core)
         {
             Assert.AreEqual("", core.EditorUnavailableReason);
             string error;
-            var catalog = BlockCatalog.Load(core, Toolbox(), out error);
+            var catalog = BlockCatalog.Load(core, out error);
             Assert.IsNotNull(catalog, error);
             return catalog;
         }

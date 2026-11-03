@@ -7,6 +7,14 @@
  * When more than one block moves the same thing (position or rotation), the generated code
  * reads and writes a copy kept in $.state instead, so their changes add up.
  *
+ * Something else may move the item too (a hand, physics). The script also keeps where the item was
+ * when it last moved it; while the item is on that way to the remembered pose (as interpolation shows
+ * it), the remembered pose is used, and once it is off that way (more than 5 cm / 3 degrees from the
+ * nearest point) the item's own transform is used again (helpers.ts). When the getters already show
+ * the new pose (preview, tests), or once a read sees the item arrived, the way shrinks to the pose.
+ * Known limit on Cluster: an outside move that leaves the item on the way of the last move (within
+ * 5 cm / 3 degrees), before any read saw it arrive, looks like the item still on its way.
+ *
  * Programs where only one block moves each thing are generated exactly as before.
  */
 

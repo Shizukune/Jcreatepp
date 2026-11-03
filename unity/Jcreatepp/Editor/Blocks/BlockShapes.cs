@@ -226,10 +226,10 @@ namespace Jcreatepp.Editor.Blocks
         }
 
         /// <summary>Reads the palette and every shape it needs. Null (and why) when the core cannot.</summary>
-        public static BlockCatalog Load(CoreHost core, string toolboxJson, out string error)
+        public static BlockCatalog Load(CoreHost core, out string error)
         {
             error = "";
-            var palette = core.Palette(toolboxJson);
+            var palette = core.Palette();
             if (!palette.Ok)
             {
                 error = palette.Error;

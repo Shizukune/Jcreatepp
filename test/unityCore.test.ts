@@ -17,6 +17,7 @@ import { collectWarnings } from '../src/validator';
 import { programToJS } from '../src/codegen';
 import { buildUnitySetup, describeScriptSize, scriptByteLength } from '../src/unitySetup';
 import { utf8ByteLength } from '../src/utf8';
+import { toolbox } from '../src/toolbox';
 import { SCENARIOS } from './realdevice/scenarios';
 import { b, onEvent, workspace } from './build';
 import { convertState, loadWorkspace, saveWorkspace } from './harness';
@@ -69,7 +70,7 @@ test('unity core: up to date with its sources (npm run unity:sim)', () => {
 
 test('unity core: version', () => {
   const v = plain(core.version());
-  assert.equal(v.format, 1);
+  assert.equal(v.format, 2);
   assert.equal(v.jcreatepp, JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version);
   assert.match(v.blockly, /^12\./);
   assert.ok(v.blockTypes.includes('jcreatepp_on_start') && v.blockTypes.includes('math_number'));
@@ -250,6 +251,55 @@ test('unity core: refuses inputs before Blockly reads them', () => {
   const over = plain(core.addPart(JSON.stringify(full), 'spin', ''));
   assert.equal(over.ok, false);
   assert.match(over.error, /大きくなりすぎます/);
+});
+
+test('unity core: shadow blocks convert like the Web editor (Blockly writes an XML copy of each)', () => {
+  const shadow = (n: number) => ({ shadow: { type: 'math_number', fields: { NUM: n } } });
+  const state = {
+    blocks: {
+      languageVersion: 0,
+      blocks: [{ type: 'jcreatepp_on_interact', id: 'ev', x: 0, y: 0, inputs: { DO: { block: { type: 'jcreatepp_add_position', id: 'm', inputs: { X: shadow(0), Y: shadow(1), Z: shadow(0) } } } } }],
+    },
+  };
+  const got = plain(core.convert(JSON.stringify(state)));
+  assert.equal(got.ok, true, got.error);
+  assert.equal(got.code, direct(state).code);
+  assert.match(got.code, /new Vector3\(0, 1, 0\)/);
+});
+
+test('unity core: the block editor palette is the Web toolbox, and every starting block converts', () => {
+  const r = plain(core.palette());
+  assert.equal(r.ok, true, r.error);
+  const palette = JSON.parse(r.json) as { categories: { name: string; colour: string; items: { kind: string; type?: string; template?: object }[] }[]; types: string[] };
+  const webCategories = (toolbox.contents as { kind: string; name?: string; contents?: { kind: string; type?: string }[] }[]).filter((c) => c.kind === 'category');
+  assert.deepEqual(palette.categories.map((c) => c.name), webCategories.map((c) => c.name));
+  for (const [i, c] of palette.categories.entries()) {
+    assert.match(c.colour, /^#[0-9a-f]{6}$/);
+    const webBlocks = (webCategories[i].contents ?? []).filter((x) => x.kind === 'block').map((x) => x.type);
+    assert.deepEqual(c.items.filter((x) => x.kind === 'block').map((x) => x.type), webBlocks, c.name);
+  }
+  for (const type of Object.keys(Blockly.Blocks).filter((t) => t.startsWith('jcreatepp_'))) assert.ok(palette.types.includes(type), type);
+  // Each starting block (shadows included) loads and converts on its own.
+  for (const item of palette.categories.flatMap((c) => c.items).filter((x) => x.kind === 'block')) {
+    const got = plain(core.convert(JSON.stringify({ blocks: { languageVersion: 0, blocks: [item.template] } })));
+    assert.equal(got.ok, true, `${item.type}: ${got.error}`);
+  }
+  // Same as core.ts in process (where Node's Blockly has its own DOM).
+  assert.equal(inProcess.palette().json, r.json);
+});
+
+test('unity core: block shapes, unknown types listed, refused input', () => {
+  const r = plain(core.shapes(JSON.stringify(['jcreatepp_add_position', 'math_number', 'no_such_block'])));
+  assert.equal(r.ok, true, r.error);
+  const { shapes, unknown } = JSON.parse(r.json) as { shapes: Record<string, { previous: boolean; output: boolean; inputs: { kind: string; name: string; check: string[] | null }[] }>; unknown: string[] };
+  assert.deepEqual(unknown, ['no_such_block']);
+  assert.equal(shapes.jcreatepp_add_position.previous, true);
+  assert.deepEqual(shapes.jcreatepp_add_position.inputs.filter((i) => i.kind === 'value').map((i) => i.name), ['X', 'Y', 'Z']);
+  assert.equal(shapes.math_number.output, true);
+  assert.equal(inProcess.shapes(JSON.stringify(['jcreatepp_add_position', 'math_number', 'no_such_block'])).json, r.json);
+  const refused = plain(core.shapes('{'));
+  assert.equal(refused.ok, false);
+  assert.equal(refused.broken, false);
 });
 
 test('unity core (in process): Blockly events, group and undo recording are put back', () => {

@@ -109,11 +109,10 @@ static class CoreHostCheck
                 "\"X\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":0}}},\"Y\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":1}}},\"Z\":{\"shadow\":{\"type\":\"math_number\",\"fields\":{\"NUM\":0}}}}}}}}]}}");
             Expect(shadow.Ok && shadow.Errors.Count == 0 && shadow.Code.Contains("new Vector3(0, 1, 0)"), "shadow blocks convert" + (shadow.Ok ? "" : ": " + shadow.Error));
             Expect(host.EditorUnavailableReason == "", "block editor calls available" + (host.EditorUnavailableReason == "" ? "" : ": " + host.EditorUnavailableReason));
-            if (args.Length > 2)
-            {
-                var palette = host.Palette(File.ReadAllText(args[2]));
-                Expect(palette.Ok && palette.Json.Length > 0, "palette loads (" + host.LastCallMilliseconds.ToString("0") + " ms)" + (palette.Ok ? "" : ": " + palette.Error));
-            }
+            var palette = host.Palette();
+            Expect(palette.Ok && palette.Json == read("palette.expected.json").TrimEnd('\n'), "palette like Node (" + host.LastCallMilliseconds.ToString("0") + " ms)" + (palette.Ok ? "" : ": " + palette.Error));
+            var shapes = host.Shapes("[\"jcreatepp_add_position\",\"math_number\",\"no_such_block\"]");
+            Expect(shapes.Ok && shapes.Json == read("shapes.expected.json").TrimEnd('\n'), "shapes like Node" + (shapes.Ok ? "" : ": " + shapes.Error));
         }
 
         // 6. Blockly throwing inside: the host stops; a new host works.

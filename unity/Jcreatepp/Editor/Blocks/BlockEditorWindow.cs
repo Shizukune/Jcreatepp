@@ -28,7 +28,6 @@ namespace Jcreatepp.Editor.Blocks
         const double ConvertDelay = 0.3;
         const string SaveFolder = "Assets/Jcreatepp Scripts";
         const string PartsCallback = "jppOpenParts";
-        const string ToolboxMarker = "\"categoryToolbox\"";
 
         static readonly Color CanvasColour = new Color(0.17f, 0.17f, 0.18f);
         static readonly Color GridColour = new Color(1, 1, 1, 0.04f);
@@ -207,12 +206,6 @@ namespace Jcreatepp.Editor.Blocks
                 problem = "ブロック処理（jcreatepp-core.txt）が見つかりません。Jcreatepp フォルダを丸ごと入れ直してください。";
                 return false;
             }
-            var toolbox = LoadToolbox();
-            if (toolbox == null)
-            {
-                problem = "パレットの定義（jcreatepp-toolbox.json）が見つかりません。Jcreatepp フォルダを丸ごと入れ直してください。";
-                return false;
-            }
             try
             {
                 core = new CoreHost(bundle);
@@ -228,7 +221,7 @@ namespace Jcreatepp.Editor.Blocks
                 return false;
             }
             string error;
-            var loaded = BlockCatalog.Load(core, toolbox, out error);
+            var loaded = BlockCatalog.Load(core, out error);
             if (loaded == null)
             {
                 problem = "パレットを作れませんでした: " + error;
@@ -239,16 +232,6 @@ namespace Jcreatepp.Editor.Blocks
             paletteBlocks.Clear();
             parts = core.Parts();
             return true;
-        }
-
-        static string LoadToolbox()
-        {
-            foreach (var guid in AssetDatabase.FindAssets("jcreatepp-toolbox t:TextAsset"))
-            {
-                var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(AssetDatabase.GUIDToAssetPath(guid));
-                if (asset != null && asset.text.Contains(ToolboxMarker)) return asset.text;
-            }
-            return null;
         }
 
         /// <summary>The workspace being edited, read again from <see cref="BlockEditorState"/> after Undo / Redo / reload.</summary>
