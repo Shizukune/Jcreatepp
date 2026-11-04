@@ -460,8 +460,17 @@ btnSave?.addEventListener('click', () => {
 btnLoad?.addEventListener('click', () => {
   console.log('[btnLoad] clicked');
   try {
-    resetEditTarget();
-    loadFromFile(ws);
+    // 読み込みはイベントを止めて行うので、読めたら自動保存・警告・コード生成をここで動かす
+    loadFromFile(ws, () => {
+      resetEditTarget();
+      try {
+        save(ws);
+      } catch (err) {
+        console.error('[btnLoad] save error:', err);
+      }
+      validateWorkspace(ws);
+      generateCode();
+    });
   } catch (e) {
     console.error('[btnLoad] failed:', e);
     alert('ブロックを開けませんでした: ' + (e as Error).message);

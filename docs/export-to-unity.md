@@ -71,10 +71,10 @@ Jcreate++の右側に「Unity側で必要な設定」が表示される場合が
 
 例:
 
-- 別アイテムを動かす → World Item Reference が必要
-- `音 hit を 音量 1 で鳴らす` → Item Audio Set List が必要
-- マテリアルを変える → Material Set が必要
-- 衝突を使う → Collider や衝突設定が必要
+- `指定アイテム door に メッセージ open を1回だけ送る` → World Item Reference List に `door` を登録する
+- `音 hit を 音量 1 で鳴らす` → Item Audio Set List に `hit` を登録する
+- `サブノード Text の TextView の文字を … にする` → `Text` という名前の子オブジェクトに TextView を付ける
+- 衝突を使う → Collider と、物理で動く Movable Item（Rigidbody の Is Kinematic をオフ）が必要
 
 生成したJSだけでは完結しないギミックもあるので、この表示も確認してください。
 
