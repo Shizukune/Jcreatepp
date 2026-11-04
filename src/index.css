@@ -120,14 +120,6 @@ body {
   transform: scale(0.96);
 }
 
-#btnGenerate {
-  background: var(--brand);
-  color: var(--text-on-color);
-}
-#btnGenerate:hover {
-  background: var(--brand-hover);
-}
-
 #btnDownloadJS {
   background: var(--save);
   color: var(--text-on-color);
@@ -167,18 +159,25 @@ body {
   min-width: 400px;
 }
 
-.blocklyToolboxDiv {
+/* Blockly 12 のクラス名（11 までの blocklyToolboxDiv / blocklyTreeRow / blocklyTreeLabel から変わった） */
+.blocklyToolbox {
   min-width: 190px;
 }
 
-.blocklyTreeRow {
+.blocklyToolbox .blocklyToolboxCategory {
   height: 34px;
   line-height: 34px;
 }
 
-.blocklyTreeLabel {
+.blocklyToolbox .blocklyToolboxCategoryLabel {
   font-size: 13px;
   white-space: nowrap;
+  /* ページの文字色（暗い背景用の明るい色）を引き継ぐと、明るいパレットの上で読めない */
+  color: #222;
+}
+
+.blocklyToolbox .blocklyToolboxSelected .blocklyToolboxCategoryLabel {
+  color: #fff;
 }
 
 /* ── コード表示ペイン ── */
@@ -229,6 +228,28 @@ body {
 #codeView[hidden],
 #previewView[hidden] {
   display: none;
+}
+
+#startHint {
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-soft);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line-soft);
+  font-family: 'Segoe UI', 'Meiryo', sans-serif;
+}
+
+#startHint[hidden] {
+  display: none;
+}
+
+#startHint ol {
+  margin: 6px 0 8px 1.4em;
+}
+
+#startHint a {
+  color: var(--text-link);
 }
 
 #errorMessages {

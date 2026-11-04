@@ -143,7 +143,7 @@ namespace Jcreatepp.Editor
                     lastResult = ItemSetup.Apply(target, script);
                 }
             }
-            if (script == null) EditorGUILayout.HelpBox("Jcreate++ の「JS保存」で保存した .js を選んでください。", MessageType.Info);
+            if (script == null) EditorGUILayout.HelpBox("Jcreate++ の「JS保存（Unity用）」で保存した .js を選んでください。", MessageType.Info);
             else if (target == null) EditorGUILayout.HelpBox("ヒエラルキーでオブジェクトを選ぶと、ここに入ります。", MessageType.Info);
 
             if (lastResult != null)

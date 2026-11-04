@@ -15,7 +15,7 @@
 
 ## 必要なUnity / Cluster設定
 
-- スクリプトを動かすアイテムに Scriptable Item を設定します。
+- スクリプトを動かすアイテムに `Item` と `Scriptable Item` を付け、Scriptable Item に `.js` を設定します（[はじめて Unity で動かす](../first-unity)）。
 - ライトを切り替えたい場合は、サブノードにLightコンポーネントを付けます。
 - 見た目を切り替えたい場合は、サブノードにMeshRendererを付けます。
 - サブノード名を `Lamp` などにして、Jcreate++側の名前と合わせます。

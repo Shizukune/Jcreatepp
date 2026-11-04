@@ -282,7 +282,7 @@ namespace Jcreatepp.Editor.Preview
             EditorGUILayout.LabelField("① スクリプトを選ぶ", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             script = (JavaScriptAsset)EditorGUILayout.ObjectField(
-                new GUIContent("スクリプト", "Jcreate++ の「JS保存」で保存した .js（JavaScript Asset）"), script, typeof(JavaScriptAsset), false);
+                new GUIContent("スクリプト", "Jcreate++ の「JS保存（Unity用）」で保存した .js（JavaScript Asset）"), script, typeof(JavaScriptAsset), false);
             if (EditorGUI.EndChangeCheck())
             {
                 if (script != null) blockCode = "";
@@ -309,7 +309,7 @@ namespace Jcreatepp.Editor.Preview
             }
             if (script == null && blockCode == "")
             {
-                EditorGUILayout.HelpBox("Jcreate++ の「JS保存」で保存した .js をプロジェクトに入れて、ここに入れてください。", MessageType.Info);
+                EditorGUILayout.HelpBox("Jcreate++ の「JS保存（Unity用）」で保存した .js をプロジェクトに入れて、ここに入れてください。", MessageType.Info);
                 Footer();
                 EditorGUILayout.EndScrollView();
                 return;

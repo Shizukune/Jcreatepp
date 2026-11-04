@@ -15,7 +15,7 @@
 
 ## 必要なUnity / Cluster設定
 
-- スクリプトを動かすアイテムに Scriptable Item を設定します。
+- スクリプトを動かすアイテムに `Item` と `Scriptable Item` を付け、Scriptable Item に `.js` を設定します（[はじめて Unity で動かす](../first-unity)）。
 - 衝突を取るためのColliderやPhysical Shapeを設定します。
 - 音を鳴らす場合は、Item Audio Set Listに `hit` などのIDで音を登録します。
 - 文字を変える場合は、サブノードにTextMeshProなどを付けます。

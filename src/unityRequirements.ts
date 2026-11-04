@@ -116,7 +116,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
       case 'oscillate':
         add({
           kind: 'movable_item',
-          reason: '位置・回転・物理力をスクリプトから変更するため、このアイテムは移動可能/物理操作可能な設定が必要です。',
+          reason: 'アイテムに Movable Item を付けてください（位置・回転・物理の力をスクリプトから変えるため）。',
           blockId: 'blockId' in stmt ? stmt.blockId : '',
         });
         if ('x' in stmt) visitExpr(stmt.x);
@@ -318,7 +318,7 @@ export function collectUnityRequirements(program: Program): UnityRequirement[] {
   if (program.rideTemplate || program.chaseTemplate) {
     add({
       kind: 'movable_item',
-      reason: '移動系テンプレートを使うため、このアイテムは移動可能な設定が必要です。',
+      reason: 'アイテムに Movable Item を付けてください（移動系テンプレートで動かすため）。',
       blockId: '',
     });
   }

@@ -10,6 +10,9 @@ hero:
       text: Jcreate++を開く
       link: /app/
     - theme: alt
+      text: はじめてUnityで動かす
+      link: /first-unity
+    - theme: alt
       text: レシピを見る
       link: /recipes/
     - theme: alt
@@ -56,6 +59,6 @@ JavaScriptやCluster Scriptに慣れていない人でも、ブロックを組�
 
 細かい仕様を覚える前に、まず1つ動くものを作ってみましょう。
 
-作ったScriptをUnityに入れる流れは、[JSを保存してUnityに持っていく](/export-to-unity) にまとめています。
+作ったScriptをClusterで動かすまでの流れ（Unity と Cluster Creator Kit の準備、付けるコンポーネント、アップロード）は、[はじめて Unity で動かす](/first-unity) にまとめています。
 
 ブロックごとの詳しい意味は、[パーツリファレンス](/reference/) にまとめています。

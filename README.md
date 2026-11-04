@@ -25,13 +25,15 @@ Web版はこちらです。
 
 1. [Jcreate++を開く](https://shizukune.github.io/Jcreatepp/app/)
 2. ブロックを置く
-3. `JS生成` を押す
-4. `JS名` にファイル名を入れる
-5. `JS保存` を押して `.js` ファイルを保存する
+3. 右側の `3Dプレビュー` で動きを確かめる
+4. `JSファイル名` にファイル名を入れる
+5. `JS保存（Unity用）` を押して `.js` ファイルを保存する
 6. 保存した `.js` をUnityプロジェクトの `Assets` に入れる
-7. 動かしたいアイテムに `Scriptable Item` を付ける
-8. Scriptable Itemに `.js` ファイルを設定する
+7. 動かしたいアイテムに `Item` と `Scriptable Item`（動かすなら `Movable Item` も）を付ける
+8. Scriptable Itemの `Source Code Asset` に `.js` ファイルを設定する
 9. Clusterへアップロードして動作確認する
+
+Unity と Cluster Creator Kit の準備から、アップロードまでの全体の流れは [はじめて Unity で動かす](https://shizukune.github.io/Jcreatepp/first-unity) にまとめています。必要なコンポーネントを自動で付ける Unity 拡張（試作）もあります（[unity/Jcreatepp](unity/Jcreatepp/README.md)）。
 
 詳しい手順は、こちらにまとめています。
 

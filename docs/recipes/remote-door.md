@@ -16,14 +16,14 @@
 
 スイッチ側:
 
-- Scriptable Itemを付けます。
-- インタラクトできる設定にします。
+- `Item` と `Scriptable Item` を付けます。
+- インタラクトするので `Collider` が必要です（Cube などには最初から付いています）。
 - World Item Reference List に、ドアを `door` という名前で登録します。
 
 ドア側:
 
-- Scriptable Itemを付けます。
-- 位置をスクリプトから変えるため、移動できる設定にします。
+- `Item` と `Scriptable Item` を付けます。
+- 位置をスクリプトから変えるため、`Movable Item` を付けます。
 - `メッセージ toggle を受け取ったとき` を使います。
 
 ## Jcreate++で置くブロック

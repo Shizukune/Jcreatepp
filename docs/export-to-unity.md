@@ -3,6 +3,7 @@
 Jcreate++で作ったブロックは、Cluster Script用のJavaScriptとして保存できます。
 
 ここでは「ブロックを置く → JSを保存する → Unityに入れる → Scriptable Itemに設定する」までを短く説明します。
+Unity や Cluster Creator Kit の準備、アップロードまで含めた全体の流れは [はじめて Unity で動かす](./first-unity) を見てください。
 
 ## 1. ブロックを置く
 
@@ -16,17 +17,15 @@ Jcreate++の画面左側で、使いたいブロックを置きます。
 
 いきなり大きな仕掛けを作るより、まず1つ動かす方が原因を見つけやすいです。
 
-## 2. JS生成を押す
+## 2. 生成コードを確かめる
 
-画面上部の `JS生成` を押します。
-
-右側の「生成コード」にJavaScriptが表示されればOKです。
+ブロックを置くと、右側の「生成コード」にJavaScriptが自動で表示されます。
 
 エラーが出た場合は、ブロックの置き場所や空欄になっている値を確認してください。
 
-## 3. ファイル名を決めてJS保存を押す
+## 3. ファイル名を決めてJS保存（Unity用）を押す
 
-画面上部の `JS名` 欄に、保存したいファイル名を入力します。
+画面上部の `JSファイル名` 欄に、保存したいファイル名を入力します。
 
 例:
 
@@ -36,7 +35,7 @@ door_switch.js
 
 `.js` を付け忘れても、自動で `.js` が付きます。
 
-そのあと `JS保存` を押します。
+そのあと `JS保存（Unity用）` を押します。
 
 保存したファイルは、通常はブラウザのダウンロードフォルダに入ります。
 
@@ -56,13 +55,13 @@ Assets/Scripts/door_switch.js
 
 Unity上で、スクリプトを動かしたいアイテムを選びます。
 
-Inspectorで、Cluster用の `Scriptable Item` コンポーネントを追加します。
+Inspectorで、Cluster用の `Item` と `Scriptable Item` コンポーネントを追加します。位置や角度を変えるスクリプトなら `Movable Item` も付けます（[付けるものの一覧](./first-unity#_2-unity-でアイテムに付ける)）。
 
 すでに付いている場合は、追加しなくて大丈夫です。
 
 ## 6. Scriptable ItemにJSをアタッチする
 
-Scriptable ItemのScript欄に、保存した `.js` ファイルを設定します。
+Scriptable Itemの `Source Code Asset` 欄に、保存した `.js` ファイルを設定します。
 
 設定したら、Clusterへアップロードして実際に動くか確認します。
 
@@ -81,7 +80,7 @@ Jcreate++の右側に「Unity側で必要な設定」が表示される場合が
 
 ## よくあるミス
 
-- JS保存ではなく、workspace保存のJSONをUnityに入れている
+- `JS保存（Unity用）` の `.js` ではなく、`ブロック保存` の `.json` をUnityに入れている
 - Scriptable Itemが付いていない
 - Scriptable ItemにJSファイルを設定していない
 - 別アイテム参照や音など、Unity側の追加設定を忘れている

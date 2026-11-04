@@ -11,7 +11,7 @@
       { text: 'はじめに', link: '/' },
       { text: 'レシピ', link: '/recipes/' },
       { text: 'パーツリファレンス', link: '/reference/' },
-      { text: 'Unityへ持っていく', link: '/export-to-unity' },
+      { text: 'はじめてUnityで動かす', link: '/first-unity' },
       { text: 'Clusterルール', link: '/cluster-rules' },
       { text: '困ったとき', link: '/troubleshooting' },
       { text: '更新履歴', link: '/changelog' },
@@ -23,6 +23,7 @@
           { text: 'Jcreate++を開く', link: '/app/' },
           { text: 'Jcreate++とは', link: '/' },
           { text: '3Dプレビュー', link: '/preview' },
+          { text: 'はじめて Unity で動かす', link: '/first-unity' },
         ],
       },
       {

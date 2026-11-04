@@ -10,19 +10,18 @@
       <header id="headerBar">
         <h1>Jcreate++</h1>
         <div id="toolbar">
-          <button id="btnGenerate" title="ブロックからJSコードを生成">JS生成</button>
           <label class="filenameField">
-            JS名
+            JSファイル名
             <input id="scriptFileName" type="text" value="jcreateplus_script.js" aria-label="保存するJSファイル名" />
           </label>
-          <button id="btnDownloadJS" title="生成したJSコードを指定した名前で保存">JS保存</button>
+          <button id="btnDownloadJS" title="Unity の Scriptable Item に設定する .js ファイルを保存します">JS保存（Unity用）</button>
           <label class="filenameField">
-            workspace名
-            <input id="workspaceFileName" type="text" value="jcreateplus_workspace.json" aria-label="保存するワークスペースファイル名" />
+            ブロックのファイル名
+            <input id="workspaceFileName" type="text" value="jcreateplus_workspace.json" aria-label="保存するブロックのファイル名" />
           </label>
-          <button id="btnSave" title="ブロック配置をJSONで指定した名前で保存">workspace保存</button>
-          <button id="btnLoad" title="JSONファイルからブロック配置を読み込む">workspace読込</button>
-          <button id="btnClear" title="ワークスペースをすべて消去">すべてクリア</button>
+          <button id="btnSave" title="ブロックの並びを .json に保存します（あとで「ブロックを開く」で続きを作れます。Unity には入れません）">ブロック保存</button>
+          <button id="btnLoad" title="「ブロック保存」で保存した .json を開きます">ブロックを開く</button>
+          <button id="btnClear" title="置いたブロックをすべて消去">すべてクリア</button>
         </div>
       </header>
       <div id="mainContainer">
@@ -33,10 +32,19 @@
             <button id="tabPreview" role="tab" aria-selected="false">3Dプレビュー</button>
           </div>
           <div id="codeView">
+            <div id="startHint">
+              <p><strong>はじめての人へ</strong></p>
+              <ol>
+                <li>左の「イベント」から <b>インタラクト時</b> を真ん中に置く</li>
+                <li>「動作」から <b>位置を … ずつ変える</b> を、その中に入れる</li>
+                <li>上の「3Dプレビュー」で動きを確かめる</li>
+              </ol>
+              <p><a href="../recipes/" target="_blank" rel="noopener">レシピ集</a> ・ <a href="../first-unity" target="_blank" rel="noopener">はじめて Unity で動かす</a></p>
+            </div>
             <div id="errorMessages" style="display: none;"></div>
             <div id="unityRequirements" style="display: none;"></div>
             <div id="scriptSize" style="display: none;"></div>
-            <pre id="generatedCode"><code>// ブロックを配置して「JS生成」を押してください</code></pre>
+            <pre id="generatedCode"><code>// ブロックを置くと、ここにコードが出ます</code></pre>
           </div>
           <div id="previewView" hidden></div>
         </div>

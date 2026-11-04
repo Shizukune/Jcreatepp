@@ -5,11 +5,11 @@
  * 1. Blockly ワークスペースを生成
  * 2. カスタムブロックを登録
  * 3. リアルタイム警告を changeListener で実行
- * 4. JS生成ボタン:
+ * 4. ブロックが変わるたびにコード生成（読み込み直後にも 1 回）:
  *    a. workspaceToProgram() で IR (Program) に変換
  *    b. エラーがあればコードペインにエラー表示（生成中断）
  *    c. programToJS() で JS 文字列に変換
- * 5. JS保存 / workspace保存 / workspace読込
+ * 5. JS保存（Unity用） / ブロック保存 / ブロックを開く
  */
 
 import * as Blockly from 'blockly/core';
@@ -65,9 +65,9 @@ const codeEl = document.getElementById('generatedCode')?.querySelector('code');
 const errorEl = document.getElementById('errorMessages');
 const unityRequirementsEl = document.getElementById('unityRequirements');
 const scriptSizeEl = document.getElementById('scriptSize');
+const startHintEl = document.getElementById('startHint');
 const scriptFileNameInput = document.getElementById('scriptFileName') as HTMLInputElement | null;
 const workspaceFileNameInput = document.getElementById('workspaceFileName') as HTMLInputElement | null;
-const btnGenerate = document.getElementById('btnGenerate');
 const btnDownloadJS = document.getElementById('btnDownloadJS');
 const btnSave = document.getElementById('btnSave');
 const btnLoad = document.getElementById('btnLoad');
@@ -97,7 +97,7 @@ const ws = Blockly.inject(blocklyDiv, {
   trashcan: true,
 });
 
-// ── JS生成 ──
+// ── コード生成 ──
 
 let lastGeneratedCode = '';
 let isGenerating = false; // 再入ガード
@@ -327,8 +327,9 @@ function hideScriptSize() {
 /** 出力ペインをクリアする */
 function clearOutputPane() {
   if (codeEl) {
-    codeEl.textContent = '// ブロックを配置して「JS生成」を押してください';
+    codeEl.textContent = '// ブロックを置くと、ここにコードが出ます';
   }
+  if (startHintEl) startHintEl.hidden = false;
   if (errorEl) {
     errorEl.textContent = '';
     errorEl.style.display = 'none';
@@ -356,6 +357,8 @@ const generateCode = () => {
       clearOutputPane();
       return;
     }
+
+    if (startHintEl) startHintEl.hidden = true;
 
     // 1. ブロック → IR 変換（エラー検出含む）
     const result = workspaceToProgram(ws as Blockly.Workspace, javascriptGenerator as any);
@@ -415,12 +418,6 @@ const generateCode = () => {
 
 // ── ボタンイベント ──
 
-// JS生成ボタン
-btnGenerate?.addEventListener('click', () => {
-  console.log('[btnGenerate] clicked');
-  generateCode();
-});
-
 // JS保存ボタン: 生成された JavaScript コードを .js ファイルとしてダウンロードする
 btnDownloadJS?.addEventListener('click', () => {
   console.log('[btnDownloadJS] clicked');
@@ -429,7 +426,7 @@ btnDownloadJS?.addEventListener('click', () => {
     generateCode();
 
     if (!lastGeneratedCode) {
-      alert('生成できるコードがありません。\nブロックを配置してから「JS保存」を押してください。');
+      alert('生成できるコードがありません。\nブロックを置いてから「JS保存（Unity用）」を押してください。');
       return;
     }
 
@@ -444,7 +441,7 @@ btnDownloadJS?.addEventListener('click', () => {
   }
 });
 
-// workspace保存ボタン: Blockly ワークスペースの JSON データをダウンロードする
+// ブロック保存ボタン: Blockly ワークスペースの JSON データをダウンロードする
 btnSave?.addEventListener('click', () => {
   console.log('[btnSave] clicked');
   try {
@@ -455,11 +452,11 @@ btnSave?.addEventListener('click', () => {
     console.log(`[btnSave] download triggered: ${filename}`);
   } catch (e) {
     console.error('[btnSave] failed:', e);
-    alert('workspace保存に失敗しました: ' + (e as Error).message);
+    alert('ブロック保存に失敗しました: ' + (e as Error).message);
   }
 });
 
-// workspace読込ボタン
+// ブロックを開くボタン
 btnLoad?.addEventListener('click', () => {
   console.log('[btnLoad] clicked');
   try {
@@ -467,7 +464,7 @@ btnLoad?.addEventListener('click', () => {
     loadFromFile(ws);
   } catch (e) {
     console.error('[btnLoad] failed:', e);
-    alert('workspace読込に失敗しました: ' + (e as Error).message);
+    alert('ブロックを開けませんでした: ' + (e as Error).message);
   }
 });
 
@@ -537,5 +534,12 @@ if (ws) {
     validateWorkspace(ws);
   } catch (err) {
     console.error('Initial validateWorkspace error:', err);
+  }
+
+  // 保存していたブロックのコードを、開いた直後から表示する
+  try {
+    generateCode();
+  } catch (err) {
+    console.error('Initial generateCode error:', err);
   }
 }

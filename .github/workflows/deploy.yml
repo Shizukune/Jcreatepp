@@ -49,6 +49,11 @@ jobs:
           mkdir -p docs/.vitepress/dist/app
           cp -R dist/* docs/.vitepress/dist/app/
 
+      - name: Add Unity extension ZIP to Pages
+        run: |
+          mkdir -p docs/.vitepress/dist/downloads
+          (cd unity && zip -qr ../docs/.vitepress/dist/downloads/Jcreatepp-unity.zip Jcreatepp)
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

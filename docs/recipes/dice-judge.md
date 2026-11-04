@@ -15,8 +15,8 @@
 
 ## 必要なUnity / Cluster設定
 
-- スクリプトを動かすアイテムに Scriptable Item を設定します。
-- アイテム自体を動かす場合は、移動可能な設定が必要になることがあります。
+- スクリプトを動かすアイテムに `Item` と `Scriptable Item` を付け、Scriptable Item に `.js` を設定します（[はじめて Unity で動かす](../first-unity)）。
+- アイテム自体を動かす場合は、`Movable Item` を付けます。
 - 結果を文字で見せたい場合は、表示用サブノードを用意します。
 
 ## Jcreate++で置くブロック

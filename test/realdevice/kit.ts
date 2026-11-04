@@ -49,7 +49,7 @@ function checklist(): string {
   lines.push('   - rd15・rd16 は、ほかのプレイヤーがいない状態で行う（近くの誰にでも反応するため）');
   lines.push('4. 下の一覧の「結果」に ○ / × を書く。× のときは実際の動きもメモして、Claude Code に伝える');
   lines.push('');
-  lines.push('Jcreate++ で中身を見たいときは、同じ名前の `.json` を `workspace読込` で読み込めます。');
+  lines.push('Jcreate++ で中身を見たいときは、同じ名前の `.json` を `ブロックを開く` で読み込めます。');
   lines.push('');
   lines.push('## 一覧');
   lines.push('');

@@ -464,7 +464,7 @@ namespace Jcreatepp.Editor.Blocks
                 var folder = path != "" ? Path.GetDirectoryName(path) : SaveFolder;
                 var name = path != "" ? Path.GetFileNameWithoutExtension(path) : "jcreatepp_blocks";
                 path = EditorUtility.SaveFilePanelInProject("Jcreate++ のブロックを保存", name, "json",
-                    "ブロックのファイル（.json）の保存先を選んでください。Web 版の「読み込み」でも開けます。", folder);
+                    "ブロックのファイル（.json）の保存先を選んでください。Web 版の「ブロックを開く」でも開けます。", folder);
                 if (string.IsNullOrEmpty(path)) return false;
             }
             var w = Workspace();

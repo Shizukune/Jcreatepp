@@ -18,7 +18,7 @@ Jcreate++ の動作テストは、Cluster の動きをまねたモック（`src/
 |---|---|
 | `CHECKLIST.md` | 手順書（一覧表に結果を書き込めます） |
 | `scripts/rdN-….js` | 生成済みの Cluster Script。Unity の Assets にコピーして、Scriptable Item の Source Code Asset に入れる |
-| `rdN-….json` | 同じシナリオのブロック（Jcreate++ の `workspace読込` で中身を見られる） |
+| `rdN-….json` | 同じシナリオのブロック（Jcreate++ の `ブロックを開く` で中身を見られる） |
 | `scenarios.ts` | シナリオの正本（ブロック・操作・期待する結果） |
 | `kit.ts` / `export.ts` | 上の 3 種類のファイルを作るスクリプト |
 
