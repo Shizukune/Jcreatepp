@@ -79,7 +79,7 @@ test('real-device kit: expected results in the simulator', () => {
   assert.ok(r.item.position.equals(new Vector3(0, 0, 3), 1e-3), 'rd8: +Z');
 });
 
-test('real-device kit: main features (rd9-rd16) in the simulator', () => {
+test('real-device kit: main features (rd9-rd18) in the simulator', () => {
   const yaw = (q: Quaternion) => q.createEulerAngles().y;
   const near = (a: number, b: number, eps = 1) => Math.abs(((a - b + 540) % 360) - 180) < eps;
 
@@ -140,6 +140,20 @@ test('real-device kit: main features (rd9-rd16) in the simulator', () => {
   r.world.players.push(r.createHandle('player', 'p', new Vector3(0, 0, 2)));
   r.advance(1);
   assert.ok(near(yaw(r.item.rotation), 90), 'rd15: turns while a player is within 3 m');
+
+  r = run('rd17-combined-curve.json');
+  let maxX = 0;
+  let maxY17 = 0;
+  for (let i = 0; i < 60 * 8; i++) {
+    r.advance(1 / 60);
+    maxX = Math.max(maxX, Math.abs(r.item.position.x));
+    maxY17 = Math.max(maxY17, Math.abs(r.item.position.y));
+  }
+  assert.ok(maxX > 0.95 && maxX <= 1 + 1e-9 && maxY17 > 0.45 && maxY17 <= 0.5 + 1e-9, `rd17: both oscillations (x ${maxX}, y ${maxY17})`);
+
+  r = run('rd18-combined-spin.json');
+  r.advance(2);
+  assert.ok(near(yaw(r.item.rotation), 90), 'rd18: 30 + 15 = 45 deg per second');
 
   r = run('rd16-chase.json');
   r.world.players.push(r.createHandle('player', 'p', new Vector3(0, 0, 5)));

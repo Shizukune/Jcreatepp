@@ -20,6 +20,10 @@ export type RunnerOptions = {
   onTrace?: (blockId: string, phase: string) => void;
   /** Getters return the transform at the start of the frame, like Cluster's interpolated getters (tests only). */
   laggingGetters?: boolean;
+  /** Getters return a transform that moves this part of the way to the real one each frame (tests only, see clusterMock.ts). */
+  smoothGetters?: number;
+  /** Getters return the real transform as it was this many frames ago (tests only, see clusterMock.ts). */
+  delayedGetters?: number;
 };
 
 export type Runner = ClusterMock & {
@@ -52,7 +56,7 @@ function seededRandom(seed: number): () => number {
 }
 
 export function createRunner(code: string, options: RunnerOptions = {}): Runner {
-  const mock = createClusterMock({ position: options.position, rotation: options.rotation, laggingGetters: options.laggingGetters });
+  const mock = createClusterMock({ position: options.position, rotation: options.rotation, laggingGetters: options.laggingGetters, smoothGetters: options.smoothGetters, delayedGetters: options.delayedGetters });
   const math = Object.create(Math) as Math;
   math.random = seededRandom(options.seed ?? 1);
 

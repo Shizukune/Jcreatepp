@@ -564,6 +564,65 @@ test('combine: the same angle written with the other sign (-x, -y, -z, -w) is no
   });
 });
 
+test('combine: interpolating getters, and slow motion with getters some frames behind, are not taken for outside moves', () => {
+  // The remembered pose only counts as moved from outside when the getter leaves the way of the last
+  // move. With interpolation toward the new pose it never does. With the transform of n frames ago it
+  // does once the motion curves enough in n frames: these slow motions hold up to 12 frames (0.2 s), a
+  // fast one already at 1-2 frames (see the next test). Up to the start of the frame (laggingGetters)
+  // it holds at any speed.
+  const programs = {
+    'position, curved (two oscillations)': [
+      b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(1), SPEED: num(2) } }),
+      b('jcreatepp_oscillate', { fields: { AXIS: 'X' }, inputs: { WIDTH: num(2), SPEED: num(3) } }),
+    ],
+    'rotation, two axes': [
+      b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(120) } }),
+      b('jcreatepp_continuous_rotation', { fields: { AXIS: 'X' }, inputs: { SPEED: num(45) } }),
+    ],
+  };
+  for (const [name, body] of Object.entries(programs)) {
+    const code = generateCode(workspace(onEvent('jcreatepp_on_update', body)));
+    for (const options of [{ smoothGetters: 0.3 }, { delayedGetters: 3 }, { delayedGetters: 12 }]) {
+      const ref = createRunner(code);
+      const r = createRunner(code, options);
+      for (let f = 0; f < 600; f++) {
+        ref.update(1 / 60);
+        r.update(1 / 60);
+        const angle = (2 * Math.acos(Math.min(1, Math.abs(r.item.rotation.dot(ref.item.rotation)))) * 180) / Math.PI;
+        if (!near(r.item.position, ref.item.position, 1e-6) || angle > 1e-3) assert.fail(`${name} ${JSON.stringify(options)}: differs at frame ${f}`);
+      }
+      assert.deepEqual(r.errors(), []);
+    }
+  }
+});
+
+test('lag models: one extra frame halves a single turn; start-of-frame getters keep fast combined motion exact', () => {
+  // In these lag models a single "keep turning" reads the getter directly: one extra frame of lag halves
+  // its speed, and a fast combined motion with one extra frame can be misjudged; with start-of-frame
+  // getters both are exact. rd9 shows how getRotation keeps up for a slow single turn only; combined
+  // position and rotation are checked on the device by rd17 and rd18.
+  const spin = generateCode(workspace(onEvent('jcreatepp_on_update', [b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(45) } })])));
+  const yawAfter2s = (options: object) => {
+    const r = createRunner(spin, options);
+    r.advance(2);
+    return r.item.rotation.createEulerAngles().y;
+  };
+  assert.ok(Math.abs(yawAfter2s({ laggingGetters: true }) - 90) < 1e-6);
+  assert.ok(Math.abs(yawAfter2s({ delayedGetters: 1 }) - 45) < 1e-6, 'one extra frame: half the speed');
+
+  const fast = generateCode(workspace(onEvent('jcreatepp_on_update', [
+    b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(3), SPEED: num(10) } }),
+    b('jcreatepp_oscillate', { fields: { AXIS: 'X' }, inputs: { WIDTH: num(3), SPEED: num(10) } }),
+  ])));
+  const ref = createRunner(fast);
+  const lagging = createRunner(fast, { laggingGetters: true });
+  for (let f = 0; f < 600; f++) {
+    ref.update(1 / 60);
+    lagging.update(1 / 60);
+    if (!near(lagging.item.position, ref.item.position, 1e-6)) assert.fail(`fast, start-of-frame getters: differs at frame ${f}`);
+  }
+});
+
 test('combine: an item turned by something else continues from the angle it has', () => {
   const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [
     b('jcreatepp_add_rotation', { inputs: xyz(0, 10, 0) }),

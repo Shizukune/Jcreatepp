@@ -33,10 +33,10 @@ export const SCENARIOS: Scenario[] = [
   {
     file: 'rd1-position-immediate.json',
     title: '位置の即時反映',
-    checks: '同じイベントの中で2回続けて位置を変えたとき、2回目が1回目の結果から動くか（多くのブロックの前提）',
+    checks: '同じイベントの中で2回続けて位置を変えたとき、2つの動きが足し合わされるか（動かすブロックが2つあるので、覚えた位置に足していく JS になる）',
     operation: 'インタラクトを1回',
     expected: '**1 上がる**（0.5 × 2）',
-    ifWrong: '0.5 しか上がらない → 位置を設定した直後に読むと古い値が返る。「〜ずつ変える」を続けて使うブロック全般の前提が崩れる',
+    ifWrong: '0.5 しか上がらない → 覚えた位置に足していくしくみ（src/codegen/pose.ts）が実機で働いていない',
     state: workspace(onEvent('jcreatepp_on_interact', [up(0.5), up(0.5)])),
   },
   {
@@ -144,7 +144,7 @@ export const SCENARIOS: Scenario[] = [
     checks: '毎フレームの回転と往復が、なめらかに・ほかのプレイヤーにも同じように見えるか',
     operation: '入室して 10 秒ほど見る（もう1つのアカウントか、ほかの人にも見てもらうとなおよい）',
     expected: 'Y 軸のまわりを **1 秒に 45°** 回りながら、**上下に ±0.5 m** 行ったり来たりする',
-    ifWrong: 'カクカク・ほかの人には止まって見える → 毎フレームの位置・回転の更新が同期されていない（Item の Movement Type を確認）',
+    ifWrong: 'カクカク・ほかの人には止まって見える → 毎フレームの位置・回転の更新が同期されていない（Item の Movement Type を確認）。**回るのが遅い**（90° に 2 秒より長くかかる）→ getRotation が何フレームも前の向きを返している。毎フレーム動かすブロックすべてに関わるので、かかった秒数を記録する',
     state: workspace(onEvent('jcreatepp_on_update', [
       b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(45) } }),
       b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(0.5), SPEED: num(2) } }),
@@ -288,5 +288,30 @@ export const SCENARIOS: Scenario[] = [
     expected: '**こちらを向いて近づき**、1.5 m ほどで止まる。10 m より遠いと追いかけない',
     ifWrong: '後ろ向きに進む → 向きの計算。近づきすぎる・離れない → 距離の測り方が違う',
     state: workspace(b('jcreatepp_chase_template', { inputs: { MOVE_SPEED: num(2), MAX_DISTANCE: num(10), MIN_DISTANCE: num(1.5) } })),
+  },
+  {
+    file: 'rd17-combined-curve.json',
+    title: '動きの足し合わせ（曲がりながら）',
+    checks: '位置を動かすブロックが2つ（上下と左右の往復）あり、回りながら動くとき、覚えた位置に足していくしくみが外からの動きと見まちがえずに動き続けるか（位置の足し合わせ。向きは rd18）',
+    operation: '入室して 20 秒ほど見る',
+    expected: '**上下 ±0.5 m と 左右 ±1 m を同時に**行き来しながら（ななめの 8 の字のような動き）、Y 軸のまわりを **1 秒に 45°** 回る。どちらの往復も止まらず、ガタつかない',
+    ifWrong: 'ときどきガクッと戻る・片方の往復が消える → getPosition が何フレームも遅れていて、外から動かされたと見まちがえている（rd9 の回る速さも記録する。rd9 が遅いなら原因は同じ）',
+    state: workspace(onEvent('jcreatepp_on_update', [
+      b('jcreatepp_oscillate', { fields: { AXIS: 'Y' }, inputs: { WIDTH: num(0.5), SPEED: num(2) } }),
+      b('jcreatepp_oscillate', { fields: { AXIS: 'X' }, inputs: { WIDTH: num(1), SPEED: num(1) } }),
+      b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(45) } }),
+    ])),
+  },
+  {
+    file: 'rd18-combined-spin.json',
+    title: '回転の足し合わせ',
+    checks: '向きを変えるブロックが2つ（1 秒に 30° と 15° で回り続ける）あるとき、覚えた向きに足していくしくみで、合わせた速さで回るか（向きの足し合わせ）',
+    operation: '入室して、アイテムが 1 回転するまでの時間をストップウォッチで計る',
+    expected: 'Y 軸のまわりを **1 秒に 45°**（30° + 15°）回る。**1 回転に約 8 秒**。止まったりガクッと戻ったりしない',
+    ifWrong: '1 回転に 12 秒・24 秒ほどかかる → どちらかの回転しか効いていない（足し合わせが働いていない、または getRotation が遅れて外から回されたと見まちがえている。rd9 の回る速さと比べる）',
+    state: workspace(onEvent('jcreatepp_on_update', [
+      b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(30) } }),
+      b('jcreatepp_continuous_rotation', { fields: { AXIS: 'Y' }, inputs: { SPEED: num(15) } }),
+    ])),
   },
 ];

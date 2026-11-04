@@ -9,7 +9,11 @@
  * getRotation return them. On Cluster, the getters may return the interpolated (moving)
  * transform rather than the value just set, so code that reads right after writing can
  * behave differently in-world. Tests can ask for that with `laggingGetters`: the getters then return
- * the transform as it was at the start of the frame (see `catchUp`).
+ * the transform as it was at the start of the frame (see `catchUp`). With `smoothGetters` (0 < k <= 1)
+ * the getters return a shown transform that moves the part k of the way to the real one each frame,
+ * like network interpolation lagging several frames behind (k = 1 is the same as `laggingGetters`).
+ * With `delayedGetters` (n frames) the getters return the real transform as it was n frames ago,
+ * like a playback of past network updates.
  */
 
 import { Quaternion, Vector3 } from './math';
@@ -66,7 +70,7 @@ function copyStateValue(value: unknown): unknown {
   return value;
 }
 
-export function createClusterMock(options: { position?: Vector3; rotation?: Quaternion; laggingGetters?: boolean } = {}): ClusterMock {
+export function createClusterMock(options: { position?: Vector3; rotation?: Quaternion; laggingGetters?: boolean; smoothGetters?: number; delayedGetters?: number } = {}): ClusterMock {
   const handlers: Handlers = {};
   const log: LogEntry[] = [];
   const unsupported = new Set<string>();
@@ -75,12 +79,25 @@ export function createClusterMock(options: { position?: Vector3; rotation?: Quat
     rotation: options.rotation?.clone() ?? new Quaternion(),
   };
   const world = { players: [] as Handle[], items: [] as Handle[] };
-  // What the getters return: the item itself, or (laggingGetters) the transform at the start of the frame.
-  const seen = options.laggingGetters ? { position: item.position.clone(), rotation: item.rotation.clone() } : item;
+  // What the getters return: the item itself, or (laggingGetters / smoothGetters) a shown transform that
+  // follows it at the end of each frame.
+  const follow = options.smoothGetters ?? (options.laggingGetters ? 1 : 0);
+  const delay = Math.max(0, Math.floor(options.delayedGetters ?? 0));
+  const seen = follow > 0 || delay > 0 ? { position: item.position.clone(), rotation: item.rotation.clone() } : item;
+  const past: { position: Vector3; rotation: Quaternion }[] = [];
   const catchUp = () => {
     if (seen === item) return;
-    seen.position = item.position.clone();
-    seen.rotation = item.rotation.clone();
+    if (delay > 0) {
+      past.push({ position: item.position.clone(), rotation: item.rotation.clone() });
+      if (past.length > delay) {
+        const shown = past.shift()!;
+        seen.position = shown.position;
+        seen.rotation = shown.rotation;
+      }
+      return;
+    }
+    seen.position = follow >= 1 ? item.position.clone() : seen.position.clone().lerp(item.position, follow);
+    seen.rotation = follow >= 1 ? item.rotation.clone() : seen.rotation.clone().slerp(item.rotation, follow);
   };
 
   const createHandle = (type: 'player' | 'item', name: string, position = new Vector3()): Handle => ({

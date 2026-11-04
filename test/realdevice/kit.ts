@@ -60,7 +60,7 @@ function checklist(): string {
   }
   lines.push('');
   lines.push('- rd1〜rd8: Jcreate++ が前提にしている細かい動き（ずれると多くのブロックに影響）');
-  lines.push('- rd9〜rd16: よく使う機能がひととおり動くか');
+  lines.push('- rd9〜rd18: よく使う機能がひととおり動くか（rd17・rd18 は動きの足し合わせ）');
   lines.push('- rd11a と rd11b は 2 つで 1 組です（同じワールドに置く）');
   lines.push('');
   lines.push('## シナリオごとの手順');

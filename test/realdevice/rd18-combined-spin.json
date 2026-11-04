@@ -1,0 +1,55 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "t176",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_continuous_rotation",
+              "id": "t173",
+              "fields": {
+                "AXIS": "Y"
+              },
+              "inputs": {
+                "SPEED": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t172",
+                    "fields": {
+                      "NUM": 30
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_continuous_rotation",
+                  "id": "t175",
+                  "fields": {
+                    "AXIS": "Y"
+                  },
+                  "inputs": {
+                    "SPEED": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t174",
+                        "fields": {
+                          "NUM": 15
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}

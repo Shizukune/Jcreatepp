@@ -1,0 +1,93 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_update",
+        "id": "t171",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_oscillate",
+              "id": "t165",
+              "fields": {
+                "AXIS": "Y"
+              },
+              "inputs": {
+                "WIDTH": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t163",
+                    "fields": {
+                      "NUM": 0.5
+                    }
+                  }
+                },
+                "SPEED": {
+                  "block": {
+                    "type": "math_number",
+                    "id": "t164",
+                    "fields": {
+                      "NUM": 2
+                    }
+                  }
+                }
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_oscillate",
+                  "id": "t168",
+                  "fields": {
+                    "AXIS": "X"
+                  },
+                  "inputs": {
+                    "WIDTH": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t166",
+                        "fields": {
+                          "NUM": 1
+                        }
+                      }
+                    },
+                    "SPEED": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t167",
+                        "fields": {
+                          "NUM": 1
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_continuous_rotation",
+                      "id": "t170",
+                      "fields": {
+                        "AXIS": "Y"
+                      },
+                      "inputs": {
+                        "SPEED": {
+                          "block": {
+                            "type": "math_number",
+                            "id": "t169",
+                            "fields": {
+                              "NUM": 45
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      }
+    ]
+  }
+}
