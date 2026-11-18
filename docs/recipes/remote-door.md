@@ -23,7 +23,7 @@
 ドア側:
 
 - `Item` と `Scriptable Item` を付けます。
-- 位置をスクリプトから変えるため、`Movable Item` を付けます。
+- 位置をスクリプトから変えるため、`Movable Item` を付け、`Rigidbody` の `Is Kinematic` をオンにします。
 - `メッセージ toggle を受け取ったとき` を使います。
 
 ## Jcreate++で置くブロック

@@ -10,13 +10,13 @@ Cluster のワールドは Unity で作ります。Unity と、Cluster 用の道
 1. [Unity の導入](https://docs.cluster.mu/creatorkit/installation/install-unity/)（Cluster 公式）
 2. [Creator Kit の導入](https://docs.cluster.mu/creatorkit/installation/install-creatorkit/)（Cluster 公式）
 
-どちらも公式の手順どおりに進めれば大丈夫です。Unity のバージョンは公式に書かれているものを使ってください。
+Unity は Cluster 公式が案内しているバージョンを使います。最初は Creator Kit のテンプレートプロジェクトを使うと、アップロードに必要なワールド設定がそろっています。動かすアイテムには、足場の上に置いた Cube を使います。
 
 ## 1. Jcreate++ で JS を作る
 
 1. [Jcreate++ を開く](/app/)
 2. ブロックを置く（最初は [触ったら動く](./recipes/interact-move) がおすすめです）
-3. 右側の `3Dプレビュー` で動きを確かめる（[3Dプレビュー](./preview)）
+3. 右側の `3Dプレビュー` で `インタラクト` を押し、箱が 1 m 上に動くことを確かめる（[3Dプレビュー](./preview)）
 4. 上の `JS保存（Unity用）` を押して、`.js` ファイルを保存する
 
 右側の「Unity側で必要な設定」に出ている内容は、あとで使うのでメモしておきます。
@@ -54,11 +54,13 @@ Cluster のワールドは Unity で作ります。Unity と、Cluster 用の道
 
 ### B. Jcreate++ の Unity 拡張で自動で付ける（試作）
 
-`.js` を選ぶだけで、上の表のコンポーネントのうち必要なものを自動で付けます。Unity の中で動きをプレビューすることもできます。
+`.js` を選ぶと、`Item` と `Scriptable Item` を設定し、位置を変える例では `Movable Item` を付けて `Is Kinematic` をオンにします。Unity の中で動きをプレビューすることもできます。
 
 1. [Jcreate++ Unity 拡張（ZIP）](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip) をダウンロードして展開する
 2. 中の `Jcreatepp` フォルダを、Unity プロジェクトの `Assets` にまるごとコピーする
 3. Unity の上のメニューに **Jcreate++** が出たら、オブジェクトを選んで **Jcreate++ > .js を選んで、選択中のオブジェクトに設定する...** を選ぶ
+
+4. Cube の Inspector で `Box Collider` が付いていることを確認する。`Collider` は手動設定で、Unity の Cube には最初から `Box Collider` が付いています。
 
 試作なので、うまく動かないときは Console に出たメッセージを教えてください。
 
@@ -66,7 +68,11 @@ Cluster のワールドは Unity で作ります。Unity と、Cluster 用の道
 
 Scriptable Item は、Unity の再生（Play）では動きません。動きは Cluster にアップロードして確かめます。
 
-- [ワールドの作成とアップロード](https://docs.cluster.mu/creatorkit/world/upload/)（Cluster 公式）
+1. Cube を配置したシーンを開き、Unity の **Cluster > ワールドアップロード** を選ぶ。
+2. 初回は **ワールド > 新規作成** を選び、対象のワールドにアップロードする。
+3. [ワールド管理画面](https://cluster.mu/account/worlds) からワールドに入り、Cube をクリックする。クリックするたびに Cube が 1 m 上に動けば成功です。
+
+アップロードしたワールドには、公開するまでは作者だけが入れます。詳しい操作は [ワールドの作成とアップロード](https://docs.cluster.mu/creatorkit/world/upload/)（Cluster 公式）を参照してください。
 
 動かないときは、[動かないときの確認リスト](./troubleshooting) を見てください。
 
