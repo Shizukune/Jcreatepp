@@ -3,7 +3,8 @@
   "version": "0.2.0",
   "displayName": "Jcreate++ for Cluster Creator Kit",
   "description": "Jcreate++ で作ったスクリプト（.js）を、オブジェクトに Item / Scriptable Item などと一緒に設定し、エディタのウィンドウの中でプレビューするエディタ拡張（試作）。",
-  "unity": "2021.3",
+  "unity": "6000.2",
+  "unityRelease": "6f2",
   "author": {
     "name": "Shizukune"
   },
