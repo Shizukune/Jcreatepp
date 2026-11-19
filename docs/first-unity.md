@@ -66,6 +66,12 @@ Unity は Cluster 公式が案内しているバージョンを使います。�
 
 試作なので、うまく動かないときは Console に出たメッセージを教えてください。
 
+### 用意済みのサンプルで実機確認したい場合
+
+**[実機確認キットZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)**してください。展開した`realdevice/scripts`フォルダをUnityの`Assets`へコピーし、`realdevice/README.md`と`CHECKLIST.md`を読みます。最初は`rd1-position-immediate.js`をCubeに設定し、Clusterへアップロードしてクリックすると1 m上がることを確かめます。
+
+このキットはテスト用のJS・ブロックJSON・手順書です。Unity拡張は含まれません。自動設定も使う場合は、上のUnity拡張ZIPも導入してください。ZIP自体やソース一式の`Jcreatepp-main`全体をUnityへ入れる必要はありません。
+
 ## 3. Cluster にアップロードして確かめる
 
 Scriptable Item は、Unity の再生（Play）では動きません。動きは Cluster にアップロードして確かめます。

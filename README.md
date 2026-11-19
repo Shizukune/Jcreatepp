@@ -4,6 +4,28 @@ Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成
 
 まず試すだけなら、ダウンロードやターミナル操作は不要です。ブラウザでWeb版を開くだけで使えます。
 
+## どれをダウンロードすればいい？
+
+| やりたいこと | 開く・ダウンロードするもの | 次にすること |
+|---|---|---|
+| ブロックを作って試したい | [Web版を開く](https://shizukune.github.io/Jcreatepp/app/) | インストール不要。そのままブロックを置けます |
+| Unityの中でブロック編集・プレビュー・自動設定を使いたい | **[Unity拡張ZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip)** | ZIPを展開し、中の **`Jcreatepp`フォルダを丸ごと** Unityの`Assets`へ入れます |
+| Cluster上でサンプルの動作を確認したい | **[実機確認キットZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)** | ZIPを展開し、`realdevice/README.md`から始めます。Unityへ入れるのは **`scripts`フォルダ**です |
+| Jcreate++自体を開発・改造したい | [開発用ソース一式ZIP](https://github.com/Shizukune/Jcreatepp/archive/refs/heads/main.zip) | 下の「開発したい人向け」を見てください。通常の利用には不要です |
+
+**実機確認をする人は、まず「Unity拡張ZIP」と「実機確認キットZIP」の2つをダウンロードしてください。** Unity拡張がすでに入っている場合は、実機確認キットだけで始められます。拡張を使わず、コンポーネントを手で設定して試すこともできます。
+
+### 実機確認までの最短手順
+
+1. **Unity 6000.2.6f2 + Unity 6対応Cluster Creator Kit**のプロジェクトを用意します（[初めての準備](https://shizukune.github.io/Jcreatepp/first-unity)）。この2つは上のZIPには含まれていません。
+2. Unity拡張ZIPを展開し、`Jcreatepp`フォルダを`Assets/Jcreatepp`として入れます。以前の版がある場合は[更新方法](unity/Jcreatepp/README.md#入れ方どちらか)を確認し、二重に入れないでください。
+3. 実機確認キットZIPを展開します。`realdevice/scripts`をUnityの`Assets`へコピーします（例：`Assets/Jcreatepp Test Scripts/`）。`README.md`や`.json`をアイテムのSource Code Assetへ入れる必要はありません。
+4. まずCubeを1つ作り、[CHECKLISTのrd1](test/realdevice/CHECKLIST.md#rd1-位置の即時反映)の準備をします。Jcreate++のメニューから`rd1-position-immediate.js`を選んで設定すると早いです。Cubeの`Box Collider`も確認します。
+5. ワールドをClusterへアップロードして入り、Cubeをクリックします。1 m上がれば成功です。**UnityのPlayボタンでの実行と、Clusterでの実機確認は別です。**
+6. 続いて[実機テスト手順書](test/realdevice/CHECKLIST.md)のrd9・rd17・rd18などを進めます。使うJS・必要なコンポーネント・期待する動きがシナリオごとに書かれています。
+
+ZIPのダウンロードリンクが開けないときは、[ソース一式ZIP](https://github.com/Shizukune/Jcreatepp/archive/refs/heads/main.zip)を展開して、Unity拡張は`unity/Jcreatepp`、実機確認キットは`test/realdevice`を取り出してください。**`Jcreatepp-main`全体をUnityのAssetsへ入れないでください。** GitHub Pagesの公開処理中は、ZIPに最新の変更が反映されるまで時間がかかることがあります。
+
 ## すぐ使う
 
 Web版はこちらです。
@@ -47,9 +69,9 @@ Unity と Cluster Creator Kit の準備から、アップロードまでの全�
 - [サイコロ判定](https://shizukune.github.io/Jcreatepp/recipes/dice-judge)
 - [クールダウンつきボタン](https://shizukune.github.io/Jcreatepp/recipes/cooldown)
 
-## ダウンロードして使いたい場合
+## 開発用ソースをダウンロードしたい場合
 
-通常はWeb版を使えばOKです。
+通常の利用や実機確認には、上のダウンロード表を使ってください。
 
 ソースコードを手元に置きたい場合だけ、GitHubからダウンロードしてください。
 
