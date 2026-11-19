@@ -3,10 +3,18 @@
 Jcreate++ の「JS保存（Unity用）」で保存した `.js` を、Unity で**プレビュー**したり、オブジェクトに**設定**したりするエディタ拡張です。
 メニュー **Jcreate++** から使います。
 
-> 試作です。Unity 2021.3 + Cluster Creator Kit 3.4 向けに書いています（Unity 6000.2 でブロックエディターとプレビューが動くことを確かめました。2021.3 ではまだ確かめていません）。
+> 試作です。主対象は **Unity 6000.2.6f2 + Unity 6 対応の Cluster Creator Kit** です。Unity 6000.2 ではブロックエディターとプレビューの動作を確認していますが、CCK のすべての版との組み合わせを検証したものではありません。
 > 動かなかったら、Console に出たエラーをそのまま教えてください。
 >
 > ダウンロード: [Jcreatepp-unity.zip](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip)（このフォルダだけを ZIP にしたもの。展開して、中の `Jcreatepp` フォルダを下の「入れ方」のとおりに入れます）
+
+## 対応環境
+
+- **主対象**: Unity 6000.2.6f2（[Cluster 公式の推奨版](https://docs.cluster.mu/creatorkit/installation/install-unity/)）と、Unity 6 対応の Cluster Creator Kit。CCK は [公式の更新手順](https://docs.cluster.mu/creatorkit/installation/update-creatorkit/)に従って導入してください。
+- **確認済みの範囲**: Unity 6000.2 でのブロックエディターとプレビュー。Cluster にアップロードした後のすべての動作を保証するものではありません。
+- **Unity 2021.3**: この拡張では未検証・動作保証対象外です。パッケージの最低 Unity バージョンも主対象に合わせています。Cluster 公式では Unity 2021.3.4f1 は CCK 3.3.0 までの対応で、現在はサポートが終了しています。「Unity 2021.3 + CCK 3.4」は対応環境として案内しません（[公式の移行手順](https://docs.cluster.mu/creatorkit/installation/update-unity/)）。
+
+拡張内のプレビューはシミュレーターです。生成した JavaScript は、必要なコンポーネントを設定し、最後に Cluster へアップロードして確かめてください。Unity の版の違いだけでスクリプトの動作が変わると断定せず、生成 JS・CCK・コンポーネント設定・物理などを切り分けて確認します。
 
 ## 入れ方（どちらか）
 

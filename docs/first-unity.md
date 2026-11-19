@@ -12,6 +12,8 @@ Cluster のワールドは Unity で作ります。Unity と、Cluster 用の道
 
 Unity は Cluster 公式が案内しているバージョンを使います。最初は Creator Kit のテンプレートプロジェクトを使うと、アップロードに必要なワールド設定がそろっています。動かすアイテムには、足場の上に置いた Cube を使います。
 
+このガイドと Jcreate++ の Unity 拡張の主対象は **Unity 6000.2.6f2 + Unity 6 対応の Creator Kit** です。Unity 拡張は Unity 6000.2 でブロックエディターとプレビューの動作を確認しています。Unity 2021.3 は拡張の未検証・動作保証対象外です。Cluster 公式でも Unity 2021.3.4f1 は CCK 3.3.0 までの対応で、現在はサポートが終了しています。古いプロジェクトはバックアップしてから [公式の Unity 移行手順](https://docs.cluster.mu/creatorkit/installation/update-unity/)を確認してください。
+
 ## 1. Jcreate++ で JS を作る
 
 1. [Jcreate++ を開く](/app/)
