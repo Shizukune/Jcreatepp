@@ -1,11 +1,10 @@
 # はじめて Unity で動かす
 
-Jcreate++ で作った JS を、Cluster のワールドで動かすまでの全体の流れです。
-はじめての人は、このページを上から順に進めてください。
+ブラウザで作った「クリックすると 1 m 上がる箱」を、今度は Cluster のワールドで動かします。まだブロックを作っていない人は、[最初の仕掛けを作る](/#first-project) から始めてください。
 
 ## 0. 準備（最初の 1 回だけ）
 
-Cluster のワールドは Unity で作ります。Unity と、Cluster 用の道具（Cluster Creator Kit）を入れます。
+Cluster のワールドは Unity で作ります。Unity と、Cluster 用の機能を追加する Cluster Creator Kit を入れます。Unity 拡張の導入は、後で自動設定を使う場合に選べます。
 
 1. [Unity の導入](https://docs.cluster.mu/creatorkit/installation/install-unity/)（Cluster 公式）
 2. [Creator Kit の導入](https://docs.cluster.mu/creatorkit/installation/install-creatorkit/)（Cluster 公式）
@@ -14,18 +13,17 @@ Unity は Cluster 公式が案内しているバージョンを使います。�
 
 このガイドと Jcreate++ の Unity 拡張の主対象は **Unity 6000.2.6f2 + Unity 6 対応の Creator Kit** です。Unity 拡張は Unity 6000.2 でブロックエディターとプレビューの動作を確認しています。Unity 2021.3 は拡張の未検証・動作保証対象外です。Cluster 公式でも Unity 2021.3.4f1 は CCK 3.3.0 までの対応で、現在はサポートが終了しています。古いプロジェクトはバックアップしてから [公式の Unity 移行手順](https://docs.cluster.mu/creatorkit/installation/update-unity/)を確認してください。
 
-## 1. Jcreate++ で JS を作る
+## 1. ブラウザからスクリプトを保存する
 
-1. [Jcreate++ を開く](/app/)
-2. ブロックを置く（最初は [触ったら動く](./recipes/interact-move) がおすすめです）
-3. 右側の `3Dプレビュー` で `インタラクト` を押し、箱が 1 m 上に動くことを確かめる（[3Dプレビュー](./preview)）
-4. 上の `JS保存（Unity用）` を押して、`.js` ファイルを保存する
+1. [Jcreate++ を開き](/app/)、箱を動かすブロックを表示します。上に動かす量（y）は **1** にします。
+2. 右側の **3Dプレビュー** で **インタラクト** を押し、箱が 1 m 上に動くことを確かめます。
+3. 上の **JS保存（Unity用）** を押して、`.js` ファイルを保存します。通常はブラウザのダウンロードフォルダに入ります。
 
 右側の「Unity側で必要な設定」に出ている内容は、あとで使うのでメモしておきます。
 
 ## 2. Unity でアイテムに付ける
 
-方法は 2 つあります。
+Unity では、ヒエラルキーがシーン内の物の一覧で、Inspector が選んだ物の設定欄です。最初は **A** の手順で、Cube に動作を設定してみましょう。Unity 拡張を試したい場合は **B** に進みます。
 
 ### A. 手で付ける
 
@@ -33,6 +31,8 @@ Unity は Cluster 公式が案内しているバージョンを使います。�
 2. ヒエラルキーで、動かしたいオブジェクト（例: Cube）を選ぶ
 3. Inspector の `Add Component` で、下の表のコンポーネントを付ける
 4. `Scriptable Item` の `Source Code Asset` に、入れた `.js` を設定する
+
+今回の Cube には **Item・Scriptable Item・Movable Item** を付け、**Rigidbody > Is Kinematic** をオンにします。クリックに必要な **Box Collider** は、Unity の Cube に最初から付いています。
 
 | 付けるもの | いつ必要？ |
 |---|---|
@@ -60,8 +60,7 @@ Unity は Cluster 公式が案内しているバージョンを使います。�
 
 1. [Jcreate++ Unity 拡張（ZIP）](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip) をダウンロードして展開する
 2. 中の `Jcreatepp` フォルダを、Unity プロジェクトの `Assets` にまるごとコピーする
-3. Unity の上のメニューに **Jcreate++** が出たら、オブジェクトを選んで **Jcreate++ > .js を選んで、選択中のオブジェクトに設定する...** を選ぶ
-
+3. Unity の上のメニューに **Jcreate++** が出たら、Cube を選んで **Jcreate++ > .js を選んで、選択中のオブジェクトに設定する...** を選び、保存した `.js` を開く
 4. Cube の Inspector で `Box Collider` が付いていることを確認する。`Collider` は手動設定で、Unity の Cube には最初から `Box Collider` が付いています。
 
 試作なので、うまく動かないときは Console に出たメッセージを教えてください。

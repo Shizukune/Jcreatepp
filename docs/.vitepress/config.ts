@@ -1,6 +1,6 @@
 ﻿export default {
   title: 'Jcreate++ はじめてガイド',
-  description: 'Cluster ScriptをBlocklyで作るための初心者向けレシピ集',
+  description: 'スクリプトが初めての人向けに、ブロックで小さな仕掛けを作ってClusterで動かすまでを紹介します。',
   lang: 'ja-JP',
   base: '/Jcreatepp/',
   cleanUrls: true,
@@ -10,18 +10,23 @@
       { text: 'Jcreate++を開く', link: '/app/' },
       { text: 'はじめに', link: '/' },
       { text: 'レシピ', link: '/recipes/' },
-      { text: 'パーツリファレンス', link: '/reference/' },
-      { text: 'はじめてUnityで動かす', link: '/first-unity' },
-      { text: 'Clusterルール', link: '/cluster-rules' },
-      { text: '困ったとき', link: '/troubleshooting' },
-      { text: '更新履歴', link: '/changelog' },
+      { text: 'Unity・Clusterで動かす', link: '/first-unity' },
+      {
+        text: '調べる',
+        items: [
+          { text: 'ブロックの使い方', link: '/reference/' },
+          { text: 'Cluster Scriptのルール', link: '/cluster-rules' },
+          { text: '困ったとき', link: '/troubleshooting' },
+          { text: '更新履歴', link: '/changelog' },
+        ],
+      },
     ],
     sidebar: [
       {
         text: 'はじめに',
         items: [
           { text: 'Jcreate++を開く', link: '/app/' },
-          { text: 'Jcreate++とは', link: '/' },
+          { text: 'スクリプトって何？', link: '/' },
           { text: '3Dプレビュー', link: '/preview' },
           { text: 'はじめて Unity で動かす', link: '/first-unity' },
         ],

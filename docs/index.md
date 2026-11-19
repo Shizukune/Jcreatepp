@@ -1,64 +1,47 @@
-﻿---
+---
 layout: home
 
 hero:
   name: Jcreate++
-  text: はじめてのCluster Scriptレシピ集
-  tagline: ブロックを組み合わせて、Clusterワールドの小さなギミックをまず作ってみるためのガイドです。
+  text: はじめてのスクリプトを、ブロックで
+  tagline: 箱をクリックしたら、上に動く。まずはその小さな仕掛けを、ブラウザで作ってみましょう。
   actions:
     - theme: brand
-      text: Jcreate++を開く
+      text: 最初の仕掛けを作る
+      link: '#first-project'
+    - theme: alt
+      text: エディターを開く
       link: /app/
-    - theme: alt
-      text: はじめてUnityで動かす
-      link: /first-unity
-    - theme: alt
-      text: レシピを見る
-      link: /recipes/
-    - theme: alt
-      text: パーツを見る
-      link: /reference/
-    - theme: alt
-      text: Cluster Scriptのルールを見る
-      link: /cluster-rules
-
-features:
-  - title: ブロックで作る
-    details: Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで生成するプロトタイプツールです。
-  - title: レシピから試す
-    details: 「触ったら動く」「ランダムで判定する」など、作りたい動きから探せます。
-  - title: 詰まりどころも見る
-    details: Unity側の設定、Scriptable Item、状態保存など、初心者がつまずきやすい点を短くまとめます。
 ---
 
-## Jcreate++とは
+## スクリプトって何？
 
-Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成するためのプロトタイプツールです。
+スクリプトは、**「いつ、何をするか」をコンピューターに伝える指示**です。たとえば「箱がクリックされたら、今いる場所から 1 m 上に動かす」という指示があれば、クリックするたびに箱が動きます。
 
-JavaScriptやCluster Scriptに慣れていない人でも、ブロックを組み合わせて簡単なワールドギミックを試せることを目指しています。
+Cluster のワールドでアイテムにこうした指示を出す仕組みが **Cluster Script** です。Jcreate++ では、「クリックされたとき」と「上に動かす」にあたるブロックをつなぐと、Cluster が読める JavaScript（コード）が自動でできます。
 
-まず試すだけなら、[Jcreate++をブラウザで開く](/app/) だけで使えます。Node.jsやターミナル操作は、開発・改造したい人向けです。
+## 最初の仕掛けを作る {#first-project}
 
-## 誰向けか
+[ブラウザで Jcreate++ を開く](/app/) だけで試せます。インストールやアカウント登録は不要です。このガイドとエディターを別々のタブに開いておくと、手順を見ながら作れます。
 
-- Clusterでワールドを作っている人
-- Cluster Scriptをこれから学ぶ人
-- UnityやJavaScriptにあまり慣れていない人
-- 授業やワークショップで簡単なギミックを作りたい人
+1. 左の **イベント｜開始/毎F/受信** から **インタラクト時** を、真ん中の作業スペースにドラッグします。これは「アイテムをクリックして使ったとき」という合図です。
+2. 左の **動作｜移動/回転/力** の **相対指定** から **位置を x:… y:… z:… ずつ変える** をドラッグし、**インタラクト時** のくぼみにはめます。数値は **x を 0、y を 1、z を 0** にします。y が上下方向です。
+3. 右側の **3Dプレビュー** を開き、**インタラクト** ボタンを押します。押すたびに赤い箱が **1 m 上に動けば成功**です。ボタンが出ないときは、動作ブロックがイベントの中につながっているか確かめます。
 
-## レシピから探せること
+y を **2** に変えると、１回で 2 m 上がります。右側の **生成コード** も開いて、ブロックを変えるとコードの数字も変わるところを見てみましょう。
 
-まずは「作りたい動き」から選ぶのがおすすめです。
+あとでブロックを組み直したいときは、上の **ブロック保存** で編集用のファイル（`.json`）を保存できます。
 
-- [触ったら動く](/recipes/interact-move)
-- [サイコロ判定](/recipes/dice-judge)
-- [クールダウンつきボタン](/recipes/cooldown)
-- [遠隔スイッチで開くドア](/recipes/remote-door)
-- [近づくと点灯するランプ](/recipes/sensor-light)
-- [当たり音つき的あて](/recipes/hit-sound)
+## Cluster のワールドで動かす
 
-細かい仕様を覚える前に、まず1つ動くものを作ってみましょう。
+ブラウザで動きを確かめたら、同じ仕掛けを Cluster に持っていけます。上の **JS保存（Unity用）** でコードのファイル（`.js`）を保存し、Unity にある箱に設定します。**Unity** はワールドを作るアプリ、**Cluster Creator Kit** は Unity に Cluster 用の機能を追加する道具です。
 
-作ったScriptをClusterで動かすまでの流れ（Unity と Cluster Creator Kit の準備、付けるコンポーネント、アップロード）は、[はじめて Unity で動かす](/first-unity) にまとめています。
+[Unity の準備から Cluster で試すまで](/first-unity) に、必要なものの入れ方と手順をまとめています。
 
-ブロックごとの詳しい意味は、[パーツリファレンス](/reference/) にまとめています。
+## 次に作るものを選ぶ
+
+- [サイコロ判定](/recipes/dice-judge) で、出た数字によって動きを変える
+- [クールダウンつきボタン](/recipes/cooldown) で、連打してもすぐには動かないようにする
+- [遠隔スイッチで開くドア](/recipes/remote-door) で、スイッチとドアを連動させる
+
+ほかの作例は [レシピ一覧](/recipes/) にあります。使い方が分からないブロックは [ブロックの使い方](/reference/) で調べられます。
