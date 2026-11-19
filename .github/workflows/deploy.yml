@@ -54,6 +54,11 @@ jobs:
           mkdir -p docs/.vitepress/dist/downloads
           (cd unity && zip -qr ../docs/.vitepress/dist/downloads/Jcreatepp-unity.zip Jcreatepp)
 
+      - name: Add real-device test kit ZIP to Pages
+        run: |
+          (cd test && zip -qr ../docs/.vitepress/dist/downloads/Jcreatepp-realdevice.zip realdevice -x '*.ts')
+          zip -q docs/.vitepress/dist/downloads/Jcreatepp-realdevice.zip LICENSE
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

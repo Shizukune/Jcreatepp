@@ -10,8 +10,8 @@ Web 版・ガイド・Unity 拡張・Cluster 実機を、ひととおり確か�
 
 ## 0. 準備
 
-- GitHub の最新版（`c3b08d3` 以降）を ZIP でダウンロードして展開する
-- Unity は、できれば **2021.3**（本来の対象で、まだ確かめていない）。無ければ 6000.2 で
+- [Unity拡張ZIP](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip)と[実機確認キットZIP](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)をダウンロードして展開する（[何をどこへ入れるか](../README.md#どれをダウンロードすればいい)）
+- Unityは **6000.2.6f2** を使う。Unity 2021.3は拡張の未検証・動作保証対象外
 - Cluster Creator Kit を入れた Unity プロジェクトを 1 つ用意する
 
 ## 1. Web 版（https://shizukune.github.io/Jcreatepp/app/）
@@ -83,8 +83,8 @@ Web 版・ガイド・Unity 拡張・Cluster 実機を、ひととおり確か�
 
 ### 手順
 
-1. `test/realdevice/scripts/` の `.js` を全部、Unity の `Assets` にコピーする
-2. `test/realdevice/CHECKLIST.md` の「シナリオごとの手順」のとおりに、シナリオごとに立方体を置いて準備する
+1. 実機確認キットZIPの`realdevice/scripts/`（ソース一式では`test/realdevice/scripts/`）を、Unityの`Assets`にコピーする
+2. キットの`realdevice/CHECKLIST.md`（ソース一式では`test/realdevice/CHECKLIST.md`）の「シナリオごとの手順」のとおりに、シナリオごとに立方体を置いて準備する
    - 3-3 の U1（自動で付ける）を使うと早い
    - 回転を見るものは、上に小さな箱を乗せるなどして、向きが分かる形にしておく
 3. ワールドをアップロードして入室し、`CHECKLIST.md` の一覧どおりに操作する（結果は `CHECKLIST.md` に書く）

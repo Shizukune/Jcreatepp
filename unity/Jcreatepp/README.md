@@ -18,6 +18,10 @@ Jcreate++ の「JS保存（Unity用）」で保存した `.js` を、Unity で**
 
 ## 入れ方（どちらか）
 
+**[Unity拡張ZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip)**して展開し、中の`Jcreatepp`フォルダを使います。UnityとCCK自体は別途用意してください。実機確認用サンプルは別の **[実機確認キットZIP](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)** です（[キットの使い方](https://github.com/Shizukune/Jcreatepp/blob/main/test/realdevice/README.md)）。
+
+更新するときはプロジェクトをバックアップし、既存の`Assets/Jcreatepp`を置き換えてください。Package Managerで導入済みの場合はAssetsにもコピーせず、既存のパッケージを更新します。旧版と新版を二重に入れないでください。
+
 **A. Assets にコピーする（かんたん）**
 
 1. このフォルダ `Jcreatepp` を、Unity プロジェクトの `Assets` の中にまるごとコピーする
