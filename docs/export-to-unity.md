@@ -56,7 +56,7 @@ Assets/Scripts/door_switch.js
 
 Unity上で、スクリプトを動かしたいアイテムを選びます。
 
-Inspectorで、Cluster用の `Item` と `Scriptable Item` コンポーネントを追加します。位置や角度を変えるスクリプトなら `Movable Item` も付けます（[付けるものの一覧](./first-unity#_2-unity-でアイテムに付ける)）。
+Inspectorで、Cluster用の `Item` と `Scriptable Item` コンポーネントを追加します。位置や角度を変えるスクリプトなら `Movable Item` も付けます（[付けるものの一覧](./first-unity#manual-setup)）。
 
 この例では `Rigidbody > Is Kinematic` をオンにし、Cube に `Box Collider` が付いていることを確認します。すでに付いているコンポーネントはそのまま使えます。
 

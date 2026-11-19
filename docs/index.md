@@ -4,15 +4,19 @@ layout: home
 hero:
   name: Jcreate++
   text: はじめてのスクリプトを、ブロックで
-  tagline: 箱をクリックしたら、上に動く。まずはその小さな仕掛けを、ブラウザで作ってみましょう。
+  tagline: Unity に Jcreate++ を入れて、クリックで動く箱を作り、Cluster のワールドで試してみましょう。
   actions:
     - theme: brand
-      text: 最初の仕掛けを作る
-      link: '#first-project'
+      text: Unity に入れて作る
+      link: /first-unity
     - theme: alt
-      text: エディターを開く
+      text: ブラウザで見てみる
       link: /app/
 ---
+
+<script setup>
+import { withBase } from 'vitepress'
+</script>
 
 ## スクリプトって何？
 
@@ -20,23 +24,15 @@ hero:
 
 Cluster のワールドでアイテムにこうした指示を出す仕組みが **Cluster Script** です。Jcreate++ では、「クリックされたとき」と「上に動かす」にあたるブロックをつなぐと、Cluster が読める JavaScript（コード）が自動でできます。
 
-## 最初の仕掛けを作る {#first-project}
+## 作った仕掛けが動くところ
 
-[ブラウザで Jcreate++ を開く](/app/) だけで試せます。インストールやアカウント登録は不要です。このガイドとエディターを別々のタブに開いておくと、手順を見ながら作れます。
+スイッチを操作すると、離れたドアが開閉します。Jcreate++ で作った[遠隔ドアのレシピ](/recipes/remote-door)の動作例です。
 
-1. 左の **イベント｜開始/毎F/受信** から **インタラクト時** を、真ん中の作業スペースにドラッグします。これは「アイテムをクリックして使ったとき」という合図です。
-2. 左の **動作｜移動/回転/力** の **相対指定** から **位置を x:… y:… z:… ずつ変える** をドラッグし、**インタラクト時** のくぼみにはめます。数値は **x を 0、y を 1、z を 0** にします。y が上下方向です。
-3. 右側の **3Dプレビュー** を開き、**インタラクト** ボタンを押します。押すたびに赤い箱が **1 m 上に動けば成功**です。ボタンが出ないときは、動作ブロックがイベントの中につながっているか確かめます。
+<video controls muted playsinline preload="none" width="720" :src="withBase('/images/recipes/remote-door-demo.mp4')" aria-label="遠隔スイッチでドアが開閉する動作例"></video>
 
-y を **2** に変えると、１回で 2 m 上がります。右側の **生成コード** も開いて、ブロックを変えるとコードの数字も変わるところを見てみましょう。
+## Unity で最初の仕掛けを作る {#first-project}
 
-あとでブロックを組み直したいときは、上の **ブロック保存** で編集用のファイル（`.json`）を保存できます。
-
-## Cluster のワールドで動かす
-
-ブラウザで動きを確かめたら、同じ仕掛けを Cluster に持っていけます。上の **JS保存（Unity用）** でコードのファイル（`.js`）を保存し、Unity にある箱に設定します。**Unity** はワールドを作るアプリ、**Cluster Creator Kit** は Unity に Cluster 用の機能を追加する道具です。
-
-[Unity の準備から Cluster で試すまで](/first-unity) に、必要なものの入れ方と手順をまとめています。
+[Unity 入門ガイド](/first-unity)では、Jcreate++ を導入し、Unity の中でブロックを組んでプレビューします。最初は、クリックするたびに 1 m 上がる箱を作ります。
 
 ## 次に作るものを選ぶ
 

@@ -7,10 +7,10 @@
   ignoreDeadLinks: [/^\/app\//],
   themeConfig: {
     nav: [
-      { text: 'Jcreate++を開く', link: '/app/' },
       { text: 'はじめに', link: '/' },
+      { text: 'Unity に入れて作る', link: '/first-unity' },
       { text: 'レシピ', link: '/recipes/' },
-      { text: 'Unity・Clusterで動かす', link: '/first-unity' },
+      { text: 'ブラウザ版', link: '/app/' },
       {
         text: '調べる',
         items: [
@@ -25,10 +25,9 @@
       {
         text: 'はじめに',
         items: [
-          { text: 'Jcreate++を開く', link: '/app/' },
           { text: 'スクリプトって何？', link: '/' },
-          { text: '3Dプレビュー', link: '/preview' },
           { text: 'はじめて Unity で動かす', link: '/first-unity' },
+          { text: 'ブラウザ版の 3D プレビュー', link: '/preview' },
         ],
       },
       {
