@@ -69,7 +69,7 @@
 
 注意:
 
-- Unity側でColliderやPhysical Shapeなどの設定が必要です。
+- Unity 側で `Collider` と `Movable Item` を付け、`Rigidbody` の `Is Kinematic` をオフにし、アイテム自身が物理で動くようにします。固定したアイテムに別の物を当てるだけでは発生しません（[公式の onCollide の条件](https://docs.cluster.mu/script/interfaces/ClusterScript.html#onCollide)）。
 
 ## 持ったとき / 離したとき
 
