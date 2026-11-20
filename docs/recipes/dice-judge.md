@@ -16,7 +16,8 @@
 ## 必要なUnity / Cluster設定
 
 - スクリプトを動かすアイテムに `Item` と `Scriptable Item` を付け、Scriptable Item に `.js` を設定します（[はじめて Unity で動かす](../first-unity)）。
-- アイテム自体を動かす場合は、`Movable Item` を付けます。
+- インタラクトするには `Collider` が必要です（Unity の Cube などには最初から付いています）。
+- この例のように位置をスクリプトで変える場合は、`Movable Item` を付け、`Rigidbody > Is Kinematic` をオンにします。
 - 結果を文字で見せたい場合は、表示用サブノードを用意します。
 
 ## Jcreate++で置くブロック

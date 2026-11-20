@@ -16,7 +16,8 @@
 ## 必要なUnity / Cluster設定
 
 - スクリプトを動かすアイテムに `Item` と `Scriptable Item` を付け、Scriptable Item に `.js` を設定します（[はじめて Unity で動かす](../first-unity)）。
-- 衝突を取るためのColliderやPhysical Shapeを設定します。
+- `Movable Item` を付け、`Rigidbody` の `Is Kinematic` をオフ、`Use Gravity` をオンにします。この例では的自身を物理で動かし、床や壁に落として衝突を試します。
+- 的に `Box Collider` などの衝突判定を付けます。床や壁にも `Collider` が必要です。動かない的に別の物を当てるだけでは、この手順の衝突イベントを確認できません（[onCollide の条件](https://docs.cluster.mu/script/interfaces/ClusterScript.html#onCollide)）。
 - 音を鳴らす場合は、Item Audio Set Listに `hit` などのIDで音を登録します。
 - 文字を変える場合は、サブノードにTextMeshProなどを付けます。
 
@@ -45,4 +46,5 @@
 - Item Audio Set ListのIDが違う
 - Textサブノード名が違う
 - 衝突設定がなく、イベントが発生していない
+- 的に `Movable Item` が付いていない、または `Is Kinematic` がオンで、的自身が物理で動いていない
 - 同じ瞬間に何度も衝突して音が連続再生される
