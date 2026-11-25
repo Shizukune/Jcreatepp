@@ -99,6 +99,7 @@ namespace UnityEditor
         public static string CreateFolder(string parentFolder, string newFolderName) { return null; }
         public static void ImportAsset(string path, ImportAssetOptions options) { }
         public static T LoadAssetAtPath<T>(string assetPath) where T : Object { return null; }
+        public static bool OpenAsset(Object asset) { return false; }
         public static string[] FindAssets(string filter) { return new string[0]; }
         public static string GUIDToAssetPath(string guid) { return null; }
     }

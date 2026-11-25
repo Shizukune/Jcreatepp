@@ -1,8 +1,8 @@
 # Jcreate++
 
-Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成するためのプロトタイプツールです。
+Jcreate++ は、ブロックを組んで Cluster のアイテムに動きを付けるツールです。Unity の中で組み立て、同じ画面で動きを試し、選んだアイテムに設定できます。
 
-まず試すだけなら、ダウンロードやターミナル操作は不要です。ブラウザでWeb版を開くだけで使えます。
+初めて使う方は [Unity 入門ガイド](https://shizukune.github.io/Jcreatepp/first-unity.html) から始めてください。画面を気軽に試したい場合は [ブラウザ版](https://shizukune.github.io/Jcreatepp/app/) も使えます。
 
 ## どれをダウンロードすればいい？
 
@@ -26,40 +26,16 @@ Jcreate++は、Cluster ScriptをBlocklyベースのスクラッチ風UIで作成
 
 ZIPのダウンロードリンクが開けないときは、[ソース一式ZIP](https://github.com/Shizukune/Jcreatepp/archive/refs/heads/main.zip)を展開して、Unity拡張は`unity/Jcreatepp`、実機確認キットは`test/realdevice`を取り出してください。**`Jcreatepp-main`全体をUnityのAssetsへ入れないでください。** GitHub Pagesの公開処理中は、ZIPに最新の変更が反映されるまで時間がかかることがあります。
 
-## すぐ使う
+## Unity で作る
 
-Web版はこちらです。
+1. **Jcreate++ > ブロックエディター** を開きます。
+2. 左の **部品｜自動でブロック** から **押したら実行** を選び、**ここに動作を置く** に移動や回転のブロックを入れます。開始・停止、順番に実行、条件付き、連打防止、合図の受信も選べます。
+3. **この画面でプレビュー** を押して、右側の箱で動きを確かめます。
+4. ヒエラルキーで対象を選び、**「オブジェクト名」に設定する** を押します。ブロックから JavaScript が生成され、選んだアイテムに設定されます。最後に Cluster で動作を確かめます。
 
-[Jcreate++を開く](https://shizukune.github.io/Jcreatepp/app/)
+編集を続けるなら **ブロックを書き出す (.json)...**、コードだけ保存するなら **JavaScript (.js) だけ書き出す...** を使います。書き出したコードは **書き出した JavaScript を開く** から開けます。テンプレートに空欄がある場合は、ブロックを保存して後から編集できます。JavaScript の書き出しとアイテムへの設定には空欄を埋める必要があります。
 
-使い方の説明とレシピ集はこちらです。
-
-[Jcreate++ はじめてガイド](https://shizukune.github.io/Jcreatepp/)
-
-## 何ができる？
-
-- ブロックを組み合わせてCluster Script用のJavaScriptを作る
-- 触ったとき、毎フレーム、移動、回転、ランダム、クールダウンなどの基本処理を作る
-- 作ったScriptを `.js` ファイルとして保存する
-- 保存した `.js` をUnityプロジェクトに入れて、Scriptable Itemに設定する
-
-## 使い方の流れ
-
-1. [Jcreate++を開く](https://shizukune.github.io/Jcreatepp/app/)
-2. ブロックを置く
-3. 右側の `3Dプレビュー` で動きを確かめる
-4. `JSファイル名` にファイル名を入れる
-5. `JS保存（Unity用）` を押して `.js` ファイルを保存する
-6. 保存した `.js` をUnityプロジェクトの `Assets` に入れる
-7. 動かしたいアイテムに `Item` と `Scriptable Item`（動かすなら `Movable Item` も）を付ける
-8. Scriptable Itemの `Source Code Asset` に `.js` ファイルを設定する
-9. Clusterへアップロードして動作確認する
-
-Unity と Cluster Creator Kit の準備から、アップロードまでの全体の流れは [はじめて Unity で動かす](https://shizukune.github.io/Jcreatepp/first-unity) にまとめています。必要なコンポーネントを自動で付ける Unity 拡張（試作）もあります（[unity/Jcreatepp](unity/Jcreatepp/README.md)）。
-
-詳しい手順は、こちらにまとめています。
-
-[JSを保存してUnityに持っていく](https://shizukune.github.io/Jcreatepp/export-to-unity)
+詳しい操作は [Unity 拡張の説明](unity/Jcreatepp/README.md) にあります。ブラウザ版で作ったコードを持ち込む場合は [JS を保存して Unity に持っていく](https://shizukune.github.io/Jcreatepp/export-to-unity) を参照してください。
 
 ## 初心者向けレシピ
 

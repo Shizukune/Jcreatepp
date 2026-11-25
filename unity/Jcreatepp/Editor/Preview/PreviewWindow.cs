@@ -13,6 +13,34 @@ namespace Jcreatepp.Editor.Preview
     /// </summary>
     public sealed class PreviewWindow : EditorWindow
     {
+        [SerializeField] PreviewPanel panel = new PreviewPanel();
+        Vector2 scroll;
+
+        [MenuItem("Jcreate++/プレビュー", false, 10)]
+        public static void Open()
+        {
+            var window = GetWindow<PreviewWindow>();
+            window.titleContent = new GUIContent("Jcreate++ プレビュー");
+            window.minSize = new Vector2(340, 480);
+            window.Show();
+        }
+
+        void OnEnable() { panel.Enable(Repaint); }
+        void OnDisable() { panel.Disable(); }
+        void OnBecameInvisible() { panel.Pause(); }
+        void OnGUI()
+        {
+            scroll = EditorGUILayout.BeginScrollView(scroll);
+            panel.Draw(position.width, false);
+            EditorGUILayout.EndScrollView();
+        }
+
+    }
+
+    /// <summary>Simulation and controls shared by the standalone and block-editor previews.</summary>
+    [Serializable]
+    public sealed class PreviewPanel
+    {
         const double FrameSeconds = 1.0 / 60.0;
         /// <summary>Most simulation frames per editor update; time beyond that is dropped (no catching up).</summary>
         const int MaxFramesPerUpdate = 10;
@@ -41,11 +69,8 @@ namespace Jcreatepp.Editor.Preview
         [SerializeField] JavaScriptAsset script;
         /// <summary>Code sent from the block editor (used when no .js is chosen); "" when none.</summary>
         [SerializeField] string blockCode = "";
-        [SerializeField] string blockTitle = "";
         /// <summary>Why the blocks now in the editor are not what runs here (the last code that converted is); "" when they are.</summary>
         [SerializeField] string blockStale = "";
-        /// <summary>Whether the block editor starts this preview again when the blocks change (its 自動でやり直す).</summary>
-        [SerializeField] bool blockRestarts = true;
         [SerializeField] int speedIndex = 2;
         [SerializeField] bool showTransform = true;
         [SerializeField] bool showState = true;
@@ -64,60 +89,27 @@ namespace Jcreatepp.Editor.Preview
         bool playing;
         double accumulated;
         double lastUpdate;
-        Vector2 scroll;
+        Action repaint;
 
-        [MenuItem("Jcreate++/プレビュー", false, 10)]
-        public static void Open()
+        public void ShowCode(string code)
         {
-            var window = GetWindow<PreviewWindow>();
-            window.titleContent = new GUIContent("Jcreate++ プレビュー");
-            window.minSize = new Vector2(340, 480);
-            window.Show();
+            script = null;
+            blockCode = code;
+            blockStale = "";
+            Restart();
         }
 
-        /// <summary>
-        /// Opens the preview with code from the block editor (not saved anywhere), from its 開始時.
-        /// <paramref name="restarts"/>: the editor starts it again when the blocks change.
-        /// </summary>
-        public static void ShowCode(string code, string title, bool restarts)
+        public void SyncBlockCode(string code, bool restart, string staleReason)
         {
-            Open();
-            var window = GetWindow<PreviewWindow>();
-            window.script = null;
-            window.blockCode = code ?? "";
-            window.blockTitle = title ?? "";
-            window.blockStale = "";
-            window.blockRestarts = restarts;
-            window.Restart();
-        }
-
-        /// <summary>
-        /// When an open preview shows the block editor's code: the blocks now give <paramref name="code"/> ("" when
-        /// they give none). With <paramref name="restart"/> new code starts again from 開始時; otherwise, or with no
-        /// code, the preview keeps the code it has and shows <paramref name="staleReason"/>. Does not open a window.
-        /// </summary>
-        public static void SyncBlockCode(string code, bool restart, string staleReason)
-        {
-            if (!HasOpenInstances<PreviewWindow>()) return;
-            var window = GetWindow<PreviewWindow>(false, null, false);
-            if (window.script != null || window.blockCode == "") return;
-            code = code ?? "";
-            window.blockRestarts = restart;
-            var stale = "";
-            if (code != window.blockCode)
+            if (blockCode == "") return;
+            blockStale = code != blockCode ? staleReason : "";
+            if (blockStale != "" && code != "" && restart)
             {
-                if (code != "" && restart)
-                {
-                    window.blockCode = code;
-                    window.Restart();
-                }
-                else
-                {
-                    stale = staleReason ?? "";
-                }
+                blockCode = code;
+                blockStale = "";
+                Restart();
             }
-            window.blockStale = stale;
-            window.Repaint();
+            if (repaint != null) repaint();
         }
 
         /// <summary>The script text to run: the chosen .js, else the block editor's code; null when neither.</summary>
@@ -127,8 +119,9 @@ namespace Jcreatepp.Editor.Preview
             return blockCode != "" ? blockCode : null;
         }
 
-        void OnEnable()
+        public void Enable(Action requestRepaint)
         {
+            repaint = requestRepaint;
             stage = new PreviewStage();
             EditorApplication.update += Tick;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
@@ -136,9 +129,10 @@ namespace Jcreatepp.Editor.Preview
             if (Source() != null) Restart();
         }
 
-        void OnDisable()
+        public void Disable()
         {
             Shutdown();
+            repaint = null;
             if (stage != null)
             {
                 stage.Dispose();
@@ -161,7 +155,7 @@ namespace Jcreatepp.Editor.Preview
         }
 
         /// <summary>Another tab was brought to front: the preview pauses (it does not run while not shown).</summary>
-        void OnBecameInvisible()
+        public void Pause()
         {
             SetPlaying(false);
         }
@@ -271,58 +265,43 @@ namespace Jcreatepp.Editor.Preview
                 log.AddRange(next.Log);
                 if (log.Count > LogShown) log.RemoveRange(0, log.Count - LogShown);
             }
-            Repaint();
+            if (repaint != null) repaint();
         }
 
-        void OnGUI()
+        public void Draw(float width, bool embedded)
         {
-            scroll = EditorGUILayout.BeginScrollView(scroll);
-
-            // ① スクリプト
-            EditorGUILayout.LabelField("① スクリプトを選ぶ", EditorStyles.boldLabel);
-            EditorGUI.BeginChangeCheck();
-            script = (JavaScriptAsset)EditorGUILayout.ObjectField(
-                new GUIContent("スクリプト", "Jcreate++ の「JS保存（Unity用）」で保存した .js（JavaScript Asset）"), script, typeof(JavaScriptAsset), false);
-            if (EditorGUI.EndChangeCheck())
+            if (!embedded)
             {
-                if (script != null) blockCode = "";
-                Restart();
+                EditorGUI.BeginChangeCheck();
+                script = (JavaScriptAsset)EditorGUILayout.ObjectField(new GUIContent("スクリプト"), script, typeof(JavaScriptAsset), false);
+                if (EditorGUI.EndChangeCheck()) Restart();
             }
-            if (script == null && blockCode != "")
+            else
             {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("ブロックエディターのコード" + (blockTitle != "" ? "（" + blockTitle + "）" : ""), EditorStyles.wordWrappedLabel);
-                if (GUILayout.Button(new GUIContent("やめる", "ブロックエディターのコードを使うのをやめます"), GUILayout.Width(60)))
-                {
-                    blockCode = "";
-                    Restart();
-                    GUIUtility.ExitGUI();
-                }
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.LabelField(blockRestarts
-                    ? "ブロックを変えると、ここも最初からやり直します。"
-                    : "ブロックを変えても、ここはやり直しません（ブロックエディターの「開いているプレビューもやり直す」がオフ）。", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField("ブロックのプレビュー", EditorStyles.boldLabel);
                 if (blockStale != "")
-                {
-                    EditorGUILayout.HelpBox("いまのブロックではなく、最後に変換できたときのコードで動いています。" + blockStale, MessageType.Warning);
-                }
+                    EditorGUILayout.HelpBox("最後に変換できたブロックを表示しています。 " + blockStale, MessageType.Warning);
             }
-            if (script == null && blockCode == "")
+
+            if (Source() == null)
             {
-                EditorGUILayout.HelpBox("Jcreate++ の「JS保存（Unity用）」で保存した .js をプロジェクトに入れて、ここに入れてください。", MessageType.Info);
-                Footer();
-                EditorGUILayout.EndScrollView();
+                EditorGUILayout.HelpBox("プロジェクト内の .js を選ぶとプレビューできます。", MessageType.Info);
                 return;
             }
 
             // ② 再生
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("② 再生する", EditorStyles.boldLabel);
-            Toolbar();
-            var rect = GUILayoutUtility.GetRect(200f, 10000f, 220f, 320f);
+            EditorGUILayout.LabelField("再生", EditorStyles.boldLabel);
+            Toolbar(width);
+            if (embedded)
+            {
+                EditorGUILayout.LabelField("イベントを起こして試す", EditorStyles.boldLabel);
+                Events();
+            }
+            var rect = GUILayoutUtility.GetRect(180f, 10000f, embedded ? 145f : 220f, embedded ? 145f : 320f);
             if (stage != null)
             {
-                if (stage.HandleInput(rect)) Repaint();
+                if (stage.HandleInput(rect) && repaint != null) repaint();
                 var position = snapshot != null ? new Vector3((float)snapshot.Position[0], (float)snapshot.Position[1], (float)snapshot.Position[2]) : Vector3.zero;
                 var rotation = snapshot != null
                     ? new Quaternion((float)snapshot.Rotation[0], (float)snapshot.Rotation[1], (float)snapshot.Rotation[2], (float)snapshot.Rotation[3])
@@ -334,21 +313,25 @@ namespace Jcreatepp.Editor.Preview
             if (problem != "") EditorGUILayout.HelpBox(problem, MessageType.Error);
             if (snapshot != null && snapshot.LastError != "") EditorGUILayout.HelpBox("スクリプトでエラーが起きました: " + snapshot.LastError, MessageType.Warning);
 
-            // ③ イベント
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("③ イベントを起こして試す", EditorStyles.boldLabel);
-            Events();
+            if (!embedded)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("イベントを起こして試す", EditorStyles.boldLabel);
+                Events();
+            }
 
             EditorGUILayout.Space();
             TransformSection();
             StateSection();
             LogSection();
-            HelpSection();
-            Footer();
-            EditorGUILayout.EndScrollView();
+            if (!embedded)
+            {
+                HelpSection();
+                Footer();
+            }
         }
 
-        void Toolbar()
+        void Toolbar(float width)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             using (new EditorGUI.DisabledScope(host == null))
@@ -368,7 +351,7 @@ namespace Jcreatepp.Editor.Preview
                 Restart();
             }
             // In a narrow window the speed and the time go to a second toolbar row.
-            if (position.width < 420f)
+            if (width < 420f)
             {
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();

@@ -9,8 +9,76 @@ import * as assert from 'node:assert/strict';
 import { STATEMENT_PLACEMENT_RULES, placementError, type Placement } from '../src/blocks/placement';
 import type { EventContext } from '../src/blocks/context';
 import { collectWarnings } from '../src/validator';
-import { b, onEvent, workspace } from './build';
+import { b, bool, num, onEvent, workspace, xyz } from './build';
 import { conversionErrors, loadWorkspace } from './harness';
+
+test('unfinished template slots block conversion even beside a complete action', () => {
+  const move = b('jcreatepp_add_position', { inputs: xyz(0, 1, 0) });
+  const draft = { ...b('jcreatepp_if'), data: 'jcreatepp.template.condition' };
+  const state = workspace(onEvent('jcreatepp_on_interact', [move, draft]));
+  assert.equal(conversionErrors(state).filter(e => e.includes('組み方テンプレート')).length, 2);
+  const filled = {
+    ...b('jcreatepp_if', {
+      inputs: { CONDITION: bool(true) },
+      stmts: { DO: [b('jcreatepp_add_position', { inputs: xyz(0, 1, 0) })] },
+    }),
+    data: 'jcreatepp.template.condition',
+  };
+  assert.deepEqual(conversionErrors(workspace(onEvent('jcreatepp_on_interact', [filled]))), []);
+});
+
+test('a cooldown starter alone does not fill a template action slot', () => {
+  const timer = b('jcreatepp_start_cooldown', { fields: { COOLDOWN_NAME: '再使用' } });
+  const guard = {
+    ...b('jcreatepp_if', { inputs: { CONDITION: bool(true) }, stmts: { DO: [timer] } }),
+    data: 'jcreatepp.template.cooldown',
+  };
+  assert.ok(conversionErrors(workspace(onEvent('jcreatepp_on_interact', [guard])))
+    .some(e => e.includes('ここに動作を置く')));
+});
+
+test('a cooldown template requires a starter with the same name as its condition', () => {
+  const state = (timerName?: string) => {
+    const move = b('jcreatepp_add_position', { inputs: xyz(0, 1, 0) });
+    const actions = timerName
+      ? [b('jcreatepp_start_cooldown', { fields: { COOLDOWN_NAME: timerName }, inputs: { SECONDS: num(3) } }), move]
+      : [move];
+    const active = b('jcreatepp_cooldown_active', { fields: { COOLDOWN_NAME: '再使用' } });
+    const guard = {
+      ...b('jcreatepp_if', {
+        inputs: { CONDITION: b('jcreatepp_not', { inputs: { BOOL: active } }) },
+        stmts: { DO: actions },
+      }),
+      data: 'jcreatepp.template.cooldown',
+    };
+    return workspace(onEvent('jcreatepp_on_interact', [guard]));
+  };
+  assert.ok(conversionErrors(state()).some(e => e.includes('連打防止テンプレート')));
+  assert.ok(conversionErrors(state('別名')).some(e => e.includes('連打防止テンプレート')));
+  assert.deepEqual(conversionErrors(state('再使用')), []);
+});
+
+test('a start/stop template requires the matching interact toggle', () => {
+  const state = (name?: string, operation = 'toggle') => {
+    const guard = {
+      ...b('jcreatepp_if', {
+        inputs: { CONDITION: b('jcreatepp_flag', { fields: { FLAG_NAME: '動作中' } }) },
+        stmts: { DO: [b('jcreatepp_add_position', { inputs: xyz(0, 1, 0) })] },
+      }),
+      data: 'jcreatepp.template.toggle',
+    };
+    const update = onEvent('jcreatepp_on_update', [guard]);
+    return name
+      ? workspace(onEvent('jcreatepp_on_interact', [
+        b('jcreatepp_set_flag', { fields: { FLAG_NAME: name, OPERATION: operation } }),
+      ]), update)
+      : workspace(update);
+  };
+  assert.ok(conversionErrors(state()).some(e => e.includes('開始・停止テンプレート')));
+  assert.ok(conversionErrors(state('別名')).some(e => e.includes('開始・停止テンプレート')));
+  assert.ok(conversionErrors(state('動作中', 'true')).some(e => e.includes('開始・停止テンプレート')));
+  assert.deepEqual(conversionErrors(state('動作中')), []);
+});
 
 const EVENTS: EventContext[] = [
   'jcreatepp_on_start',

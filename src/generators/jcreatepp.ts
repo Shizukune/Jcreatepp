@@ -60,6 +60,44 @@ export function workspaceToProgram(
 
   const topBlocks = workspace.getTopBlocks(true);
 
+  for (const block of workspace.getAllBlocks(false)) {
+    if (!block.isEnabled()) continue;
+    const template = block.data;
+    if (template !== 'jcreatepp.template.action' &&
+        template !== 'jcreatepp.template.condition' &&
+        template !== 'jcreatepp.template.toggle' &&
+        template !== 'jcreatepp.template.cooldown') continue;
+
+    const first = block.getInputTargetBlock('DO');
+    const condition = block.getInputTargetBlock('CONDITION');
+    const action = template === 'jcreatepp.template.cooldown' && first?.type === 'jcreatepp_start_cooldown'
+      ? first.getNextBlock()
+      : first;
+    if (!action) errors.push('組み方テンプレートの「ここに動作を置く」に、動作を入れてください。');
+    if (template === 'jcreatepp.template.condition' && !condition) {
+      errors.push('組み方テンプレートの「もし」に、条件を入れてください。');
+    }
+    if (template === 'jcreatepp.template.cooldown') {
+      const active = condition?.type === 'jcreatepp_not' ? condition.getInputTargetBlock('BOOL') : null;
+      const name = active?.type === 'jcreatepp_cooldown_active' ? active.getFieldValue('COOLDOWN_NAME') : '';
+      if (!name?.trim() || first?.type !== 'jcreatepp_start_cooldown' || first.getFieldValue('COOLDOWN_NAME') !== name) {
+        errors.push('連打防止テンプレートでは、「クールダウン中」の条件と、最初に置く「クールダウンを開始する」の名前をそろえてください。');
+      }
+    }
+    if (template === 'jcreatepp.template.toggle') {
+      const name = condition?.type === 'jcreatepp_flag' ? condition.getFieldValue('FLAG_NAME') : '';
+      const interact = topBlocks.find(top => top.type === 'jcreatepp_on_interact' && top.isEnabled());
+      let toggle = interact?.getInputTargetBlock('DO');
+      while (toggle && !(toggle.isEnabled() && toggle.type === 'jcreatepp_set_flag' &&
+          toggle.getFieldValue('FLAG_NAME') === name && toggle.getFieldValue('OPERATION') === 'toggle')) {
+        toggle = toggle.getNextBlock();
+      }
+      if (!name?.trim() || !toggle) {
+        errors.push('開始・停止テンプレートでは、「インタラクト時」の直下に「もし」で読むフラグと同じ名前の切り替えを置いてください。');
+      }
+    }
+  }
+
   for (const block of topBlocks) {
     const type = block.type;
 

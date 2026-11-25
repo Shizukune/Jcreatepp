@@ -50,6 +50,8 @@ namespace Jcreatepp.Editor.Blocks
         [SerializeField] Vector2 resultScroll;
         [SerializeField] string selectedId = "";
         [SerializeField] bool autoPreview = true;
+        PreviewPanel preview;
+        JavaScriptAsset lastWrittenScript;
         [SerializeField] bool showCode = true;
         [SerializeField] bool showSetup = true;
 
@@ -141,10 +143,17 @@ namespace Jcreatepp.Editor.Blocks
 
         void OnDisable()
         {
+            if (preview != null) preview.Disable();
+            preview = null;
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.update -= Tick;
             AssemblyReloadEvents.beforeAssemblyReload -= DisposeCore;
             DisposeCore();
+        }
+
+        void OnBecameInvisible()
+        {
+            if (preview != null) preview.Pause();
         }
 
         void OnDestroy()
@@ -323,14 +332,14 @@ namespace Jcreatepp.Editor.Blocks
         /// </summary>
         void SyncPreview()
         {
-            if (result == null) return;
+            if (result == null || preview == null) return;
             var code = result.Ok ? result.Code : "";
             string reason;
             if (!result.Ok) reason = result.Error;
             else if (result.Errors.Count > 0) reason = "ブロックにまちがいがあるので、新しいコードを作れません。";
             else if (code == "") reason = "コードを作れるブロックがありません。";
             else reason = "「ブロックを変えたら、開いているプレビューもやり直す」がオフです。";
-            PreviewWindow.SyncBlockCode(code, autoPreview, reason);
+            preview.SyncBlockCode(code, autoPreview, reason);
         }
 
         bool ConvertedNow()
@@ -492,8 +501,8 @@ namespace Jcreatepp.Editor.Blocks
             File.WriteAllText(full, text, new UTF8Encoding(false));
         }
 
-        /// <summary>Writes the generated code next to the saved blocks (same name, .js) and returns it as a JavaScript Asset; null when not done.</summary>
-        JavaScriptAsset WriteScript()
+        /// <summary>Exports a standalone .js, or writes alongside the saved blocks when applying to an item.</summary>
+        JavaScriptAsset WriteScript(bool exportOnly)
         {
             if (!ConvertedNow() || !result.Ok || result.Code == "")
             {
@@ -502,11 +511,21 @@ namespace Jcreatepp.Editor.Blocks
                     : "コードを作れるブロックがありません。イベント（開始時 など）のブロックを置いて、中に動作をつなげてください。", "OK");
                 return null;
             }
-            if (assetPath == "" || HasUnsavedChanges())
+            string jsPath;
+            if (exportOnly)
             {
-                if (!Save(false)) return null;
+                var folder = assetPath != "" ? Path.GetDirectoryName(assetPath) : "Assets";
+                var name = assetPath != "" ? Path.GetFileNameWithoutExtension(assetPath) : "jcreatepp_script";
+                jsPath = EditorUtility.SaveFilePanelInProject("JavaScript を書き出す", name, "js",
+                    "JavaScript（.js）の保存先を選びます。ブロック（.json）は保存されません。", folder);
+                if (string.IsNullOrEmpty(jsPath)) return null;
             }
-            var jsPath = Path.ChangeExtension(assetPath, ".js").Replace('\\', '/');
+            else
+            {
+                if ((assetPath == "" || HasUnsavedChanges()) && !Save(false)) return null;
+                jsPath = Path.ChangeExtension(assetPath, ".js");
+            }
+            jsPath = jsPath.Replace('\\', '/');
             var full = Path.Combine(Path.GetDirectoryName(Application.dataPath), jsPath);
             var wroteAt = writtenPaths.IndexOf(jsPath);
             if (File.Exists(full))
@@ -546,6 +565,10 @@ namespace Jcreatepp.Editor.Blocks
             {
                 EditorUtility.DisplayDialog("Jcreate++", "「" + jsPath + "」を JavaScript Asset として読み込めませんでした。Cluster Creator Kit が入っているか確認してください。", "OK");
             }
+            else
+            {
+                lastWrittenScript = asset;
+            }
             return asset;
         }
 
@@ -557,7 +580,7 @@ namespace Jcreatepp.Editor.Blocks
                 EditorUtility.DisplayDialog("Jcreate++", "先にヒエラルキーで、スクリプトを付けるオブジェクトを選んでください。", "OK");
                 return;
             }
-            var asset = WriteScript();
+            var asset = WriteScript(false);
             if (asset == null) return;
             applyResult = ItemSetup.Apply(go, asset);
             applyTarget = go;
@@ -695,7 +718,7 @@ namespace Jcreatepp.Editor.Blocks
         }
 
         /// <summary>Draws laid-out blocks at an offset; editable fields become controls when <paramref name="interactive"/>.</summary>
-        void DrawLayout(LayoutResult lr, Vector2 offset, bool interactive)
+        void DrawLayout(LayoutResult lr, Vector2 offset, bool interactive, bool showTemplateHints = false)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -708,6 +731,28 @@ namespace Jcreatepp.Editor.Blocks
                     Fill(new Rect(b.X + offset.x + 12, b.Bottom + offset.y - 1, 16, 4), ColourOf(bb.Shape.Colour), 1);
                 }
                 foreach (var s in lr.Slots) Fill(ToRect(s.Box, offset), new Color(0, 0, 0, 0.35f), 6);
+                if (showTemplateHints)
+                {
+                    foreach (var socket in lr.Connections)
+                    {
+                        if (socket.Occupant != null) continue;
+                        var data = socket.Owner.Extra.String("data", "");
+                        var action = socket.Kind == ConnectionKind.Statement && socket.Input == "DO" &&
+                            IsTemplate(data);
+                        var parent = socket.Owner.Parent;
+                        action |= socket.Kind == ConnectionKind.Next && socket.Owner.Type == "jcreatepp_start_cooldown" &&
+                            parent != null && parent.Extra.String("data", "") == "jcreatepp.template.cooldown" &&
+                            socket.Owner.ParentInput != null && socket.Owner.ParentInput.Name == "DO";
+                        var condition = socket.Kind == ConnectionKind.Value && socket.Input == "CONDITION" &&
+                            data == "jcreatepp.template.condition";
+                        if (!action && !condition) continue;
+                        var hint = new Rect(socket.X + offset.x + (action ? 2 : 28), socket.Y + offset.y + 1, 128, 20);
+                        Fill(hint, CanvasColour, 3);
+                        Outline(hint, SelectColour, 1, 3);
+                        GUI.Label(new Rect(hint.x + 4, hint.y, hint.width - 8, hint.height),
+                            action ? "ここに動作を置く" : "ここに条件を置く", EditorStyles.miniLabel);
+                    }
+                }
                 foreach (var bb in lr.Blocks)
                 {
                     if (bb.Block.IsShadow) continue;
@@ -888,12 +933,12 @@ namespace Jcreatepp.Editor.Blocks
                 PickAndLoad();
                 GUIUtility.ExitGUI();
             }
-            if (GUILayout.Button(new GUIContent("保存", "ブロックを .json に保存します（Web 版でも開けます）"), EditorStyles.toolbarButton, GUILayout.Width(44)))
+            if (GUILayout.Button(new GUIContent("ブロック保存", "編集用のブロック（.json）を保存します"), EditorStyles.toolbarButton, GUILayout.Width(80)))
             {
                 Save(false);
                 GUIUtility.ExitGUI();
             }
-            if (GUILayout.Button("名前を付けて保存...", EditorStyles.toolbarButton, GUILayout.Width(110)))
+            if (GUILayout.Button("ブロックを書き出す (.json)...", EditorStyles.toolbarButton, GUILayout.Width(165)))
             {
                 Save(true);
                 GUIUtility.ExitGUI();
@@ -927,7 +972,7 @@ namespace Jcreatepp.Editor.Blocks
                 GUI.Label(new Rect(20, local.height / 2 - 40, local.width - 40, 80),
                     "左のパレットからブロックをドラッグして、ここに置きます。\nまず「イベント」の「開始時」などを置いて、その中に動作のブロックをつなげます。", hint);
             }
-            DrawLayout(canvasLayout, pan, dragging == null);
+            DrawLayout(canvasLayout, pan, dragging == null, true);
 
             if (dragging != null && target != null && e.type == EventType.Repaint) DrawTarget(target);
 
@@ -1247,6 +1292,16 @@ namespace Jcreatepp.Editor.Blocks
         /// <summary>Parts (部品): a finished set of blocks added with chosen values, like the Web editor's parts tab.</summary>
         void DrawParts()
         {
+            GUILayout.Label("組み方テンプレート", EditorStyles.boldLabel);
+            GUILayout.Label("きっかけや条件を選び、空欄に自分の動作を置きます。", smallWrap);
+            DrawTemplateButton("押したら実行", "押したときに、中の動作を一度実行します。", TemplateKind.Interact);
+            DrawTemplateButton("押して開始・停止", "押すたびに、続ける動作をオン・オフします。", TemplateKind.Toggle);
+            DrawTemplateButton("順番に実行", "押したら始まり、移動などの完了を待って次へ進みます。", TemplateKind.Sequence);
+            DrawTemplateButton("条件に合うときだけ実行", "押したときに条件を確認し、合えば動きます。", TemplateKind.Conditional);
+            DrawTemplateButton("押したあと、しばらく押せない", "押したあと、次に押せるまで初期設定で3秒待ちます。", TemplateKind.Cooldown);
+            DrawTemplateButton("合図が届いたら実行", "同じ名前のメッセージが届いたときに動きます。", TemplateKind.Receive);
+            GUILayout.Space(8);
+            GUILayout.Label("そのまま使える部品", EditorStyles.boldLabel);
             if (parts == null || parts.Count == 0)
             {
                 EditorGUILayout.HelpBox("部品を読み込めませんでした。", MessageType.Warning);
@@ -1283,6 +1338,115 @@ namespace Jcreatepp.Editor.Blocks
                 if (GUILayout.Button("ブロックとして追加")) AddPart(part, values);
                 EditorGUILayout.EndVertical();
             }
+        }
+
+        enum TemplateKind { Interact, Toggle, Sequence, Conditional, Cooldown, Receive }
+
+        static bool IsTemplate(string data)
+        {
+            return data == "jcreatepp.template.action" || data == "jcreatepp.template.condition" ||
+                data == "jcreatepp.template.toggle" || data == "jcreatepp.template.cooldown";
+        }
+
+        void DrawTemplateButton(string title, string description, TemplateKind kind)
+        {
+            if (!GUILayout.Button(new GUIContent(title, description))) return;
+            AddTemplate(kind);
+            Commit("テンプレート「" + title + "」を追加");
+            GUIUtility.ExitGUI();
+        }
+
+        BlockNode TemplateBlock(string type, string field = null, object value = null)
+        {
+            var template = new JsonObject();
+            template["type"] = type;
+            var node = ws.FromTemplate(template);
+            if (field != null) node.Fields[field] = value;
+            return node;
+        }
+
+        string UnusedTemplateName(string field, string name)
+        {
+            var used = new HashSet<string>();
+            foreach (var node in ws.All())
+                used.Add(node.Fields.String(field, "").Trim());
+            if (field == "FLAG_NAME")
+            {
+                foreach (var node in ws.All())
+                    if (node.Type == "jcreatepp_bool_var" || node.Type == "jcreatepp_set_bool_var")
+                        used.Add(node.Fields.String("VAR_NAME", "").Trim());
+            }
+            if (!used.Contains(name)) return name;
+            for (var suffix = 2; ; suffix++)
+                if (!used.Contains(name + suffix)) return name + suffix;
+        }
+
+        BlockNode TemplateEvent(string type, string message = null)
+        {
+            foreach (var top in ws.Tops)
+                if (top.Type == type && message == null) return top;
+            var node = TemplateBlock(type, message != null ? "MESSAGE" : null, message);
+            node.X = 40 - pan.x;
+            node.Y = ws.Tops.Count == 0 ? 40 - pan.y : layout.Layout(ws.Tops).Bounds.Bottom + 24;
+            ws.Tops.Add(node);
+            return node;
+        }
+
+        static void AppendTemplateAction(BlockNode root, BlockNode action)
+        {
+            var body = root.SlotOrNew("DO");
+            if (body.Block == null) body.Block = action;
+            else body.Block.Last.Next = action;
+        }
+
+        void AddTemplate(TemplateKind kind)
+        {
+            BlockNode target;
+            if (kind == TemplateKind.Receive)
+            {
+                target = TemplateEvent("jcreatepp_on_receive", UnusedTemplateName("MESSAGE", "合図"));
+            }
+            else
+            {
+                var interact = TemplateEvent("jcreatepp_on_interact");
+                if (kind == TemplateKind.Toggle)
+                {
+                    var name = UnusedTemplateName("FLAG_NAME", "動作中");
+                    var toggle = TemplateBlock("jcreatepp_set_flag", "FLAG_NAME", name);
+                    toggle.Fields["OPERATION"] = "toggle";
+                    AppendTemplateAction(interact, toggle);
+                    var update = TemplateEvent("jcreatepp_on_update");
+                    target = TemplateBlock("jcreatepp_if");
+                    AppendTemplateAction(update, target);
+                    target.SlotOrNew("CONDITION").Block = TemplateBlock("jcreatepp_flag", "FLAG_NAME", name);
+                }
+                else
+                {
+                    target = TemplateBlock(kind == TemplateKind.Sequence ? "jcreatepp_sequence" : "jcreatepp_if");
+                    AppendTemplateAction(interact, target);
+                    if (kind == TemplateKind.Interact)
+                        target.SlotOrNew("CONDITION").Block = TemplateBlock("jcreatepp_bool_literal", "VALUE", "true");
+                    if (kind == TemplateKind.Cooldown)
+                    {
+                        var name = UnusedTemplateName("COOLDOWN_NAME", "再使用");
+                        var not = TemplateBlock("jcreatepp_not");
+                        target.SlotOrNew("CONDITION").Block = not;
+                        not.SlotOrNew("BOOL").Block = TemplateBlock("jcreatepp_cooldown_active", "COOLDOWN_NAME", name);
+                        var timer = TemplateBlock("jcreatepp_start_cooldown", "COOLDOWN_NAME", name);
+                        AppendTemplateAction(target, timer);
+                        var seconds = TemplateBlock("math_number", "NUM", 3d);
+                        seconds.IsShadow = true;
+                        timer.SlotOrNew("SECONDS").Shadow = seconds;
+                    }
+                }
+            }
+
+            target.Extra["data"] = "jcreatepp.template." + (kind == TemplateKind.Conditional ? "condition" :
+                kind == TemplateKind.Cooldown ? "cooldown" : kind == TemplateKind.Toggle ? "toggle" : "action");
+            ws.Relink();
+            LoadMissingShapes(ws);
+            canvasLayout = layout.Layout(ws.Tops);
+            Reveal(target.Id);
         }
 
         void AddPart(CoreHost.PartInfo part, Dictionary<string, string> values)
@@ -1323,7 +1487,7 @@ namespace Jcreatepp.Editor.Blocks
             if (problem != "") EditorGUILayout.HelpBox(problem, MessageType.Error);
             if (notice != "") EditorGUILayout.HelpBox(notice, MessageType.None);
 
-            EditorGUILayout.LabelField("変換の結果", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("試す・アイテムに設定", EditorStyles.boldLabel);
             if (result == null || convertPending)
             {
                 EditorGUILayout.LabelField("変換しています…", EditorStyles.miniLabel);
@@ -1338,6 +1502,19 @@ namespace Jcreatepp.Editor.Blocks
                 {
                     EditorGUILayout.LabelField("変換できないところ", EditorStyles.miniBoldLabel);
                     foreach (var err in result.Errors) EditorGUILayout.HelpBox(err, MessageType.Error);
+                    foreach (var node in ws.All())
+                    {
+                        var data = node.Extra.String("data", "");
+                        if (!IsTemplate(data)) continue;
+                        var body = node.Slot("DO");
+                        var action = body == null ? null : body.Block;
+                        if (data == "jcreatepp.template.cooldown" && action != null && action.Type == "jcreatepp_start_cooldown")
+                            action = action.Next;
+                        var condition = node.Slot("CONDITION");
+                        if ((action == null || (data == "jcreatepp.template.condition" && (condition == null || condition.Shown == null))) &&
+                            GUILayout.Button("テンプレートの空欄へ移動", EditorStyles.miniButton))
+                            Reveal(node.Id);
+                    }
                 }
                 foreach (var w in result.Warnings)
                 {
@@ -1355,16 +1532,16 @@ namespace Jcreatepp.Editor.Blocks
             var hasCode = result != null && result.Ok && result.Code != "" && !convertPending;
             using (new EditorGUI.DisabledScope(!hasCode))
             {
-                if (GUILayout.Button(new GUIContent(" プレビューで動かす", EditorGUIUtility.IconContent("PlayButton").image, "ウィンドウの中の立方体で動かします（シーンには触れません）"), GUILayout.Height(26)))
+                if (GUILayout.Button(new GUIContent(preview == null ? " この画面でプレビュー" : " 最新のブロックで試し直す", EditorGUIUtility.IconContent("PlayButton").image, "右側の箱で動きを確かめます。シーン内のアイテムは変更しません。"), GUILayout.Height(26)))
                 {
-                    PreviewWindow.ShowCode(result.Code, assetPath != "" ? Path.GetFileNameWithoutExtension(assetPath) : "未保存", autoPreview);
+                    if (preview == null)
+                    {
+                        preview = new PreviewPanel();
+                        preview.Enable(Repaint);
+                    }
+                    preview.ShowCode(result.Code);
+                    GUIUtility.ExitGUI();
                 }
-            }
-            var auto = EditorGUILayout.ToggleLeft("ブロックを変えたら、開いているプレビューもやり直す", autoPreview, EditorStyles.miniLabel);
-            if (auto != autoPreview)
-            {
-                autoPreview = auto;
-                SyncPreview();
             }
 
             EditorGUILayout.Space();
@@ -1382,12 +1559,36 @@ namespace Jcreatepp.Editor.Blocks
             if (go == null || EditorUtility.IsPersistent(go)) EditorGUILayout.LabelField("ヒエラルキーでオブジェクトを選ぶと設定できます。", EditorStyles.miniLabel);
             using (new EditorGUI.DisabledScope(!hasCode))
             {
-                if (GUILayout.Button(new GUIContent(".js を書き出す", "保存したブロックと同じ名前の .js に、コードを書き出します"), EditorStyles.miniButton))
+                if (GUILayout.Button(new GUIContent("JavaScript (.js) だけ書き出す...", "ブロックの保存やアイテムへの設定をせずに .js を作成します"), EditorStyles.miniButton))
                 {
-                    var asset = WriteScript();
-                    if (asset != null) notice = "書き出しました: " + AssetDatabase.GetAssetPath(asset);
+                    var asset = WriteScript(true);
+                    if (asset != null) notice = "JavaScript を書き出しました: " + AssetDatabase.GetAssetPath(asset);
                     GUIUtility.ExitGUI();
                 }
+            }
+            if (lastWrittenScript != null &&
+                GUILayout.Button(new GUIContent("書き出した JavaScript を開く", AssetDatabase.GetAssetPath(lastWrittenScript)), EditorStyles.miniButton))
+            {
+                if (!AssetDatabase.OpenAsset(lastWrittenScript))
+                    notice = "JavaScript を開けませんでした: " + AssetDatabase.GetAssetPath(lastWrittenScript);
+            }
+            if (preview != null)
+            {
+                EditorGUILayout.Space();
+                var auto = EditorGUILayout.ToggleLeft("編集したらプレビューを更新", autoPreview, EditorStyles.miniLabel);
+                if (auto != autoPreview)
+                {
+                    autoPreview = auto;
+                    SyncPreview();
+                }
+                if (GUILayout.Button("プレビューを閉じる", EditorStyles.miniButton))
+                {
+                    preview.Disable();
+                    preview = null;
+                    GUIUtility.ExitGUI();
+                }
+                preview.Draw(resultRect.width - 22f, true);
+                EditorGUILayout.Space();
             }
 
             if (applyResult != null)
