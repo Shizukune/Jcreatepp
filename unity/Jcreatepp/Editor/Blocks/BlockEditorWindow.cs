@@ -48,6 +48,7 @@ namespace Jcreatepp.Editor.Blocks
         [SerializeField] int category = 1;
         [SerializeField] Vector2 paletteScroll;
         [SerializeField] Vector2 resultScroll;
+        [SerializeField] Vector2 codeScroll;
         [SerializeField] string selectedId = "";
         [SerializeField] bool autoPreview = true;
         PreviewPanel preview;
@@ -1292,6 +1293,13 @@ namespace Jcreatepp.Editor.Blocks
         /// <summary>Parts (部品): a finished set of blocks added with chosen values, like the Web editor's parts tab.</summary>
         void DrawParts()
         {
+            EditorGUILayout.BeginVertical(GUILayout.Width(paletteRect.width - 30));
+            DrawPartsContent();
+            EditorGUILayout.EndVertical();
+        }
+
+        void DrawPartsContent()
+        {
             GUILayout.Label("組み方テンプレート", EditorStyles.boldLabel);
             GUILayout.Label("きっかけや条件を選び、空欄に自分の動作を置きます。", smallWrap);
             DrawTemplateButton("押したら実行", "押したときに、中の動作を一度実行します。", TemplateKind.Interact);
@@ -1483,7 +1491,10 @@ namespace Jcreatepp.Editor.Blocks
         void DrawResults()
         {
             GUILayout.BeginArea(resultRect, EditorStyles.helpBox);
-            resultScroll = EditorGUILayout.BeginScrollView(resultScroll);
+            resultScroll.x = 0;
+            resultScroll = EditorGUILayout.BeginScrollView(resultScroll, GUILayout.Width(resultRect.width - 8));
+            // Keep controls inside the panel; only the code below may scroll horizontally.
+            EditorGUILayout.BeginVertical(GUILayout.Width(resultRect.width - 30));
             if (problem != "") EditorGUILayout.HelpBox(problem, MessageType.Error);
             if (notice != "") EditorGUILayout.HelpBox(notice, MessageType.None);
 
@@ -1620,10 +1631,13 @@ namespace Jcreatepp.Editor.Blocks
                 if (showCode)
                 {
                     var style = new GUIStyle(EditorStyles.textArea) { wordWrap = false, fontSize = 11 };
+                    codeScroll = EditorGUILayout.BeginScrollView(codeScroll, GUILayout.Width(resultRect.width - 34), GUILayout.Height(180));
                     var size = style.CalcSize(new GUIContent(result.Code));
                     EditorGUILayout.SelectableLabel(result.Code, style, GUILayout.Height(size.y + 4), GUILayout.MinWidth(size.x));
+                    EditorGUILayout.EndScrollView();
                 }
             }
+            EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
         }

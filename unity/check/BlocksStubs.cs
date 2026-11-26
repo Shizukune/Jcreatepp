@@ -137,6 +137,7 @@ namespace UnityEditor
     public static partial class EditorGUILayout
     {
         public static void BeginVertical(GUIStyle style, params GUILayoutOption[] options) { }
+        public static void BeginVertical(params GUILayoutOption[] options) { }
         public static void EndVertical() { }
         public static int Popup(string label, int selectedIndex, string[] displayedOptions, params GUILayoutOption[] options) { return selectedIndex; }
         public static double DoubleField(string label, double value, params GUILayoutOption[] options) { return value; }
