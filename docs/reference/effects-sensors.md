@@ -25,7 +25,7 @@ Unity側の準備:
 
 ## サブノード NAME の Text の文字を VALUE にする
 
-指定したサブノードのText/TextMesh/TextMeshPro/TextMeshProUGUIの文字を変えます。
+指定したサブノードの TextView / Text / TextMesh / TextMeshPro / TextMeshProUGUI の文字を変えます。ブロックのコンポーネント選択を、Unity 側に付けたものに合わせます。
 
 使いどころ:
 

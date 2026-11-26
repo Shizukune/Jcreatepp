@@ -11,6 +11,8 @@ Unity はワールドを作るアプリです。Cluster Creator Kit を入れる
 3. [Jcreate++ Unity 拡張（ZIP）](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip) をダウンロードして展開します。
 4. 展開した **Jcreatepp フォルダ**を、Unity プロジェクトの **Assets** に丸ごとコピーします。Unity に戻り、上のメニューに **Jcreate++** が表示されたら準備完了です。
 
+以前の版がある場合は、プロジェクトをバックアップしてから古い `Assets/Jcreatepp` を取り除き、新しいフォルダに置き換えます。古いファイルを残したまま上書きすると、削除済みのコードが残ってコンパイルエラーになることがあります。Package Manager から導入している場合は、そのパッケージを更新し、Assets にもコピーして二重に入れないでください。
+
 Unity は Cluster 公式が案内しているバージョンを使います。最初は Creator Kit のテンプレートプロジェクトを使うと、アップロードに必要なワールド設定がそろっています。動かすアイテムには、足場の上に置いた Cube を使います。
 
 このガイドと Jcreate++ の Unity 拡張の主対象は **Unity 6000.2.6f2 + Unity 6 対応の Creator Kit** です。Unity 拡張は Unity 6000.2 でブロックエディターとプレビューの動作を確認しています。Unity 2021.3 は拡張の未検証・動作保証対象外です。Cluster 公式でも Unity 2021.3.4f1 は CCK 3.3.0 までの対応で、現在はサポートが終了しています。古いプロジェクトはバックアップしてから [公式の Unity 移行手順](https://docs.cluster.mu/creatorkit/installation/update-unity/)を確認してください。
@@ -82,7 +84,7 @@ Scriptable Item は、Unity の再生（Play）では動きません。動きは
 
 ### 用意済みのサンプルで実機確認したい場合
 
-**[実機確認キットZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)**してください。展開した`realdevice/scripts`フォルダをUnityの`Assets`へコピーし、`realdevice/README.md`と`CHECKLIST.md`を読みます。最初は`rd1-position-immediate.js`をCubeに設定し、Clusterへアップロードしてクリックすると1 m上がることを確かめます。
+**[実機確認キットZIPをダウンロード](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-realdevice.zip)** してください。展開した`realdevice/scripts`フォルダをUnityの`Assets`へコピーし、`realdevice/README.md`と`CHECKLIST.md`を読みます。最初は`rd1-position-immediate.js`をCubeに設定し、Clusterへアップロードしてクリックすると1 m上がることを確かめます。
 
 このキットはテスト用のJS・ブロックJSON・手順書です。Unity拡張は含まれません。自動設定も使う場合は、上のUnity拡張ZIPも導入してください。ZIP自体やソース一式の`Jcreatepp-main`全体をUnityへ入れる必要はありません。
 
