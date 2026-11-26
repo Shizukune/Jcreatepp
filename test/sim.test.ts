@@ -11,11 +11,102 @@ import * as path from 'node:path';
 import { Quaternion, Vector3 } from '../src/sim/math';
 import { createRunner } from '../src/sim/runner';
 import { b, bool, num, onEvent, workspace, xyz } from './build';
-import { generateCode } from './harness';
+import { generateCode, conversionErrors, loadWorkspace, convertState } from './harness';
+import { buildUnitySetup } from '../src/unitySetup';
+import { collectWarnings } from '../src/validator';
 import { toolbox } from '../src/toolbox';
 import { blocks } from '../src/blocks/jcreatepp';
 
 const fixtureDir = path.resolve(__dirname, '../../test/fixtures');
+
+const plainSend = () => b('jcreatepp_send_message_to_item', { fields: { ITEM_NAME: 'door', MESSAGE: 'open' } });
+const sendCount = (r: ReturnType<typeof createRunner>) => r.log.filter(l => l.type === 'send').length;
+
+test('plain send is an action: every interaction sends without a condition or latch', () => {
+  const code = generateCode(workspace(onEvent('jcreatepp_on_interact', [plainSend()])));
+  assert.ok(!code.includes('__jpp_send_once_'));
+  const r = createRunner(code);
+  r.interact(); r.interact(); r.interact();
+  assert.equal(sendCount(r), 3);
+  assert.deepEqual(r.errors(), []);
+});
+
+test('plain send composes with if and flags without changing the flag', () => {
+  const state = workspace(onEvent('jcreatepp_on_interact', [b('jcreatepp_if', {
+    inputs: { CONDITION: b('jcreatepp_flag', { fields: { FLAG_NAME: 'enabled' } }) }, stmts: { DO: [plainSend()] },
+  })]));
+  const r = createRunner(generateCode(state));
+  r.interact();
+  assert.equal(sendCount(r), 0);
+  r.$.state['bool.enabled'] = true;
+  r.interact(); r.interact();
+  assert.equal(sendCount(r), 2);
+  assert.equal(r.$.state['bool.enabled'], true);
+});
+
+test('plain send repeats each frame; explicit if-edge and historical send still latch', () => {
+  const condition = () => b('jcreatepp_flag', { fields: { FLAG_NAME: 'enabled' } });
+  for (const mode of ['plain', 'if-edge', 'legacy']) {
+    const action = mode === 'legacy'
+      ? b('jcreatepp_send_message_to_item_once', { fields: { ITEM_NAME: 'door', MESSAGE: 'open' }, inputs: { CONDITION: condition() } })
+      : mode === 'if-edge' ? b('jcreatepp_if_edge', { inputs: { CONDITION: condition() }, stmts: { DO: [plainSend()] } }) : plainSend();
+    const r = createRunner(generateCode(workspace(onEvent('jcreatepp_on_update', [action]))));
+    r.$.state['bool.enabled'] = true;
+    r.update(0.1); r.update(0.1);
+    assert.equal(sendCount(r), mode === 'plain' ? 2 : 1, mode);
+    r.$.state['bool.enabled'] = false; r.update(0.1);
+    r.$.state['bool.enabled'] = true; r.update(0.1);
+    assert.equal(sendCount(r), mode === 'plain' ? 4 : 2, mode);
+  }
+});
+
+test('all plain send destinations and value types use the existing message pipeline', () => {
+  const cases = [
+    ['jcreatepp_send_message', 'jcreatepp_on_interact'],
+    ['jcreatepp_send_message_to_item', 'jcreatepp_on_interact'],
+    ['jcreatepp_reply_message', 'jcreatepp_on_receive'],
+    ['jcreatepp_send_message_to_collision', 'jcreatepp_on_collide'],
+  ];
+  for (const [type, event] of cases) {
+    for (const valueType of [null, 'number', 'string', 'boolean']) {
+      const valueBlock = valueType === 'boolean' ? bool(true) : valueType === 'string' ? b('jcreatepp_string_literal', { fields: { TEXT: 'hello' } }) : num(7);
+      const valueName = type.replace('send_message', 'send_message_value').replace('reply_message', 'reply_message_value');
+      const action = b(valueType ? valueName : type, {
+        fields: { MESSAGE: 'ping', ...(type.endsWith('_to_item') ? { ITEM_NAME: 'door' } : {}), ...(valueType ? { VALUE_TYPE: valueType } : {}) },
+        inputs: { ...(type === 'jcreatepp_send_message' ? { RANGE: num(5) } : {}), ...(valueType ? { VALUE: valueBlock } : {}) },
+      });
+      const r = createRunner(generateCode(workspace(onEvent(event, [action], event === 'jcreatepp_on_receive' ? { MESSAGE: 'request' } : undefined))));
+      if (type === 'jcreatepp_send_message') r.world.items.push(r.createHandle('item', 'neighbor'));
+      if (event === 'jcreatepp_on_receive') r.receive('request');
+      else if (event === 'jcreatepp_on_collide') r.collide();
+      else r.interact();
+      const sent = r.log.filter(l => l.type === 'send');
+      assert.equal(sent.length, 1, `${type}/${valueType}`);
+      assert.equal(sent[0].type === 'send' && sent[0].arg, valueType === 'boolean' ? true : valueType === 'string' ? 'hello' : valueType ? 7 : null);
+      assert.deepEqual(r.errors(), []);
+    }
+  }
+});
+
+test('plain reply and collision sends enforce event and sequence context', () => {
+  for (const type of ['jcreatepp_reply_message', 'jcreatepp_reply_message_value', 'jcreatepp_send_message_to_collision', 'jcreatepp_send_message_value_to_collision']) {
+    assert.ok(conversionErrors(workspace(onEvent('jcreatepp_on_start', [b(type)]))).length > 0, type);
+    const event = type.startsWith('jcreatepp_reply') ? 'jcreatepp_on_receive' : 'jcreatepp_on_collide';
+    assert.throws(() => generateCode(workspace(onEvent(event, [b('jcreatepp_sequence', { stmts: { DO: [b(type)] } })], event === 'jcreatepp_on_receive' ? { MESSAGE: 'ping' } : undefined))), /一連の動作/);
+  }
+});
+
+test('plain message blocks retain name validation and Unity reference setup', () => {
+  const state = workspace(onEvent('jcreatepp_on_interact', [b('jcreatepp_send_message_to_item', { fields: { ITEM_NAME: '', MESSAGE: '' } })]));
+  assert.ok(conversionErrors(state).length > 0);
+  const ws = loadWorkspace(state);
+  assert.ok([...collectWarnings(ws).values()].some(text => /メッセージ名|参照名/.test(text || '')));
+  ws.dispose();
+  const valid = workspace(onEvent('jcreatepp_on_interact', [plainSend()]));
+  const setup = buildUnitySetup(convertState(valid).program!, generateCode(valid));
+  assert.ok(setup.components.includes('WorldItemReferenceList'));
+  assert.deepEqual(setup.worldItemReferenceIds, ['door']);
+});
 
 // ── math (Cluster conventions) ──
 

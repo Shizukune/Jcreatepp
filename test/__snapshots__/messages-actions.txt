@@ -1,0 +1,95 @@
+// ==== errors ====
+// ==== warnings ====
+// ==== unity requirements ====
+Unity側で必要な設定
+- メッセージ送信にはCluster Scriptのsend頻度制限とペイロード容量制限があります。毎フレームや大量対象への送信ではクールダウンや「1回だけ」制御を併用してください。
+- World Item Reference List に "door" を登録してください。指定アイテムへ送信するには、World Item Reference Listに同じ参照名を登録してください。
+- 近くのアイテムへ送信するには、対象アイテムを取得できるCollider / Shape / Layer設定が必要です。
+- 衝突相手へ送信するには、衝突イベントが発火するCollider / Physical Shape設定が必要です。衝突相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになり送信されません。
+- 衝突イベントを動かすには、衝突判定用のCollider / Physical Shapeなどの設定が必要です。また、衝突イベントはアイテムが物理挙動する（Movable Itemを付け、物理で動く）ときだけ発生します。相手がアイテム/プレイヤー以外の場合、衝突相手ハンドルはnullになります。
+- インタラクト（クリック・使う）するには、アイテムにColliderが必要です。
+// ==== code ====
+// ── 開始時 ──
+$.onStart(() => {
+  // フラグ enabled を true にする
+  $.state["bool.enabled"] = true;
+});
+
+// ── インタラクト時 ──
+$.onInteract((player) => {
+  // 指定アイテム door に メッセージ「open」を送る
+  {
+    const target = $.worldItemReference("door");
+    if (target && target.exists()) {
+      target.send("open", null);
+    }
+  }
+  // もし フラグ enabled なら
+  if (!!$.state["bool.enabled"]) {
+    // 範囲 5m のアイテム に メッセージ「open」を送る
+    {
+      const items = $.getItemsNear($.getPosition() || new Vector3(0, 0, 0), 5);
+      for (const item of items) {
+        item.send("open", null);
+      }
+    }
+  }
+  // 指定アイテム door に メッセージ「score」 と値 3を送る
+  {
+    const target = $.worldItemReference("door");
+    if (target && target.exists()) {
+      target.send("score", 3);
+    }
+  }
+  // 範囲 5m のアイテム に メッセージ「score」 と値 7を送る
+  {
+    const items = $.getItemsNear($.getPosition() || new Vector3(0, 0, 0), 5);
+    for (const item of items) {
+      item.send("score", 7);
+    }
+  }
+  // もし true なら 指定アイテム door に メッセージ「legacy」を送る
+  {
+    const target = $.worldItemReference("door");
+    if (target && target.exists()) {
+      target.send("legacy", null);
+    }
+  }
+});
+
+// ── 衝突したとき ──
+$.onCollide((collision) => {
+  // 衝突相手 に メッセージ「hit」を送る
+  {
+    const target = collision && collision.handle ? collision.handle : null;
+    if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+      target.send("hit", null);
+    }
+  }
+  // 衝突相手 に メッセージ「score」 と値 1を送る
+  {
+    const target = collision && collision.handle ? collision.handle : null;
+    if (target && typeof target.send === "function" && (typeof target.exists !== "function" || target.exists())) {
+      target.send("score", 1);
+    }
+  }
+});
+
+// ── メッセージを受け取ったとき ──
+$.onReceive((msg, arg, sender) => {
+  // メッセージ「request」を受け取ったとき
+  if (msg === "request") {
+    // 送ってきた相手 に メッセージ「ok」を返す
+    {
+      if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+        sender.send("ok", null);
+      }
+    }
+    // 送ってきた相手 に メッセージ「value」 と値 trueを返す
+    {
+      if (sender && typeof sender.send === "function" && (typeof sender.exists !== "function" || sender.exists())) {
+        sender.send("value", true);
+      }
+    }
+  }
+}, { item: true, player: true });

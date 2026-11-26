@@ -529,6 +529,36 @@ function blockToStmtCore(
       return { kind: 'run_for_seconds', seconds, body };
     }
 
+    case 'jcreatepp_send_message':
+    case 'jcreatepp_send_message_value':
+    case 'jcreatepp_send_message_to_item':
+    case 'jcreatepp_send_message_value_to_item':
+    case 'jcreatepp_reply_message':
+    case 'jcreatepp_reply_message_value':
+    case 'jcreatepp_send_message_to_collision':
+    case 'jcreatepp_send_message_value_to_collision': {
+      const message = block.getFieldValue('MESSAGE') || '';
+      if (!message.trim()) {
+        errors.push('送信するメッセージ名を入力してください。');
+        return null;
+      }
+      let target: MessageTarget;
+      if (block.type.endsWith('_to_item')) {
+        const itemName = block.getFieldValue('ITEM_NAME') || '';
+        if (!itemName.trim()) { errors.push('送信先アイテムの参照名を入力してください。'); return null; }
+        target = { kind: 'world_item', itemName };
+      } else if (block.type.startsWith('jcreatepp_reply_')) {
+        target = { kind: 'sender' };
+      } else if (block.type.endsWith('_to_collision')) {
+        target = { kind: 'handle', handle: collisionHandle() };
+      } else {
+        target = { kind: 'near', range: resolveValueExpr(block, 'RANGE', eventType, generator, errors, inSequence) };
+      }
+      const value = block.type.includes('_value')
+        ? messageSendValueFromBlock(block, eventType, generator, errors, inSequence) : undefined;
+      return sendMessageStmt(target, message, block.id, undefined, value, false);
+    }
+
     case 'jcreatepp_send_message_once': {
       const message = block.getFieldValue('MESSAGE') || '';
       if (!message.trim()) {

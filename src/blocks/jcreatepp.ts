@@ -428,7 +428,7 @@ const ifBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 120,
-  tooltip: '条件がtrueのときだけ中のブロックを実行します。',
+  tooltip: '条件が成り立つ（true）とき、中の動作を実行します。条件の判断と動作を別々に組み合わせられます。毎フレームの中では、成り立つ間は毎フレーム実行します。',
   helpUrl: '',
 };
 
@@ -445,7 +445,7 @@ const ifElseBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 120,
-  tooltip: '条件がtrueなら上、falseなら下のブロックを実行します。',
+  tooltip: '条件が成り立つ（true）なら上、成り立たない（false）なら下の動作を実行します。',
   helpUrl: '',
 };
 
@@ -460,7 +460,7 @@ const ifEdgeBlock = {
   previousStatement: null,
   nextStatement: null,
   colour: 120,
-  tooltip: '条件がfalseからtrueになった瞬間だけ、中のブロックを1回実行します。',
+  tooltip: '条件が成り立たない（false）状態から、成り立つ（true）状態になったときだけ中を実行します。いったん条件が成り立たなくなると、次の成立時にまた実行できます。',
   helpUrl: '',
 };
 
@@ -574,11 +574,11 @@ const orBlock = {
 
 const flagBlock = {
   type: 'jcreatepp_flag',
-  message0: 'フラグ %1',
+  message0: 'フラグ %1 がオン',
   args0: [{ type: 'field_input', name: 'FLAG_NAME', text: '名前' }],
   output: 'Boolean',
   colour: 330,
-  tooltip: '指定した名前のフラグを読み取ります。',
+  tooltip: 'フラグはオン・オフを覚えるスイッチです。このブロックは状態を変えず、オンかどうかを調べます。「もし」の条件などにつなぎます。初めはオフです。',
   helpUrl: '',
 };
 
@@ -590,13 +590,13 @@ const setFlagBlock = {
     {
       type: 'field_dropdown',
       name: 'OPERATION',
-      options: [['true', 'true'], ['false', 'false'], ['切り替える', 'toggle']],
+      options: [['オン', 'true'], ['オフ', 'false'], ['反対の状態（オン↔オフ）', 'toggle']],
     },
   ],
   previousStatement: null,
   nextStatement: null,
   colour: 330,
-  tooltip: '指定したフラグの値を変更します。',
+  tooltip: 'フラグの状態を覚えさせます。オンはtrue、オフはfalseです。「反対の状態」はオンとオフを入れ替えます。状態を調べるブロックとは役割が異なります。',
   helpUrl: '',
 };
 
@@ -679,12 +679,12 @@ const boolLiteralBlock = {
     {
       type: 'field_dropdown',
       name: 'VALUE',
-      options: [['true', 'true'], ['false', 'false']],
+      options: [['成立する（true）', 'true'], ['成立しない（false）', 'false']],
     },
   ],
   output: 'Boolean',
   colour: 330,
-  tooltip: 'true または false の真偽値です。',
+  tooltip: '条件が成り立つかを表す固定の値です。trueは成立、falseは不成立です。フラグのように状態を保存するものではありません。',
   helpUrl: '',
 };
 
@@ -833,7 +833,7 @@ const sendMessageOnceBlock = {
   nextStatement: null,
   colour: 20,
   inputsInline: true,
-  tooltip: '条件がfalseからtrueになった瞬間だけ、近くのアイテムへメッセージを送ります。',
+  tooltip: '従来の条件付き送信です。毎フレームなどの繰り返し処理ではfalseからtrueになったときだけ送ります。インタラクトなど単発のイベントでは条件がtrueのイベントごとに送ります。条件なしの送信ブロックもあります。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
@@ -855,7 +855,7 @@ const sendMessageValueOnceBlock = {
   nextStatement: null,
   colour: 20,
   inputsInline: true,
-  tooltip: '条件がfalseからtrueになった瞬間だけ、近くのアイテムへ値つきメッセージを送ります。',
+  tooltip: '従来の条件付き・値つき送信です。繰り返し処理ではfalseからtrueになったときだけ、単発のイベントでは条件がtrueのイベントごとに送ります。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
@@ -871,7 +871,7 @@ const sendMessageToItemOnceBlock = {
   nextStatement: null,
   colour: 20,
   inputsInline: true,
-  tooltip: '条件がfalseからtrueになった瞬間だけ、World Item Referenceの指定アイテムへメッセージを送ります。',
+  tooltip: '従来の条件付き送信です。World Item Referenceの参照名で相手を指定します。繰り返し処理ではfalseからtrueになったときだけ、単発のイベントでは条件がtrueのイベントごとに送ります。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
@@ -893,7 +893,7 @@ const sendMessageValueToItemOnceBlock = {
   nextStatement: null,
   colour: 20,
   inputsInline: true,
-  tooltip: '条件がfalseからtrueになった瞬間だけ、指定アイテムへ値つきメッセージを送ります。',
+  tooltip: '従来の条件付き・値つき送信です。繰り返し処理ではfalseからtrueになったときだけ、単発のイベントでは条件がtrueのイベントごとに送ります。',
   helpUrl: 'https://docs.cluster.mu/script/classes/ItemHandle.html#send',
 };
 
@@ -1145,6 +1145,19 @@ export const blocks = Blockly.common.createBlockDefinitionsFromJsonArray([
   cooldownRemainingBlock,
   startCooldownBlock,
   arithmeticBlock,
+  // New action blocks have no condition or hidden edge latch. Historical types remain below.
+  ...[
+    sendMessageOnceBlock, sendMessageValueOnceBlock, sendMessageToItemOnceBlock,
+    sendMessageValueToItemOnceBlock, replyMessageBlock, replyMessageValueBlock,
+    sendMessageToCollisionOnceBlock, sendMessageValueToCollisionOnceBlock,
+  ].map(block => ({
+    ...block,
+    type: block.type.replace(/_once$/, ''),
+    message0: block.message0.replace(/^もし %1 になったら /, '')
+      .replace(/%(\d+)/g, (_, index) => `%${Number(index) - 1}`).replace('を1回だけ送る', 'を送る'),
+    args0: block.args0.filter(arg => arg.name !== 'CONDITION'),
+    tooltip: 'この動作が実行されるたびに送信します。条件を付けるときは「もし」の中に入れます。毎フレームの中では毎フレーム送るため、成立した瞬間だけ送る場合は「もし〜になった瞬間だけ実行」を使います。返信は受信イベント、衝突相手への送信は衝突イベントの中で使います。',
+  })),
   sendMessageOnceBlock,
   sendMessageValueOnceBlock,
   sendMessageToItemOnceBlock,

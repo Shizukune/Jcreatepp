@@ -1,0 +1,232 @@
+{
+  "blocks": {
+    "languageVersion": 0,
+    "blocks": [
+      {
+        "type": "jcreatepp_on_start",
+        "id": "t2",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_set_flag",
+              "id": "t1",
+              "fields": {
+                "FLAG_NAME": "enabled",
+                "OPERATION": "true"
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "jcreatepp_on_interact",
+        "id": "t15",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_send_message_to_item",
+              "id": "t3",
+              "fields": {
+                "ITEM_NAME": "door",
+                "MESSAGE": "open"
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_if",
+                  "id": "t7",
+                  "inputs": {
+                    "CONDITION": {
+                      "block": {
+                        "type": "jcreatepp_flag",
+                        "id": "t4",
+                        "fields": {
+                          "FLAG_NAME": "enabled"
+                        }
+                      }
+                    },
+                    "DO": {
+                      "block": {
+                        "type": "jcreatepp_send_message",
+                        "id": "t6",
+                        "fields": {
+                          "MESSAGE": "open"
+                        },
+                        "inputs": {
+                          "RANGE": {
+                            "block": {
+                              "type": "math_number",
+                              "id": "t5",
+                              "fields": {
+                                "NUM": 5
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "next": {
+                    "block": {
+                      "type": "jcreatepp_send_message_value_to_item",
+                      "id": "t9",
+                      "fields": {
+                        "ITEM_NAME": "door",
+                        "MESSAGE": "score",
+                        "VALUE_TYPE": "number"
+                      },
+                      "inputs": {
+                        "VALUE": {
+                          "block": {
+                            "type": "math_number",
+                            "id": "t8",
+                            "fields": {
+                              "NUM": 3
+                            }
+                          }
+                        }
+                      },
+                      "next": {
+                        "block": {
+                          "type": "jcreatepp_send_message_value",
+                          "id": "t12",
+                          "fields": {
+                            "VALUE_TYPE": "number",
+                            "MESSAGE": "score"
+                          },
+                          "inputs": {
+                            "RANGE": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t10",
+                                "fields": {
+                                  "NUM": 5
+                                }
+                              }
+                            },
+                            "VALUE": {
+                              "block": {
+                                "type": "math_number",
+                                "id": "t11",
+                                "fields": {
+                                  "NUM": 7
+                                }
+                              }
+                            }
+                          },
+                          "next": {
+                            "block": {
+                              "type": "jcreatepp_send_message_to_item_once",
+                              "id": "t14",
+                              "fields": {
+                                "ITEM_NAME": "door",
+                                "MESSAGE": "legacy"
+                              },
+                              "inputs": {
+                                "CONDITION": {
+                                  "block": {
+                                    "type": "jcreatepp_bool_literal",
+                                    "id": "t13",
+                                    "fields": {
+                                      "VALUE": "true"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 200
+      },
+      {
+        "type": "jcreatepp_on_receive",
+        "id": "t19",
+        "fields": {
+          "MESSAGE": "request"
+        },
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_reply_message",
+              "id": "t16",
+              "fields": {
+                "MESSAGE": "ok"
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_reply_message_value",
+                  "id": "t18",
+                  "fields": {
+                    "MESSAGE": "value",
+                    "VALUE_TYPE": "boolean"
+                  },
+                  "inputs": {
+                    "VALUE": {
+                      "block": {
+                        "type": "jcreatepp_bool_literal",
+                        "id": "t17",
+                        "fields": {
+                          "VALUE": "true"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 400
+      },
+      {
+        "type": "jcreatepp_on_collide",
+        "id": "t23",
+        "inputs": {
+          "DO": {
+            "block": {
+              "type": "jcreatepp_send_message_to_collision",
+              "id": "t20",
+              "fields": {
+                "MESSAGE": "hit"
+              },
+              "next": {
+                "block": {
+                  "type": "jcreatepp_send_message_value_to_collision",
+                  "id": "t22",
+                  "fields": {
+                    "VALUE_TYPE": "number",
+                    "MESSAGE": "score"
+                  },
+                  "inputs": {
+                    "VALUE": {
+                      "block": {
+                        "type": "math_number",
+                        "id": "t21",
+                        "fields": {
+                          "NUM": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x": 0,
+        "y": 600
+      }
+    ]
+  }
+}

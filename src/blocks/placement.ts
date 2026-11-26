@@ -87,8 +87,12 @@ export const STATEMENT_PLACEMENT_RULES: Record<string, StatementRule> = {
   jcreatepp_set_move_speed: playerOnly,
   jcreatepp_set_jump_speed: playerOnly,
   jcreatepp_reply_message_once: replyOnly,
+  jcreatepp_reply_message: replyOnly,
+  jcreatepp_reply_message_value: replyOnly,
   jcreatepp_reply_message_value_once: replyOnly,
   jcreatepp_send_message_to_collision_once: collisionOnly,
+  jcreatepp_send_message_to_collision: collisionOnly,
+  jcreatepp_send_message_value_to_collision: collisionOnly,
   jcreatepp_send_message_value_to_collision_once: collisionOnly,
   jcreatepp_sequence: {
     notIn: {
@@ -175,6 +179,14 @@ export function blockLabel(type: string): string {
     case 'jcreatepp_not': return '〜ではない';
     case 'jcreatepp_and': return 'かつ';
     case 'jcreatepp_or': return 'または';
+    case 'jcreatepp_send_message': return '近くのアイテムにメッセージを送る';
+    case 'jcreatepp_send_message_value': return '近くのアイテムに値つきメッセージを送る';
+    case 'jcreatepp_send_message_to_item': return '指定アイテムにメッセージを送る';
+    case 'jcreatepp_send_message_value_to_item': return '指定アイテムに値つきメッセージを送る';
+    case 'jcreatepp_reply_message': return '送ってきた相手にメッセージを返す';
+    case 'jcreatepp_reply_message_value': return '送ってきた相手に値つきメッセージを返す';
+    case 'jcreatepp_send_message_to_collision': return '衝突相手にメッセージを送る';
+    case 'jcreatepp_send_message_value_to_collision': return '衝突相手に値つきメッセージを送る';
     case 'jcreatepp_delta_time': return '経過時間';
     case 'jcreatepp_player': return 'プレイヤー';
     default: return type;

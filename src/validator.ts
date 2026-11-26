@@ -244,6 +244,14 @@ function validateMessageBlock(
 ): void {
   const sendMessageTypes = new Set([
     'jcreatepp_on_receive',
+    'jcreatepp_send_message',
+    'jcreatepp_send_message_value',
+    'jcreatepp_send_message_to_item',
+    'jcreatepp_send_message_value_to_item',
+    'jcreatepp_reply_message',
+    'jcreatepp_reply_message_value',
+    'jcreatepp_send_message_to_collision',
+    'jcreatepp_send_message_value_to_collision',
     'jcreatepp_send_message_once',
     'jcreatepp_send_message_value_once',
     'jcreatepp_send_message_to_item_once',
@@ -270,6 +278,8 @@ function validateMessageBlock(
   }
 
   if (
+    block.type === 'jcreatepp_send_message_to_item' ||
+    block.type === 'jcreatepp_send_message_value_to_item' ||
     block.type === 'jcreatepp_send_message_to_item_once' ||
     block.type === 'jcreatepp_send_message_value_to_item_once'
   ) {
