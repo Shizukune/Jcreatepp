@@ -1,5 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { LicenseNoticesPlugin } = require('./scripts/license-notices');
+const webpack = require('webpack');
 
 // Base config that applies to either development or production mode.
 const config = {
@@ -32,6 +34,8 @@ const config = {
     extensions: ['.tsx', '.ts', '.js'],
   },
   plugins: [
+    new LicenseNoticesPlugin(),
+    new webpack.BannerPlugin({ banner: 'Jcreate++: Apache-2.0. Bundled/minified third-party code retains its own licenses; see LICENSE.txt and THIRD-PARTY-NOTICES.txt.', test: /\.js$/ }),
     // Generate the HTML index page based on our template.
     // This will output the same index page with the bundle we
     // created above added in a script tag.

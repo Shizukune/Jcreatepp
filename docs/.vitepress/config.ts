@@ -1,10 +1,15 @@
-﻿export default {
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { docsLicenseNotices } = require('../../scripts/license-notices.js');
+
+export default {
+  vite: { plugins: [docsLicenseNotices()] },
   title: 'Jcreate++ はじめてガイド',
   description: 'スクリプトが初めての人向けに、ブロックで小さな仕掛けを作ってClusterで動かすまでを紹介します。',
   lang: 'ja-JP',
   base: '/Jcreatepp/',
   cleanUrls: true,
-  ignoreDeadLinks: [/^\/app\//],
+  ignoreDeadLinks: [/^\/app\//, /^\/(?:THIRD-PARTY-NOTICES|LICENSE)\.txt$/],
   themeConfig: {
     nav: [
       { text: 'はじめに', link: '/' },
@@ -18,6 +23,7 @@
           { text: 'Cluster Scriptのルール', link: '/cluster-rules' },
           { text: '困ったとき', link: '/troubleshooting' },
           { text: '更新履歴', link: '/changelog' },
+          { text: 'ライセンス', link: '/licenses' },
         ],
       },
     ],
@@ -69,7 +75,7 @@
     },
     footer: {
       message: 'Jcreate++は、Cluster Scriptを学びながら小さなギミックを作るためのプロトタイプです。',
-      copyright: 'Released under the Apache-2.0 License.',
+      copyright: 'Jcreate++: Apache-2.0 · <a href="/Jcreatepp/licenses">ライセンス・第三者表記</a>',
     },
   },
 };

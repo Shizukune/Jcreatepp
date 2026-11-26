@@ -38,6 +38,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Check license handling
+        run: npm run licenses:check
+
       - name: Build Jcreate++ app
         run: npm run build
 

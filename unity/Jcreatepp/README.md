@@ -8,6 +8,13 @@ Jcreate++ の「JS保存（Unity用）」で保存した `.js` を、Unity で**
 >
 > ダウンロード: [Jcreatepp-unity.zip](https://shizukune.github.io/Jcreatepp/downloads/Jcreatepp-unity.zip)（このフォルダだけを ZIP にしたもの。展開して、中の `Jcreatepp` フォルダを下の「入れ方」のとおりに入れます）
 
+## ライセンス
+
+Jcreate++ 本体は [Apache-2.0](LICENSE) です。このフォルダを再配布する場合も `LICENSE` と下記の第三者表記を含めてください。第三者ライブラリの権利とライセンスは各原文のとおりです。
+
+- [Blockly の表記・ライセンス全文](Editor/Core/THIRD-PARTY-NOTICES.md)
+- [Jint・Acornima・.NET ライブラリの表記・ライセンス全文](Editor/Preview/Plugins/THIRD-PARTY-NOTICES.md)
+
 ## 対応環境
 
 - **主対象**: Unity 6000.2.6f2（[Cluster 公式の推奨版](https://docs.cluster.mu/creatorkit/installation/install-unity/)）と、Unity 6 対応の Cluster Creator Kit。CCK は [公式の更新手順](https://docs.cluster.mu/creatorkit/installation/update-creatorkit/)に従って導入してください。
