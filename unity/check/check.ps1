@@ -58,6 +58,13 @@ $refs = @("-r:$out\Jint.dll", "-r:$out\Acornima.dll", "-r:$netstandard", "-r:$ru
 if ($LASTEXITCODE -ne 0) { throw 'preview code does not compile' }
 Write-Output 'compile (preview): ok'
 
+& $csc -nologo -langversion:5 -codepage:65001 "-out:$out\BeginnerTemplatesCheck.exe" @refs $stubs $setup $preview $core $blocks (Join-Path $PSScriptRoot 'BeginnerTemplatesCheck.cs')
+if ($LASTEXITCODE -ne 0) { throw 'beginner templates do not compile' }
+& "$out\BeginnerTemplatesCheck.exe" "$out\beginner-cases"
+if ($LASTEXITCODE -ne 0) { throw 'beginner preview isolation failed' }
+node (Join-Path $PSScriptRoot 'beginner-templates.js') "$out\beginner-cases"
+if ($LASTEXITCODE -ne 0) { throw 'beginner template conversion failed' }
+
 & $csc -nologo -langversion:5 -codepage:65001 "-out:$out\SimHostCheck.exe" @refs (Join-Path $PSScriptRoot 'SimHostCheck.cs') (Join-Path $root 'unity\Jcreatepp\Editor\Preview\SimHost.cs')
 if ($LASTEXITCODE -ne 0) { throw 'SimHostCheck does not compile' }
 Copy-Item (Join-Path $PSScriptRoot 'SimHostCheck.exe.config') "$out\SimHostCheck.exe.config" -Force

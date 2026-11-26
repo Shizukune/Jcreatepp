@@ -45,7 +45,8 @@ namespace Jcreatepp.Editor.Blocks
         [SerializeField] List<string> writtenPaths = new List<string>();
         [SerializeField] List<string> writtenTexts = new List<string>();
         [SerializeField] Vector2 pan = new Vector2(40, 40);
-        [SerializeField] int category = 1;
+        [SerializeField] int category = 0;
+        [SerializeField] GameObject editingTarget;
         [SerializeField] Vector2 paletteScroll;
         [SerializeField] Vector2 resultScroll;
         [SerializeField] Vector2 codeScroll;
@@ -53,8 +54,9 @@ namespace Jcreatepp.Editor.Blocks
         [SerializeField] bool autoPreview = true;
         PreviewPanel preview;
         JavaScriptAsset lastWrittenScript;
-        [SerializeField] bool showCode = true;
+        [SerializeField] bool showCode;
         [SerializeField] bool showSetup = true;
+        [SerializeField] bool showPatterns;
 
         CoreHost core;
         BlockCatalog catalog;
@@ -84,6 +86,8 @@ namespace Jcreatepp.Editor.Blocks
         bool panning;
 
         readonly Dictionary<PaletteItem, BlockNode> paletteBlocks = new Dictionary<PaletteItem, BlockNode>();
+        readonly Dictionary<string, BlockWorkspace> examples = new Dictionary<string, BlockWorkspace>();
+        readonly Dictionary<string, Vector2> exampleScroll = new Dictionary<string, Vector2>();
         readonly List<KeyValuePair<PaletteItem, Rect>> paletteHits = new List<KeyValuePair<PaletteItem, Rect>>();
         List<CoreHost.PartInfo> parts;
         readonly Dictionary<string, Dictionary<string, string>> partValues = new Dictionary<string, Dictionary<string, string>>();
@@ -102,6 +106,37 @@ namespace Jcreatepp.Editor.Blocks
             window.titleContent = new GUIContent("Jcreate++ ブロック");
             window.minSize = new Vector2(820, 420);
             window.Show();
+        }
+
+        [MenuItem("Jcreate++/選んだオブジェクトに動きを作る", false, -20)]
+        public static void CreateForSelection()
+        {
+            var target = Selection.activeGameObject;
+            if (target == null || EditorUtility.IsPersistent(target))
+            {
+                EditorUtility.DisplayDialog("Jcreate++", "ヒエラルキーで動きを付けたいオブジェクトを選んでください。", "OK");
+                return;
+            }
+            OpenFor(target);
+        }
+
+        public static void OpenFor(GameObject target)
+        {
+            if (target == null || EditorUtility.IsPersistent(target)) return;
+            Open();
+            var window = GetWindow<BlockEditorWindow>();
+            if (window.editingTarget == target) return;
+            if (!window.ConfirmDiscard()) return;
+            window.editingTarget = target;
+            window.category = 0;
+            window.Replace("", "", "");
+            // Reopen the editable source for an item already made here, when available.
+            var item = target.GetComponent<ScriptableItem>();
+            if (item == null) return;
+            var source = new SerializedObject(item).FindProperty("sourceCodeAsset");
+            if (source == null || source.objectReferenceValue == null) return;
+            var path = Path.ChangeExtension(AssetDatabase.GetAssetPath(source.objectReferenceValue), ".json");
+            if (File.Exists(path)) window.Load(path);
         }
 
         /// <summary>Opens a saved workspace (.json) in the editor.</summary>
@@ -240,6 +275,8 @@ namespace Jcreatepp.Editor.Blocks
             catalog = loaded;
             layout = new BlockLayout(catalog, Measure);
             paletteBlocks.Clear();
+            examples.Clear();
+            exampleScroll.Clear();
             parts = core.Parts();
             return true;
         }
@@ -502,7 +539,7 @@ namespace Jcreatepp.Editor.Blocks
             File.WriteAllText(full, text, new UTF8Encoding(false));
         }
 
-        /// <summary>Exports a standalone .js, or writes alongside the saved blocks when applying to an item.</summary>
+        /// <summary>Saves the executable JS and editable JSON together; exportOnly chooses a new destination.</summary>
         JavaScriptAsset WriteScript(bool exportOnly)
         {
             if (!ConvertedNow() || !result.Ok || result.Code == "")
@@ -513,17 +550,18 @@ namespace Jcreatepp.Editor.Blocks
                 return null;
             }
             string jsPath;
-            if (exportOnly)
+            if (assetPath == "" || exportOnly)
             {
-                var folder = assetPath != "" ? Path.GetDirectoryName(assetPath) : "Assets";
-                var name = assetPath != "" ? Path.GetFileNameWithoutExtension(assetPath) : "jcreatepp_script";
-                jsPath = EditorUtility.SaveFilePanelInProject("JavaScript を書き出す", name, "js",
-                    "JavaScript（.js）の保存先を選びます。ブロック（.json）は保存されません。", folder);
+                if (!AssetDatabase.IsValidFolder(SaveFolder)) AssetDatabase.CreateFolder("Assets", Path.GetFileName(SaveFolder));
+                var folder = assetPath != "" ? Path.GetDirectoryName(assetPath) : SaveFolder;
+                var name = assetPath != "" ? Path.GetFileNameWithoutExtension(assetPath) : editingTarget != null ? editingTarget.name : "新しい動き";
+                foreach (var invalid in Path.GetInvalidFileNameChars()) name = name.Replace(invalid, '_');
+                jsPath = EditorUtility.SaveFilePanelInProject("動きを保存（JS と編集用データを一緒に保存します）", name, "js",
+                    "保存先と名前を1回選ぶだけで、同名の .js と .json を作ります。", folder);
                 if (string.IsNullOrEmpty(jsPath)) return null;
             }
             else
             {
-                if ((assetPath == "" || HasUnsavedChanges()) && !Save(false)) return null;
                 jsPath = Path.ChangeExtension(assetPath, ".js");
             }
             jsPath = jsPath.Replace('\\', '/');
@@ -541,8 +579,13 @@ namespace Jcreatepp.Editor.Blocks
                     return null;
                 }
             }
+            var jsonPath = Path.ChangeExtension(jsPath, ".json");
+            var jsonText = Workspace().ToJson(true) + "\n";
+            if (jsonPath != assetPath && File.Exists(jsonPath) && File.ReadAllText(jsonPath, Encoding.UTF8) != jsonText &&
+                !EditorUtility.DisplayDialog("Jcreate++", "「" + jsonPath + "」も、今のブロックで上書きしますか？", "上書きする", "やめる")) return null;
             try
             {
+                WriteText(jsonPath, jsonText);
                 WriteText(jsPath, result.Code);
             }
             catch (Exception e)
@@ -550,6 +593,10 @@ namespace Jcreatepp.Editor.Blocks
                 EditorUtility.DisplayDialog("Jcreate++", "「" + jsPath + "」に書き出せませんでした: " + e.Message, "OK");
                 return null;
             }
+            AssetDatabase.ImportAsset(jsonPath);
+            assetPath = jsonPath;
+            savedJson = Workspace().ToJson(false);
+            RefreshUnsaved();
             if (wroteAt >= 0)
             {
                 writtenTexts[wroteAt] = result.Code;
@@ -575,7 +622,7 @@ namespace Jcreatepp.Editor.Blocks
 
         void ApplyToSelection()
         {
-            var go = Selection.activeGameObject;
+            var go = editingTarget;
             if (go == null || EditorUtility.IsPersistent(go))
             {
                 EditorUtility.DisplayDialog("Jcreate++", "先にヒエラルキーで、スクリプトを付けるオブジェクトを選んでください。", "OK");
@@ -585,7 +632,7 @@ namespace Jcreatepp.Editor.Blocks
             if (asset == null) return;
             applyResult = ItemSetup.Apply(go, asset);
             applyTarget = go;
-            notice = "「" + go.name + "」に設定しました（" + AssetDatabase.GetAssetPath(asset) + "）。元に戻す: Ctrl+Z";
+            notice = "保存・設定できました。「" + go.name + "」に動きを付けました。シーンを Ctrl+S で保存し、Cluster へアップロードして確かめてください。元に戻す: Ctrl+Z";
         }
 
         static string ToAssetPath(string fullPath)
@@ -934,12 +981,12 @@ namespace Jcreatepp.Editor.Blocks
                 PickAndLoad();
                 GUIUtility.ExitGUI();
             }
-            if (GUILayout.Button(new GUIContent("ブロック保存", "編集用のブロック（.json）を保存します"), EditorStyles.toolbarButton, GUILayout.Width(80)))
+            if (GUILayout.Button(new GUIContent("途中保存", "作りかけのブロックを保存します（未完成でも保存できます）"), EditorStyles.toolbarButton, GUILayout.Width(80)))
             {
                 Save(false);
                 GUIUtility.ExitGUI();
             }
-            if (GUILayout.Button("ブロックを書き出す (.json)...", EditorStyles.toolbarButton, GUILayout.Width(165)))
+            if (GUILayout.Button("途中のブロックを別名で保存...", EditorStyles.toolbarButton, GUILayout.Width(165)))
             {
                 Save(true);
                 GUIUtility.ExitGUI();
@@ -1218,7 +1265,7 @@ namespace Jcreatepp.Editor.Blocks
         {
             GUILayout.BeginArea(paletteRect, EditorStyles.helpBox);
             var names = new GUIContent[catalog.Categories.Count];
-            for (var i = 0; i < names.Length; i++) names[i] = new GUIContent(catalog.Categories[i].Name);
+            for (var i = 0; i < names.Length; i++) names[i] = new GUIContent(i == 0 ? "テンプレート｜まずここから" : catalog.Categories[i].Name);
             category = Mathf.Clamp(category, 0, Math.Max(0, names.Length - 1));
             for (var i = 0; i < names.Length; i++)
             {
@@ -1300,16 +1347,27 @@ namespace Jcreatepp.Editor.Blocks
 
         void DrawPartsContent()
         {
-            GUILayout.Label("組み方テンプレート", EditorStyles.boldLabel);
-            GUILayout.Label("きっかけや条件を選び、空欄に自分の動作を置きます。", smallWrap);
-            DrawTemplateButton("押したら実行", "押したときに、中の動作を一度実行します。", TemplateKind.Interact);
-            DrawTemplateButton("押して開始・停止", "押すたびに、続ける動作をオン・オフします。", TemplateKind.Toggle);
-            DrawTemplateButton("順番に実行", "押したら始まり、移動などの完了を待って次へ進みます。", TemplateKind.Sequence);
-            DrawTemplateButton("条件に合うときだけ実行", "押したときに条件を確認し、合えば動きます。", TemplateKind.Conditional);
-            DrawTemplateButton("押したあと、しばらく押せない", "押したあと、次に押せるまで初期設定で3秒待ちます。", TemplateKind.Cooldown);
-            DrawTemplateButton("合図が届いたら実行", "同じ名前のメッセージが届いたときに動きます。", TemplateKind.Receive);
+            GUILayout.Label("まずは見本を選んでみよう", EditorStyles.boldLabel);
+            GUILayout.Label("ブロックの組み方を覚えていなくても、追加して数字を変えるだけで試せます。見本は横にスクロールできます。", smallWrap);
+            DrawReadyCard("クリックで上に動く", "押すたびに1m上がります。高さは y の数字で変更できます。", TemplateKind.Interact);
+            DrawReadyCard("押すと回転、もう一度で停止", "インタラクト時で開始・停止、毎フレームで回転します。", TemplateKind.Toggle);
+            DrawReadyCard("上がってから元に戻る", "1秒かけて上がり、終わってから1秒かけて下がります。", TemplateKind.Sequence);
+            DrawReadyCard("3秒待たないと押せないボタン", "クリックで1m上がり、次に押せるまで3秒待ちます。", TemplateKind.Cooldown);
+            DrawReadyCard("合図を受けたら上に動く", "メッセージを受けると1m上がります。送る側と合図の名前を合わせます。", TemplateKind.Receive);
             GUILayout.Space(8);
-            GUILayout.Label("そのまま使える部品", EditorStyles.boldLabel);
+            showPatterns = EditorGUILayout.Foldout(showPatterns, "自分で組むためのひな形", true);
+            if (showPatterns)
+            {
+                GUILayout.Label("きっかけや条件を選び、空欄に自分の動作を置きます。", smallWrap);
+                DrawTemplateButton("押したら実行", "押したときに、中の動作を一度実行します。", TemplateKind.Interact);
+                DrawTemplateButton("押して開始・停止", "押すたびに、続ける動作をオン・オフします。", TemplateKind.Toggle);
+                DrawTemplateButton("順番に実行", "押したら始まり、移動などの完了を待って次へ進みます。", TemplateKind.Sequence);
+                DrawTemplateButton("条件に合うときだけ実行", "押したときに条件を確認し、合えば動きます。", TemplateKind.Conditional);
+                DrawTemplateButton("押したあと、しばらく押せない", "押したあと、次に押せるまで初期設定で3秒待ちます。", TemplateKind.Cooldown);
+                DrawTemplateButton("合図が届いたら実行", "同じ名前のメッセージが届いたときに動きます。", TemplateKind.Receive);
+            }
+            GUILayout.Space(8);
+            GUILayout.Label("ほかの動きの見本", EditorStyles.boldLabel);
             if (parts == null || parts.Count == 0)
             {
                 EditorGUILayout.HelpBox("部品を読み込めませんでした。", MessageType.Warning);
@@ -1343,7 +1401,15 @@ namespace Jcreatepp.Editor.Blocks
                         values[p.Key] = now.ToString("R", CultureInfo.InvariantCulture);
                     }
                 }
-                if (GUILayout.Button("ブロックとして追加")) AddPart(part, values);
+                var sampleKey = "part:" + part.Id;
+                if (!examples.ContainsKey(sampleKey))
+                {
+                    var sample = core.AddPart("{}", part.Id, "{}");
+                    if (sample.Ok) examples[sampleKey] = BlockWorkspace.FromJson(sample.Json);
+                }
+                DrawExample(sampleKey);
+                GUILayout.Label("上は初期値の見本です。数値は追加前にも、追加してからも変えられます。", smallWrap);
+                if (GUILayout.Button("この動きを追加")) AddPart(part, values);
                 EditorGUILayout.EndVertical();
             }
         }
@@ -1358,7 +1424,14 @@ namespace Jcreatepp.Editor.Blocks
 
         void DrawTemplateButton(string title, string description, TemplateKind kind)
         {
-            if (!GUILayout.Button(new GUIContent(title, description))) return;
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label(title, EditorStyles.boldLabel);
+            GUILayout.Label(description, smallWrap);
+            EnsureExample("empty:" + kind, kind, false);
+            DrawExample("empty:" + kind);
+            var add = GUILayout.Button("この組み方を追加");
+            EditorGUILayout.EndVertical();
+            if (!add) return;
             AddTemplate(kind);
             Commit("テンプレート「" + title + "」を追加");
             GUIUtility.ExitGUI();
@@ -1407,7 +1480,7 @@ namespace Jcreatepp.Editor.Blocks
             else body.Block.Last.Next = action;
         }
 
-        void AddTemplate(TemplateKind kind)
+        BlockNode AddTemplate(TemplateKind kind, bool reveal = true)
         {
             BlockNode target;
             if (kind == TemplateKind.Receive)
@@ -1454,7 +1527,90 @@ namespace Jcreatepp.Editor.Blocks
             ws.Relink();
             LoadMissingShapes(ws);
             canvasLayout = layout.Layout(ws.Tops);
+            if (reveal) Reveal(target.Id);
+            return target;
+        }
+
+        void NumberInput(BlockNode node, string input, double value)
+        {
+            var number = TemplateBlock("math_number", "NUM", value);
+            number.IsShadow = true;
+            node.SlotOrNew(input).Shadow = number;
+        }
+
+        void FillReady(BlockNode target, TemplateKind kind)
+        {
+            if (kind == TemplateKind.Toggle)
+            {
+                var spin = TemplateBlock("jcreatepp_continuous_rotation", "AXIS", "Y");
+                NumberInput(spin, "SPEED", 90);
+                AppendTemplateAction(target, spin);
+            }
+            else
+            {
+                var move = TemplateBlock(kind == TemplateKind.Sequence ? "jcreatepp_smooth_move_by" : "jcreatepp_add_position");
+                NumberInput(move, "X", 0); NumberInput(move, "Y", 1); NumberInput(move, "Z", 0);
+                if (kind == TemplateKind.Sequence)
+                {
+                    NumberInput(move, "DURATION", 1);
+                    var back = TemplateBlock("jcreatepp_smooth_move_by");
+                    NumberInput(back, "X", 0); NumberInput(back, "Y", -1); NumberInput(back, "Z", 0); NumberInput(back, "DURATION", 1);
+                    move.Next = back;
+                }
+                AppendTemplateAction(target, move);
+            }
+            ws.Relink();
+            LoadMissingShapes(ws);
+        }
+
+        void EnsureExample(string key, TemplateKind kind, bool ready)
+        {
+            if (examples.ContainsKey(key)) return;
+            var original = ws;
+            var oldPan = pan;
+            var oldLayout = canvasLayout;
+            try
+            {
+                ws = new BlockWorkspace();
+                pan = Vector2.zero;
+                var target = AddTemplate(kind, false);
+                if (ready) FillReady(target, kind);
+                examples[key] = ws;
+            }
+            finally { ws = original; pan = oldPan; canvasLayout = oldLayout; }
+        }
+
+        void DrawExample(string key)
+        {
+            BlockWorkspace sample;
+            if (!examples.TryGetValue(key, out sample)) return;
+            LoadMissingShapes(sample);
+            var lr = layout.Layout(sample.Tops);
+            Vector2 scroll;
+            exampleScroll.TryGetValue(key, out scroll);
+            exampleScroll[key] = GUILayout.BeginScrollView(scroll, GUILayout.Width(paletteRect.width - 42), GUILayout.Height(Math.Min(180, lr.Bounds.H + 28)));
+            var rect = GUILayoutUtility.GetRect(lr.Bounds.W + 16, lr.Bounds.H + 12);
+            DrawLayout(lr, new Vector2(rect.x + 6 - lr.Bounds.X, rect.y + 4 - lr.Bounds.Y), false, true);
+            GUILayout.EndScrollView();
+        }
+
+        void DrawReadyCard(string title, string description, TemplateKind kind)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label(title, EditorStyles.boldLabel);
+            GUILayout.Label(description, smallWrap);
+            var key = "ready:" + kind;
+            EnsureExample(key, kind, true);
+            DrawExample(key);
+            var add = GUILayout.Button("この動きを追加");
+            EditorGUILayout.EndVertical();
+            if (!add) return;
+            var target = AddTemplate(kind, false);
+            FillReady(target, kind);
+            canvasLayout = layout.Layout(ws.Tops);
             Reveal(target.Id);
+            Commit("テンプレート「" + title + "」を追加");
+            GUIUtility.ExitGUI();
         }
 
         void AddPart(CoreHost.PartInfo part, Dictionary<string, string> values)
@@ -1498,7 +1654,12 @@ namespace Jcreatepp.Editor.Blocks
             if (problem != "") EditorGUILayout.HelpBox(problem, MessageType.Error);
             if (notice != "") EditorGUILayout.HelpBox(notice, MessageType.None);
 
-            EditorGUILayout.LabelField("試す・アイテムに設定", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("① 動きを付けるオブジェクト", EditorStyles.boldLabel);
+            editingTarget = (GameObject)EditorGUILayout.ObjectField(editingTarget, typeof(GameObject), true);
+            if (editingTarget == null && Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject) &&
+                GUILayout.Button("選択中の「" + Selection.activeGameObject.name + "」を使う")) editingTarget = Selection.activeGameObject;
+            EditorGUILayout.LabelField("② 左のテンプレートで動きを選ぶ", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("見本を選んで追加し、数値を変えます。慣れてきたら他のタブからブロックを足せます。", EditorStyles.wordWrappedMiniLabel);
             if (result == null || convertPending)
             {
                 EditorGUILayout.LabelField("変換しています…", EditorStyles.miniLabel);
@@ -1543,7 +1704,7 @@ namespace Jcreatepp.Editor.Blocks
             var hasCode = result != null && result.Ok && result.Code != "" && !convertPending;
             using (new EditorGUI.DisabledScope(!hasCode))
             {
-                if (GUILayout.Button(new GUIContent(preview == null ? " この画面でプレビュー" : " 最新のブロックで試し直す", EditorGUIUtility.IconContent("PlayButton").image, "右側の箱で動きを確かめます。シーン内のアイテムは変更しません。"), GUILayout.Height(26)))
+                if (GUILayout.Button(new GUIContent(preview == null ? "③ 動きを試す" : "③ 最新の動きを試す", EditorGUIUtility.IconContent("PlayButton").image, "右側の箱で動きを確かめます。シーン内のアイテムは変更しません。"), GUILayout.Height(26)))
                 {
                     if (preview == null)
                     {
@@ -1556,27 +1717,28 @@ namespace Jcreatepp.Editor.Blocks
             }
 
             EditorGUILayout.Space();
-            var go = Selection.activeGameObject;
+            var go = editingTarget;
             var canApply = hasCode && go != null && !EditorUtility.IsPersistent(go);
             using (new EditorGUI.DisabledScope(!canApply))
             {
-                var label = go != null && !EditorUtility.IsPersistent(go) ? "「" + go.name + "」に設定する" : "選択中のオブジェクトに設定する";
+                var label = go != null && !EditorUtility.IsPersistent(go) ? "④ 保存して「" + go.name + "」に設定" : "④ 保存してオブジェクトに設定";
                 if (GUILayout.Button(new GUIContent(label, "コードを .js に書き出して、Item / Scriptable Item などを付けます（Ctrl+Z で戻せます）"), GUILayout.Height(26)))
                 {
                     ApplyToSelection();
                     GUIUtility.ExitGUI();
                 }
             }
-            if (go == null || EditorUtility.IsPersistent(go)) EditorGUILayout.LabelField("ヒエラルキーでオブジェクトを選ぶと設定できます。", EditorStyles.miniLabel);
+            if (go == null || EditorUtility.IsPersistent(go)) EditorGUILayout.LabelField("①にシーン内のオブジェクトを入れてください。", EditorStyles.wordWrappedMiniLabel);
             using (new EditorGUI.DisabledScope(!hasCode))
             {
-                if (GUILayout.Button(new GUIContent("JavaScript (.js) だけ書き出す...", "ブロックの保存やアイテムへの設定をせずに .js を作成します"), EditorStyles.miniButton))
+                if (GUILayout.Button(new GUIContent("ファイルだけ保存する...", "同名の .js と編集用 .json を一緒に保存します。オブジェクトには設定しません。"), EditorStyles.miniButton))
                 {
                     var asset = WriteScript(true);
-                    if (asset != null) notice = "JavaScript を書き出しました: " + AssetDatabase.GetAssetPath(asset);
+                    if (asset != null) notice = "動きを保存しました（JS と編集用 JSON）: " + AssetDatabase.GetAssetPath(asset);
                     GUIUtility.ExitGUI();
                 }
             }
+            EditorGUILayout.LabelField("保存時に JS と編集用 JSON を一緒に作ります。先に JSON を用意する必要はありません。", EditorStyles.wordWrappedMiniLabel);
             if (lastWrittenScript != null &&
                 GUILayout.Button(new GUIContent("書き出した JavaScript を開く", AssetDatabase.GetAssetPath(lastWrittenScript)), EditorStyles.miniButton))
             {

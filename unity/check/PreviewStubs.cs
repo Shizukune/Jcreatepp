@@ -72,6 +72,7 @@ namespace UnityEditor
     public enum PlayModeStateChange { EnteredEditMode, ExitingEditMode, EnteredPlayMode, ExitingPlayMode }
     public static partial class EditorApplication
     {
+        public static bool ExecuteMenuItem(string menuItemPath) { return true; }
         public static Action update;
         public static Action<PlayModeStateChange> playModeStateChanged;
         public static double timeSinceStartup;

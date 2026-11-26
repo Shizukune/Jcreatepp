@@ -21,6 +21,10 @@ namespace Jcreatepp.Editor
         GameObject target;
         ItemSetup.Result lastResult;
         Vector2 scroll;
+        bool showExistingScript;
+
+        [MenuItem("Jcreate++/はじめる（動きを作る）", false, -30)]
+        public static void StartCreating() { Open(); }
 
         [MenuItem("Jcreate++/セットアップ ウィンドウを開く", false, 0)]
         public static void Open()
@@ -48,6 +52,7 @@ namespace Jcreatepp.Editor
             window.script = asset;
             window.target = go;
             window.lastResult = result;
+            window.showExistingScript = true;
             window.Show();
         }
 
@@ -116,6 +121,27 @@ namespace Jcreatepp.Editor
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
 
+            EditorGUILayout.LabelField("オブジェクトに動きを付ける", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("① 対象を選ぶ → ② テンプレートで作る → ③ 試す → ④ 保存して設定", EditorStyles.wordWrappedLabel);
+            EditorGUILayout.LabelField("① 動きを付けるオブジェクト", EditorStyles.boldLabel);
+            target = (GameObject)EditorGUILayout.ObjectField(target, typeof(GameObject), true);
+            using (new EditorGUI.DisabledScope(target == null || EditorUtility.IsPersistent(target)))
+            {
+                if (GUILayout.Button("② テンプレートから動きを作る", GUILayout.Height(32)))
+                {
+                    Selection.activeGameObject = target;
+                    EditorApplication.ExecuteMenuItem("Jcreate++/選んだオブジェクトに動きを作る");
+                    GUIUtility.ExitGUI();
+                }
+            }
+            EditorGUILayout.HelpBox("ブロック画面で動きを選んで「保存して設定」を押すだけで、必要なファイルとコンポーネントを用意します。既存の動きに編集用 JSON があれば、その続きから開きます。", MessageType.Info);
+            showExistingScript = EditorGUILayout.Foldout(showExistingScript, "すでに持っている JS を設定する", true);
+            if (!showExistingScript)
+            {
+                EditorGUILayout.EndScrollView();
+                return;
+            }
+
             EditorGUILayout.LabelField("1. スクリプト", EditorStyles.boldLabel);
             EditorGUILayout.BeginHorizontal();
             script = (JavaScriptAsset)EditorGUILayout.ObjectField(script, typeof(JavaScriptAsset), false);
@@ -132,8 +158,7 @@ namespace Jcreatepp.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("2. 設定するオブジェクト", EditorStyles.boldLabel);
-            target = (GameObject)EditorGUILayout.ObjectField(target, typeof(GameObject), true);
+            EditorGUILayout.LabelField("上のオブジェクトに設定します", EditorStyles.wordWrappedMiniLabel);
 
             EditorGUILayout.Space();
             using (new EditorGUI.DisabledScope(script == null || target == null || EditorUtility.IsPersistent(target)))

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using System.Reflection;
 using Jcreatepp.Editor.Blocks;
 using Jcreatepp.Editor.Core;
 using NUnit.Framework;
@@ -14,6 +16,45 @@ namespace Jcreatepp.Editor.Preview.Tests
     /// </summary>
     public sealed class BlockEditorTests
     {
+        [TestCase("Interact")]
+        [TestCase("Toggle")]
+        [TestCase("Sequence")]
+        [TestCase("Cooldown")]
+        [TestCase("Receive")]
+        public void BeginnerExamplesConvertAndDoNotReplaceTheEditedWorkspace(string kind)
+        {
+            var window = ScriptableObject.CreateInstance<BlockEditorWindow>();
+            try
+            {
+                using (var core = new CoreHost(Bundle()))
+                {
+                    var type = typeof(BlockEditorWindow);
+                    var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                    var catalog = Catalog(core);
+                    var original = new BlockWorkspace();
+                    type.GetField("core", flags).SetValue(window, core);
+                    type.GetField("catalog", flags).SetValue(window, catalog);
+                    type.GetField("layout", flags).SetValue(window, new BlockLayout(catalog, Measure));
+                    type.GetField("ws", flags).SetValue(window, original);
+                    var choice = Enum.Parse(type.GetNestedType("TemplateKind", BindingFlags.NonPublic), kind);
+                    type.GetMethod("EnsureExample", flags).Invoke(window, new object[] { kind, choice, true });
+                    Assert.AreSame(original, type.GetField("ws", flags).GetValue(window));
+                    var examples = (Dictionary<string, BlockWorkspace>)type.GetField("examples", flags).GetValue(window);
+                    var converted = core.Convert(examples[kind].ToJson(false));
+                    Assert.IsTrue(converted.Ok, converted.Error);
+                    Assert.AreEqual(0, converted.Errors.Count, string.Join("\n", converted.Errors.ToArray()));
+                    Assert.IsNotEmpty(converted.Code);
+                    // The same builder fills the actual inserted template.
+                    var target = type.GetMethod("AddTemplate", flags).Invoke(window, new object[] { choice, false });
+                    type.GetMethod("FillReady", flags).Invoke(window, new object[] { target, choice });
+                    var actual = core.Convert(original.ToJson(false));
+                    Assert.IsTrue(actual.Ok, actual.Error);
+                    Assert.AreEqual(0, actual.Errors.Count);
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(window); }
+        }
+
         /// <summary>Saved by the Web editor: number inputs hold math_number shadows (every palette block with a number does).</summary>
         const string WithShadows =
             "{\"blocks\":{\"languageVersion\":0,\"blocks\":[{\"type\":\"jcreatepp_on_start\",\"id\":\"ev\",\"x\":10,\"y\":20," +
