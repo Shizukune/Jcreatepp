@@ -20,6 +20,7 @@ namespace UnityEngine
     {
         public static Matrix4x4 identity;
         public static Matrix4x4 TRS(Vector3 pos, Quaternion q, Vector3 s) { return identity; }
+        public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) { return identity; }
     }
     public static partial class Mathf { public static float Clamp(float value, float min, float max) { return value; } }
     public partial class Material : Object

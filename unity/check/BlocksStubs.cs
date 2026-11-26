@@ -62,6 +62,7 @@ namespace UnityEngine
     }
     public static class GUI
     {
+        public static Matrix4x4 matrix;
         public static void Label(Rect position, string text, GUIStyle style) { }
         public static void Label(Rect position, GUIContent content) { }
         public static bool Toggle(Rect position, bool value, GUIContent content, GUIStyle style) { return value; }

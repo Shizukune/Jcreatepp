@@ -87,7 +87,6 @@ namespace Jcreatepp.Editor.Blocks
 
         readonly Dictionary<PaletteItem, BlockNode> paletteBlocks = new Dictionary<PaletteItem, BlockNode>();
         readonly Dictionary<string, BlockWorkspace> examples = new Dictionary<string, BlockWorkspace>();
-        readonly Dictionary<string, Vector2> exampleScroll = new Dictionary<string, Vector2>();
         readonly List<KeyValuePair<PaletteItem, Rect>> paletteHits = new List<KeyValuePair<PaletteItem, Rect>>();
         List<CoreHost.PartInfo> parts;
         readonly Dictionary<string, Dictionary<string, string>> partValues = new Dictionary<string, Dictionary<string, string>>();
@@ -95,7 +94,7 @@ namespace Jcreatepp.Editor.Blocks
         GameObject applyTarget;
         string notice = "";
 
-        GUIStyle blockLabel, fieldText, fieldPopup, smallWrap;
+        GUIStyle blockLabel, fieldText, fieldPopup, smallWrap, categoryButton;
         readonly Dictionary<string, float> widths = new Dictionary<string, float>();
         readonly Dictionary<string, Color> colours = new Dictionary<string, Color>();
 
@@ -276,7 +275,6 @@ namespace Jcreatepp.Editor.Blocks
             layout = new BlockLayout(catalog, Measure);
             paletteBlocks.Clear();
             examples.Clear();
-            exampleScroll.Clear();
             parts = core.Parts();
             return true;
         }
@@ -729,6 +727,7 @@ namespace Jcreatepp.Editor.Blocks
             fieldText.focused.background = Texture2D.whiteTexture;
             fieldPopup = new GUIStyle(EditorStyles.popup) { fontSize = 11, fixedHeight = 0 };
             smallWrap = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
+            categoryButton = new GUIStyle(EditorStyles.miniButton) { alignment = TextAnchor.MiddleLeft, padding = new RectOffset(8, 4, 0, 0) };
         }
 
         float Measure(string text)
@@ -1273,7 +1272,7 @@ namespace Jcreatepp.Editor.Blocks
                 var c = ColourOf(catalog.Categories[i].Colour);
                 if (e.type == EventType.Repaint) EditorGUI.DrawRect(new Rect(r.x, r.y + 2, 6, r.height - 4), c);
                 var label = new Rect(r.x + 10, r.y, r.width - 10, r.height);
-                if (GUI.Toggle(label, category == i, names[i], EditorStyles.miniButton) && category != i)
+                if (GUI.Toggle(label, category == i, names[i], categoryButton) && category != i)
                 {
                     category = i;
                     paletteScroll = Vector2.zero;
@@ -1312,7 +1311,7 @@ namespace Jcreatepp.Editor.Blocks
             switch (item.Kind)
             {
                 case "label":
-                    GUILayout.Label(item.Text, EditorStyles.miniBoldLabel);
+                    if (category != 0) GUILayout.Label(item.Text, smallWrap, GUILayout.Width(paletteRect.width - 30));
                     break;
                 case "button":
                     if (item.CallbackKey == PartsCallback) DrawParts();
@@ -1348,7 +1347,7 @@ namespace Jcreatepp.Editor.Blocks
         void DrawPartsContent()
         {
             GUILayout.Label("まずは見本を選んでみよう", EditorStyles.boldLabel);
-            GUILayout.Label("ブロックの組み方を覚えていなくても、追加して数字を変えるだけで試せます。見本は横にスクロールできます。", smallWrap);
+            GUILayout.Label("ブロックの組み方を覚えていなくても、追加して数字を変えるだけで試せます。追加したブロックは中央で大きく見られます。", smallWrap);
             DrawReadyCard("クリックで上に動く", "押すたびに1m上がります。高さは y の数字で変更できます。", TemplateKind.Interact);
             DrawReadyCard("押すと回転、もう一度で停止", "インタラクト時で開始・停止、毎フレームで回転します。", TemplateKind.Toggle);
             DrawReadyCard("上がってから元に戻る", "1秒かけて上がり、終わってから1秒かけて下がります。", TemplateKind.Sequence);
@@ -1586,12 +1585,23 @@ namespace Jcreatepp.Editor.Blocks
             if (!examples.TryGetValue(key, out sample)) return;
             LoadMissingShapes(sample);
             var lr = layout.Layout(sample.Tops);
-            Vector2 scroll;
-            exampleScroll.TryGetValue(key, out scroll);
-            exampleScroll[key] = GUILayout.BeginScrollView(scroll, GUILayout.Width(paletteRect.width - 42), GUILayout.Height(Math.Min(180, lr.Bounds.H + 28)));
-            var rect = GUILayoutUtility.GetRect(lr.Bounds.W + 16, lr.Bounds.H + 12);
-            DrawLayout(lr, new Vector2(rect.x + 6 - lr.Bounds.X, rect.y + 4 - lr.Bounds.Y), false, true);
-            GUILayout.EndScrollView();
+            var width = Math.Max(40f, paletteRect.width - 48f);
+            var scale = Math.Min(1f, (width - 12f) / Math.Max(1f, lr.Bounds.W));
+            var height = lr.Bounds.H * scale + 12f;
+            var rect = GUILayoutUtility.GetRect(width, width, height, height);
+            // Fit the whole example into its card; only the outer palette needs to scroll.
+            GUI.BeginGroup(rect);
+            var previous = GUI.matrix;
+            try
+            {
+                GUI.matrix = previous * Matrix4x4.TRS(new Vector3(6, 6, 0), Quaternion.identity, new Vector3(scale, scale, 1));
+                DrawLayout(lr, new Vector2(-lr.Bounds.X, -lr.Bounds.Y), false);
+            }
+            finally
+            {
+                GUI.matrix = previous;
+                GUI.EndGroup();
+            }
         }
 
         void DrawReadyCard(string title, string description, TemplateKind kind)
