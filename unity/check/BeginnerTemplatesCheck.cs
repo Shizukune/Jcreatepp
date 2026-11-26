@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Jcreatepp.Editor.Blocks;
+using UnityEngine;
 
 // Runs against Unity stubs; generated JSON is then converted by the actual block core in Node.
 class BeginnerTemplatesCheck
@@ -12,6 +13,19 @@ class BeginnerTemplatesCheck
         Directory.CreateDirectory(args[0]);
         var type = typeof(BlockEditorWindow);
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var switching = new BlockEditorWindow();
+        var oldTarget = new GameObject("A");
+        var newTarget = new GameObject("B");
+        var oldState = new BlockEditorState { Json = "saved A" };
+        type.GetField("state", flags).SetValue(switching, oldState);
+        type.GetField("editingTarget", flags).SetValue(switching, oldTarget);
+        type.GetField("assetPath", flags).SetValue(switching, "Assets/A.json");
+        type.GetField("savedJson", flags).SetValue(switching, "saved A");
+        type.GetMethod("SwitchTarget", flags).Invoke(switching, new object[] { newTarget });
+        if ((string)type.GetField("assetPath", flags).GetValue(switching) != "" || oldState.Json != "" ||
+            !ReferenceEquals(newTarget, type.GetField("editingTarget", flags).GetValue(switching)))
+            throw new Exception("target switch retained A's source or destination");
+        Console.WriteLine("target switch: old blocks and file path cleared");
         foreach (var name in new[] { "Interact", "Toggle", "Sequence", "Cooldown", "Receive" })
         {
             var window = new BlockEditorWindow();

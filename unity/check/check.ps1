@@ -37,6 +37,11 @@ $stubs = @((Join-Path $PSScriptRoot 'Stubs.cs'), (Join-Path $PSScriptRoot 'Previ
 if ($LASTEXITCODE -ne 0) { throw 'setup code does not compile' }
 Write-Output 'compile (setup): ok'
 
+& $csc -nologo -langversion:5 -codepage:65001 "-out:$out\MotionFilePairCheck.exe" (Join-Path $PSScriptRoot 'MotionFilePairCheck.cs') (Join-Path $root 'unity\Jcreatepp\Editor\Blocks\MotionFilePair.cs')
+if ($LASTEXITCODE -ne 0) { throw 'paired save checks do not compile' }
+& "$out\MotionFilePairCheck.exe" "$out\pair-cases"
+if ($LASTEXITCODE -ne 0) { throw 'paired save checks failed' }
+
 & $csc -nologo -langversion:5 -codepage:65001 "-out:$out\edge.exe" (Join-Path $PSScriptRoot 'EdgeCases.cs') $analysis
 & "$out\edge.exe"
 if ($LASTEXITCODE -ne 0) { throw 'edge cases failed' }

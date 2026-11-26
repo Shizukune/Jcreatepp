@@ -124,18 +124,30 @@ namespace Jcreatepp.Editor.Blocks
             if (target == null || EditorUtility.IsPersistent(target)) return;
             Open();
             var window = GetWindow<BlockEditorWindow>();
-            if (window.editingTarget == target) return;
-            if (!window.ConfirmDiscard()) return;
-            window.editingTarget = target;
-            window.category = 0;
-            window.Replace("", "", "");
+            window.SwitchTarget(target);
+        }
+
+        bool SwitchTarget(GameObject target)
+        {
+            if (target != null && EditorUtility.IsPersistent(target)) return false;
+            if (editingTarget == target) return true;
+            if (!ConfirmDiscard()) return false;
             // Reopen the editable source for an item already made here, when available.
-            var item = target.GetComponent<ScriptableItem>();
-            if (item == null) return;
-            var source = new SerializedObject(item).FindProperty("sourceCodeAsset");
-            if (source == null || source.objectReferenceValue == null) return;
-            var path = Path.ChangeExtension(AssetDatabase.GetAssetPath(source.objectReferenceValue), ".json");
-            if (File.Exists(path)) window.Load(path);
+            var item = target != null ? target.GetComponent<ScriptableItem>() : null;
+            var source = item != null ? new SerializedObject(item).FindProperty("sourceCodeAsset") : null;
+            var path = source != null && source.objectReferenceValue != null
+                ? Path.ChangeExtension(AssetDatabase.GetAssetPath(source.objectReferenceValue), ".json") : null;
+            // Load validates first, so a corrupt file cannot clear the previous editor or change its target.
+            if (!string.IsNullOrEmpty(path) && File.Exists(path))
+            {
+                if (!Load(path)) return false;
+            }
+            else Replace("", "", "");
+            if (preview != null) { preview.Disable(); preview = null; }
+            lastWrittenScript = null;
+            editingTarget = target;
+            category = 0;
+            return true;
         }
 
         /// <summary>Opens a saved workspace (.json) in the editor.</summary>
@@ -455,12 +467,12 @@ namespace Jcreatepp.Editor.Blocks
             Load(path);
         }
 
-        void Load(string path)
+        bool Load(string path)
         {
             if (!EnsureCore())
             {
                 EditorUtility.DisplayDialog("Jcreate++", problem, "OK");
-                return;
+                return false;
             }
             string text;
             try
@@ -470,7 +482,7 @@ namespace Jcreatepp.Editor.Blocks
             catch (Exception e)
             {
                 EditorUtility.DisplayDialog("Jcreate++", "ファイルを読めませんでした: " + e.Message, "OK");
-                return;
+                return false;
             }
             BlockWorkspace loaded;
             try
@@ -480,7 +492,7 @@ namespace Jcreatepp.Editor.Blocks
             catch (FormatException e)
             {
                 EditorUtility.DisplayDialog("Jcreate++", "Jcreate++ のブロックのファイルではないようです: " + e.Message, "OK");
-                return;
+                return false;
             }
             // The same check as the Web editor's converter (unknown blocks, size, depth).
             var check = core.Convert(text);
@@ -488,7 +500,7 @@ namespace Jcreatepp.Editor.Blocks
             {
                 EditorUtility.DisplayDialog("Jcreate++", "このファイルは開けません: " + check.Error, "OK");
                 if (core.IsStopped) EnsureCore();
-                return;
+                return false;
             }
             var json = loaded.Tops.Count == 0 ? "" : loaded.ToJson(false);
             var inProject = ToAssetPath(path);
@@ -497,6 +509,7 @@ namespace Jcreatepp.Editor.Blocks
             notice = inProject == null ? "プロジェクトの外のファイルを開きました。保存するときはプロジェクトの中に保存します。" : "";
             FitView();
             Repaint();
+            return true;
         }
 
         /// <summary>Saves the blocks (.json, the Web editor's format). False when not saved.</summary>
@@ -583,8 +596,8 @@ namespace Jcreatepp.Editor.Blocks
                 !EditorUtility.DisplayDialog("Jcreate++", "「" + jsonPath + "」も、今のブロックで上書きしますか？", "上書きする", "やめる")) return null;
             try
             {
-                WriteText(jsonPath, jsonText);
-                WriteText(jsPath, result.Code);
+                var project = Path.GetDirectoryName(Application.dataPath);
+                MotionFilePair.Save(Path.Combine(project, jsPath), result.Code, jsonText);
             }
             catch (Exception e)
             {
@@ -1665,9 +1678,18 @@ namespace Jcreatepp.Editor.Blocks
             if (notice != "") EditorGUILayout.HelpBox(notice, MessageType.None);
 
             EditorGUILayout.LabelField("① 動きを付けるオブジェクト", EditorStyles.boldLabel);
-            editingTarget = (GameObject)EditorGUILayout.ObjectField(editingTarget, typeof(GameObject), true);
+            var proposedTarget = (GameObject)EditorGUILayout.ObjectField(editingTarget, typeof(GameObject), true);
+            if (proposedTarget != editingTarget)
+            {
+                SwitchTarget(proposedTarget);
+                GUIUtility.ExitGUI();
+            }
             if (editingTarget == null && Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject) &&
-                GUILayout.Button("選択中の「" + Selection.activeGameObject.name + "」を使う")) editingTarget = Selection.activeGameObject;
+                GUILayout.Button("選択中の「" + Selection.activeGameObject.name + "」を使う"))
+            {
+                SwitchTarget(Selection.activeGameObject);
+                GUIUtility.ExitGUI();
+            }
             EditorGUILayout.LabelField("② 左のテンプレートで動きを選ぶ", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("見本を選んで追加し、数値を変えます。慣れてきたら他のタブからブロックを足せます。", EditorStyles.wordWrappedMiniLabel);
             if (result == null || convertPending)
